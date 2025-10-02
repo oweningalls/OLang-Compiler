@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLang Compiler", "OLang Compiler\OLang Compiler.csproj", "{35CFBB68-DE2D-4967-A44C-696B137AA93D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangCompiler", "OLangCompiler\OLangCompiler.csproj", "{35CFBB68-DE2D-4967-A44C-696B137AA93D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
