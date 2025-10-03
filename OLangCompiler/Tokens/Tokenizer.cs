@@ -30,14 +30,14 @@ public class Tokenizer
 
             if (Peek() == ';')
             {
-                Consume();
+                _ = Consume();
                 tokens.Add(new SemicolonToken());
                 continue;
             }
 
             if (char.IsWhiteSpace(Peek()!.Value))
             {
-                Consume();
+                _ = Consume();
                 continue;
             }
 
@@ -57,12 +57,16 @@ public class Tokenizer
         return _input[_currentIndex];
     }
 
-    private char? Consume()
+    private char Consume()
     {
         var ret = Peek();
         _currentIndex++;
+        if (ret == null)
+        {
+            throw new Exception("Unexpected end of input");
+        }
 
-        return ret;
+        return (char)ret;
     }
 
     private bool LookForString(string expected)
