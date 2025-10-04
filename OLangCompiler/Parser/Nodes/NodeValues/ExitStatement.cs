@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes.NodeValues;
 
-public class ExitStatement(ExpressionNode expression)
+public class ExitStatement(IExpressionNode expression) : IStatementNode
 {
-    public ExpressionNode ExpressionNode = expression;
+    public IExpressionNode ExpressionNode = expression;
 }

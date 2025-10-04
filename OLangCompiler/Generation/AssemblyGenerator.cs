@@ -35,14 +35,14 @@ public class AssemblyGenerator
         return _output.ToString();
     }
 
-    private void GenerateStatement(StatementNode statement)
+    private void GenerateStatement(IStatementNode statement)
     {
-        switch (statement.Statement.Value)
+        switch (statement)
         {
             case ExitStatement exitStatement:
                 GenerateExitStatement(exitStatement);
                 break;
-            case VarDeclarationStatement declarationStatement:
+            case DeclarationStatement declarationStatement:
                 GenerateVarDeclarationStatement(declarationStatement);
                 break;
             case SetVarStatement setVarStatement:
@@ -50,7 +50,7 @@ public class AssemblyGenerator
                 break;
             default:
             {
-                throw new Exception($"Unknown statement type: {statement.Statement.Value.GetType()}");
+                throw new Exception($"Unknown statement type: {statement.GetType()}");
             }
         }
     }
@@ -67,7 +67,7 @@ public class AssemblyGenerator
         
     }
 
-    private void GenerateVarDeclarationStatement(VarDeclarationStatement declarationStatement)
+    private void GenerateVarDeclarationStatement(DeclarationStatement declarationStatement)
     {
         var identifier = declarationStatement.Identifier;
         GenerateExpression(declarationStatement.Expression);
@@ -84,13 +84,13 @@ public class AssemblyGenerator
                          """);
     }
 
-    private void GenerateExpression(ExpressionNode expression)
+    private void GenerateExpression(IExpressionNode expression)
     {
-        if (expression.Expression.Value is TermNode term)
+        if (expression is TermExpression term)
         {
-            GenerateTerm(term);
+            GenerateTerm(term.Term);
         }
-        else if (expression.Expression.Value is AddExpression addExpression)
+        else if (expression is AddExpression addExpression)
         {
             GenerateTerm(addExpression.Lhs);
             GenerateExpression(addExpression.Rhs);

@@ -11,7 +11,7 @@ public class Parser
     {
         _tokens = tokens;
         _currentIndex = 0;
-        var statements = new List<StatementNode>();
+        var statements = new List<IStatementNode>();
         while (Peek() != null)
         {
             statements.Add(ParseStatement());
@@ -20,7 +20,7 @@ public class Parser
         return new ProgramNode(statements);
     }
 
-    private StatementNode ParseStatement()
+    private IStatementNode ParseStatement()
     {
         if (Peek() == null)
         {
@@ -32,7 +32,7 @@ public class Parser
             _ = Consume();
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new ExitStatement(expression));
+            return new ExitStatement(expression);
         }
 
         if (Peek() is LetToken)
@@ -42,7 +42,7 @@ public class Parser
             TryConsume<EqualsToken>("Expected `=`");
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new VarDeclarationStatement(identifier, expression));
+            return new DeclarationStatement(identifier, expression);
         }
 
         if (Peek() is IdentifierToken ident)
@@ -51,23 +51,23 @@ public class Parser
             TryConsume<EqualsToken>("Expected `=`");
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new SetVarStatement(ident, expression));
+            return new SetVarStatement(ident, expression);
         }
 
         throw new Exception("Expected statement");
     }
 
-    private ExpressionNode ParseExpression()
+    private IExpressionNode ParseExpression()
     {
         var term = ParseTerm();
         if (TryConsume<PlusToken>() != null)
         {
             var expression = ParseExpression();
 
-            return new ExpressionNode(new AddExpression(term, expression));
+            return new AddExpression(term, expression);
         }
 
-        return new ExpressionNode(term);
+        return new TermExpression(term);
     }
 
     private TermNode ParseTerm()
