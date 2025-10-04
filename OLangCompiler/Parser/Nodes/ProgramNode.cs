@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class ProgramNode(Term value) : INode
+public class ProgramNode(List<StatementNode> statements) : INode
 {
-    public Term Value = value;
+    public List<StatementNode> Statements = statements;
 }

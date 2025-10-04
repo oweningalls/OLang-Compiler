@@ -1,5 +1,7 @@
 ﻿using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Parser.Nodes.NodeValues;
 using OLangCompiler.Tokens;
+using OneOf;
 
 namespace OLangCompiler.Parser;
 
@@ -9,20 +11,55 @@ public class Parser
     {
         _tokens = tokens;
         _currentIndex = 0;
-
-        TryConsume<ExitToken>("Expected exit");
-        var intLit = TryConsume<IntLiteralToken>("Expected int literal");
-        TryConsume<SemicolonToken>("Expected semicolon");
-        if (Peek() is { } token)
+        var statements = new List<StatementNode>();
+        while (Peek() != null)
         {
-            throw new Exception($"Expected end of input but was {token}");
+            statements.Add(ParseStatement());
         }
 
-        return new ProgramNode(new Term(intLit.Value));
+        return new ProgramNode(statements);
+    }
+
+    private StatementNode ParseStatement()
+    {
+        if (Peek() == null)
+        {
+            throw new Exception("Expected statement");
+        }
+
+        if (Peek() is ExitToken)
+        {
+            _ = Consume();
+            var exitTerm = ParseTerm();
+            TryConsume<SemicolonToken>("Expected `;`");
+            return new StatementNode(new ExitStatement(exitTerm));
+        }
+
+        if (Peek() is LetToken)
+        {
+            _ = Consume();
+            var identifier = TryConsume<IdentifierToken>("Expected identifier");
+            TryConsume<EqualsToken>("Expected `=`");
+            var term = ParseTerm();
+            TryConsume<SemicolonToken>("Expected `;`");
+            return new StatementNode(new VarDeclarationStatement(identifier.Name, term));
+        }
+
+        throw new Exception("Expected statement");
+    }
+
+    private TermNode ParseTerm()
+    {
+        if (Peek() == null)
+        {
+            throw new Exception("Expected term");
+        }
+
+        var intLiteralToken = TryConsume<IntLiteralToken>("Expected int literal");
+        return new TermNode(intLiteralToken.Value);
     }
     
-
-    private List<IToken>? _tokens;
+    private List<IToken>? _tokens = null!;
     private int _currentIndex;
     private IToken? Peek()
     {

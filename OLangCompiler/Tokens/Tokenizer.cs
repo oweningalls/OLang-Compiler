@@ -9,9 +9,9 @@ public class Tokenizer
         var tokens = new List<IToken>();
         while (Peek() != null)
         {
-            if (LookForString("exit"))
+            if (char.IsLetter(Peek()!.Value))
             {
-                tokens.Add(new ExitToken());
+                tokens.Add(TokenizeLetter());
                 continue;
             }
 
@@ -35,6 +35,14 @@ public class Tokenizer
                 continue;
             }
 
+            if (Peek() == '=')
+            {
+                _ = Consume();
+                tokens.Add(new EqualsToken());
+                continue;
+                
+            }
+
             if (char.IsWhiteSpace(Peek()!.Value))
             {
                 _ = Consume();
@@ -46,6 +54,28 @@ public class Tokenizer
 
         return tokens;
     }
+
+    private IToken TokenizeLetter()
+    {
+        var buffer = "";
+        while (char.IsLetterOrDigit(Peek()!.Value))
+        {
+            buffer += Consume();
+        }
+
+        if (_keywordMap.TryGetValue(buffer, out var tokenFunc))
+        {
+            return tokenFunc.Invoke();
+        }
+
+        return new IdentifierToken(buffer);
+    }
+
+    private static readonly Dictionary<string, Func<IToken>> _keywordMap = new()
+    {
+        { "exit",  () => new ExitToken()},
+        { "let", () => new LetToken() }
+    };
 
     private string? _input;
     private int _currentIndex;
@@ -67,27 +97,5 @@ public class Tokenizer
         }
 
         return (char)ret;
-    }
-
-    private bool LookForString(string expected)
-    {
-        var startIndex = _currentIndex;
-        var buffer = "";
-        while (Consume() is { } c)
-        {
-            buffer += c;
-            if (buffer == expected)
-            {
-                return true;
-            }
-
-            if (!expected.StartsWith(buffer))
-            {
-                break;
-            }
-        }
-
-        _currentIndex = startIndex;
-        return false;
     }
 }
