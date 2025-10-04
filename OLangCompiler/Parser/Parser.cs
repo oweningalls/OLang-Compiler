@@ -45,6 +45,15 @@ public class Parser
             return new StatementNode(new VarDeclarationStatement(identifier, term));
         }
 
+        if (Peek() is IdentifierToken ident)
+        {
+            _ = Consume();
+            TryConsume<EqualsToken>("Expected `=`");
+            var term = ParseTerm();
+            TryConsume<SemicolonToken>("Expected `;`");
+            return new StatementNode(new SetVarStatement(ident, term));
+        }
+
         throw new Exception("Expected statement");
     }
 

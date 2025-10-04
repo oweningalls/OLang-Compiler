@@ -32,17 +32,21 @@ public class AssemblyGenerator
 
     private void GenerateStatement(StatementNode statement)
     {
-        if (statement.Statement.Value is ExitStatement exitStatement)
+        switch (statement.Statement.Value)
         {
-            GenerateExitStatement(exitStatement);
-        }
-        else if (statement.Statement.Value is VarDeclarationStatement declarationStatement)
-        {
-            GenerateVarDeclarationStatement(declarationStatement);
-        }
-        else
-        {
-            throw new Exception($"Unknown statement type: {statement.Statement.Value.GetType()}");
+            case ExitStatement exitStatement:
+                GenerateExitStatement(exitStatement);
+                break;
+            case VarDeclarationStatement declarationStatement:
+                GenerateVarDeclarationStatement(declarationStatement);
+                break;
+            case SetVarStatement setVarStatement:
+                GenerateSetVarStatement(setVarStatement);
+                break;
+            default:
+            {
+                throw new Exception($"Unknown statement type: {statement.Statement.Value.GetType()}");
+            }
         }
     }
 
@@ -50,9 +54,10 @@ public class AssemblyGenerator
     {
         GenerateTerm(exitStatement.Term);
         _output!.Append("""
-                             mov rax, 60
                              pop rdi
+                             mov rax, 60
                              syscall
+                         
                          """);
         
     }
@@ -63,6 +68,16 @@ public class AssemblyGenerator
         GenerateTerm(declarationStatement.Term);
         _variableStackOffsets[identifier.Name] = _stackOffset;
         _stackOffset++;
+    }
+
+    private void GenerateSetVarStatement(SetVarStatement setVarStatement)
+    {
+        GenerateTerm(setVarStatement.Term);
+        _output!.Append($"""
+                             pop rax
+                             mov {GetVariableLocation(setVarStatement.Identifier.Name)}, rax
+                         
+                         """);
     }
 
     private void GenerateTerm(TermNode term)
@@ -77,9 +92,8 @@ public class AssemblyGenerator
         }
         else if (term.Value.Value is IdentifierToken identifierToken)
         {
-            var relativeStackOffset = (_stackOffset - _variableStackOffsets[identifierToken.Name] - 1) * 8;
             _output!.Append($"""
-                                mov rax, [rsp + {relativeStackOffset}]
+                                mov rax, {GetVariableLocation(identifierToken.Name)}
                                 push rax
                             
                             """);
@@ -88,6 +102,12 @@ public class AssemblyGenerator
         {
             throw new Exception($"Unknown term type: {term.Value.Value.GetType()}");
         }
+    }
+
+    private string GetVariableLocation(string variableName)
+    {
+        var relativeStackOffset = (_stackOffset - _variableStackOffsets[variableName] - 1) * 8;
+        return $"[rsp + {relativeStackOffset}]";
     }
 
     private Dictionary<string, int> _variableStackOffsets = null!;

@@ -8,8 +8,12 @@ _start:
     push rax
     mov rax, 10
     push rax
+    mov rax, 23
+    push rax
+    pop rax
+    mov [rsp + 16], rax
     mov rax, [rsp + 16]
     push rax
-    mov rax, 60
     pop rdi
+    mov rax, 60
     syscall
