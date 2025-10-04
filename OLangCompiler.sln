@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangCompiler", "OLangCompiler\OLangCompiler.csproj", "{35CFBB68-DE2D-4967-A44C-696B137AA93D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangTests", "OLangTests\OLangTests.csproj", "{545521CE-9E47-4C49-97A4-2A4790E146DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{35CFBB68-DE2D-4967-A44C-696B137AA93D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35CFBB68-DE2D-4967-A44C-696B137AA93D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35CFBB68-DE2D-4967-A44C-696B137AA93D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{545521CE-9E47-4C49-97A4-2A4790E146DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{545521CE-9E47-4C49-97A4-2A4790E146DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{545521CE-9E47-4C49-97A4-2A4790E146DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{545521CE-9E47-4C49-97A4-2A4790E146DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

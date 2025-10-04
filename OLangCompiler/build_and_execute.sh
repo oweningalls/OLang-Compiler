@@ -26,4 +26,7 @@ fi
 # Run
 echo "Running ./$BASE"
 my_obj/"$BASE"
-echo "Program exited with code $?"
+exit_code=$?
+echo "Program exited with code $exit_code"
+
+exit $exit_code

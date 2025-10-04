@@ -7,7 +7,11 @@ public static class OLangCompiler
 {
     public static void Main()
     {
-        var fileName = "test.ol";
+        CompileFile("test.ol");
+    }
+    
+    public static void CompileFile(string fileName, string outputFile = "test.asm")
+    {
         if (!fileName.EndsWith(".ol"))
         {
             throw new Exception($"Input file {fileName} must end with .ol");
@@ -16,14 +20,22 @@ public static class OLangCompiler
         var baseName = fileName.Substring(0, fileName.Length - ".ol".Length);
         var tokenizer = new Tokenizer();
         var contents = File.ReadAllText(fileName);
-        var tokens = tokenizer.Tokenize(contents);
+
+        var assembly = GenerateAssembly(contents);
+        File.WriteAllText(outputFile, assembly);
+    }
+
+    public static string GenerateAssembly(string program)
+    {
+        var tokenizer = new Tokenizer();
+        var tokens = tokenizer.Tokenize(program);
 
         var parser = new Parser.Parser();
-        var program = parser.ParseProgram(tokens);
+        var programNode = parser.ParseProgram(tokens);
 
         var generator = new AssemblyGenerator();
-        var assembly = generator.GenerateProgram(program);
-        
-        File.WriteAllText($"{baseName}.asm", assembly);
+        var assembly = generator.GenerateProgram(programNode);
+
+        return assembly;
     }
 }
