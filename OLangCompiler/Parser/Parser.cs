@@ -42,7 +42,7 @@ public class Parser
             TryConsume<EqualsToken>("Expected `=`");
             var term = ParseTerm();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new VarDeclarationStatement(identifier.Name, term));
+            return new StatementNode(new VarDeclarationStatement(identifier, term));
         }
 
         throw new Exception("Expected statement");
@@ -55,8 +55,16 @@ public class Parser
             throw new Exception("Expected term");
         }
 
-        var intLiteralToken = TryConsume<IntLiteralToken>("Expected int literal");
-        return new TermNode(intLiteralToken.Value);
+        if (TryConsume<IntLiteralToken>() is {} ilt)
+        {
+            return new TermNode(ilt);
+        }
+
+        if (TryConsume<IdentifierToken>() is { } identifier)
+        { 
+            return new TermNode(identifier);
+        }
+        throw new Exception("Expected term");
     }
     
     private List<IToken>? _tokens = null!;
@@ -78,6 +86,16 @@ public class Parser
         }
 
         return ret;
+    }
+
+    private T? TryConsume<T>() where T : class, IToken
+    {
+        if (Peek() is T token)
+        {
+            return Consume() as T;
+        }
+
+        return null;
     }
 
     private T TryConsume<T>(string errorMessage) where T : class, IToken

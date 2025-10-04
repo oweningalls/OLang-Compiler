@@ -1,6 +1,9 @@
-﻿namespace OLangCompiler.Parser.Nodes;
+﻿using OLangCompiler.Parser.Nodes.NodeValues;
+using OLangCompiler.Tokens;
 
-public class TermNode(OneOf.OneOf<int> value) : INode
+namespace OLangCompiler.Parser.Nodes;
+
+public class TermNode(OneOf.OneOf<IntLiteralToken, IdentifierToken> value) : INode
 {
-    public OneOf.OneOf<int> Value = value;
+    public OneOf.OneOf<IntLiteralToken, IdentifierToken> Value = value;
 }

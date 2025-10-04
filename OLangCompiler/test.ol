@@ -1,2 +1,4 @@
-﻿let name = 69;
-exit 72;
+﻿let first = 30;
+let second = 20;
+let third = 10;
+exit first;

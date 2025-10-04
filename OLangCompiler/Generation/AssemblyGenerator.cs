@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Parser.Nodes.NodeValues;
+using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Generation;
 
@@ -60,19 +61,28 @@ public class AssemblyGenerator
     {
         var identifier = declarationStatement.Identifier;
         GenerateTerm(declarationStatement.Term);
-        _variableStackOffsets[identifier] = _stackOffset;
+        _variableStackOffsets[identifier.Name] = _stackOffset;
         _stackOffset++;
     }
 
     private void GenerateTerm(TermNode term)
     {
-        if (term.Value.Value is int intLiteral)
+        if (term.Value.Value is IntLiteralToken intLiteralToken)
         {
             _output!.Append($"""
-                                 mov rax, {intLiteral}
+                                 mov rax, {intLiteralToken.Value}
                                  push rax
 
                              """);
+        }
+        else if (term.Value.Value is IdentifierToken identifierToken)
+        {
+            var relativeStackOffset = (_stackOffset - _variableStackOffsets[identifierToken.Name] - 1) * 8;
+            _output!.Append($"""
+                                mov rax, [rsp + {relativeStackOffset}]
+                                push rax
+                            
+                            """);
         }
         else
         {
