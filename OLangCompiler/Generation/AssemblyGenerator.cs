@@ -26,7 +26,12 @@ public class AssemblyGenerator
             GenerateStatement(statement);
         }
         
-
+        _output!.Append("""
+                             mov rdi, 0
+                             mov rax, 60
+                             syscall
+                         
+                         """);
         return _output.ToString();
     }
 
