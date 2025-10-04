@@ -11,9 +11,4 @@
     <ItemGroup>
       <Folder Include="my_obj\" />
     </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="OneOf" Version="3.0.271" />
-    </ItemGroup>
-
 </Project>

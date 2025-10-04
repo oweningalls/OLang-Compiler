@@ -82,7 +82,9 @@ public class Tokenizer
     {
         { '=',  () => new EqualsToken()},
         { ';', () => new SemicolonToken() },
-        { '+', () => new PlusToken() }
+        { '+', () => new PlusToken() },
+        {'(', () => new LeftParenToken() },
+        {')', () => new RightParenToken() }
     };
     
     private string? _input;

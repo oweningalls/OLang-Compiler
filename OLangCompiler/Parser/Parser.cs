@@ -1,7 +1,6 @@
 ﻿using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Parser.Nodes.NodeValues;
 using OLangCompiler.Tokens;
-using OneOf;
 
 namespace OLangCompiler.Parser;
 
@@ -70,7 +69,7 @@ public class Parser
         return new TermExpression(term);
     }
 
-    private TermNode ParseTerm()
+    private ITermNode ParseTerm()
     {
         if (Peek() == null)
         {
@@ -79,17 +78,25 @@ public class Parser
 
         if (TryConsume<IntLiteralToken>() is {} ilt)
         {
-            return new TermNode(ilt);
+            return new IntLiteralTerm(ilt.Value);
         }
 
         if (TryConsume<IdentifierToken>() is { } identifier)
         { 
-            return new TermNode(identifier);
+            return new IdentifierTerm(identifier.Name);
         }
+
+        if (TryConsume<LeftParenToken>() != null)
+        {
+            var expression = ParseExpression();
+            TryConsume<RightParenToken>("Expected `)`");
+            return new ParenTerm(expression);
+        }
+        
         throw new Exception("Expected term");
     }
     
-    private List<IToken>? _tokens = null!;
+    private List<IToken>? _tokens;
     private int _currentIndex;
     private IToken? Peek()
     {
@@ -112,7 +119,7 @@ public class Parser
 
     private T? TryConsume<T>() where T : class, IToken
     {
-        if (Peek() is T token)
+        if (Peek() is T)
         {
             return Consume() as T;
         }

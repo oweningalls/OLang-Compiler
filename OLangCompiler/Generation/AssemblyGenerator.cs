@@ -107,25 +107,29 @@ public class AssemblyGenerator
             throw new Exception("Expected expression");
         }
     }
-    private void GenerateTerm(TermNode term)
+    private void GenerateTerm(ITermNode term)
     {
-        if (term.Value.Value is IntLiteralToken intLiteralToken)
+        if (term is IntLiteralTerm intLiteralTerm)
         {
             _output!.Append($"""
-                                 {GetPushStatement(intLiteralToken.Value.ToString())}
+                                 {GetPushStatement(intLiteralTerm.Value.ToString())}
 
                              """);
         }
-        else if (term.Value.Value is IdentifierToken identifierToken)
+        else if (term is IdentifierTerm identifierTerm)
         {
             _output!.Append($"""
-                                {GetPushStatement($"QWORD {GetVariableLocation(identifierToken.Name)}")}
+                                {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
                             
                             """);
         }
+        else if (term is ParenTerm parenTerm)
+        {
+            GenerateExpression(parenTerm.Expression);
+        }
         else
         {
-            throw new Exception($"Unknown term type: {term.Value.Value.GetType()}");
+            throw new Exception($"Unknown term type: {term.GetType()}");
         }
     }
 
