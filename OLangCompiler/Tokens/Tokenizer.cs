@@ -28,19 +28,10 @@ public class Tokenizer
                 continue;
             }
 
-            if (Peek() == ';')
+            if (TryParseOperator() is { } op)
             {
-                _ = Consume();
-                tokens.Add(new SemicolonToken());
+                tokens.Add(op);
                 continue;
-            }
-
-            if (Peek() == '=')
-            {
-                _ = Consume();
-                tokens.Add(new EqualsToken());
-                continue;
-                
             }
 
             if (char.IsWhiteSpace(Peek()!.Value))
@@ -58,7 +49,7 @@ public class Tokenizer
     private IToken TokenizeLetter()
     {
         var buffer = "";
-        while (char.IsLetterOrDigit(Peek()!.Value))
+        while (Peek() is {} c && char.IsLetterOrDigit(c))
         {
             buffer += Consume();
         }
@@ -77,6 +68,23 @@ public class Tokenizer
         { "let", () => new LetToken() }
     };
 
+    private IToken? TryParseOperator()
+    {
+        if (_operatormap.ContainsKey(Peek()!.Value))
+        {
+            return _operatormap[Consume()].Invoke();
+        }
+
+        return null;
+    }
+
+    private static readonly Dictionary<char, Func<IToken>> _operatormap = new()
+    {
+        { '=',  () => new EqualsToken()},
+        { ';', () => new SemicolonToken() },
+        { '+', () => new PlusToken() }
+    };
+    
     private string? _input;
     private int _currentIndex;
 

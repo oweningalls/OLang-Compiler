@@ -30,9 +30,9 @@ public class Parser
         if (Peek() is ExitToken)
         {
             _ = Consume();
-            var exitTerm = ParseTerm();
+            var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new ExitStatement(exitTerm));
+            return new StatementNode(new ExitStatement(expression));
         }
 
         if (Peek() is LetToken)
@@ -40,21 +40,34 @@ public class Parser
             _ = Consume();
             var identifier = TryConsume<IdentifierToken>("Expected identifier");
             TryConsume<EqualsToken>("Expected `=`");
-            var term = ParseTerm();
+            var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new VarDeclarationStatement(identifier, term));
+            return new StatementNode(new VarDeclarationStatement(identifier, expression));
         }
 
         if (Peek() is IdentifierToken ident)
         {
             _ = Consume();
             TryConsume<EqualsToken>("Expected `=`");
-            var term = ParseTerm();
+            var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new StatementNode(new SetVarStatement(ident, term));
+            return new StatementNode(new SetVarStatement(ident, expression));
         }
 
         throw new Exception("Expected statement");
+    }
+
+    private ExpressionNode ParseExpression()
+    {
+        var term = ParseTerm();
+        if (TryConsume<PlusToken>() != null)
+        {
+            var expression = ParseExpression();
+
+            return new ExpressionNode(new AddExpression(term, expression));
+        }
+
+        return new ExpressionNode(term);
     }
 
     private TermNode ParseTerm()

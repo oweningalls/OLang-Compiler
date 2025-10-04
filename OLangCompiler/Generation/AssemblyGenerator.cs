@@ -57,9 +57,9 @@ public class AssemblyGenerator
 
     private void GenerateExitStatement(ExitStatement exitStatement)
     {
-        GenerateTerm(exitStatement.Term);
-        _output!.Append("""
-                             pop rdi
+        GenerateExpression(exitStatement.ExpressionNode);
+        _output!.Append($"""
+                             {GetPopStatement("rdi")}
                              mov rax, 60
                              syscall
                          
@@ -70,36 +70,50 @@ public class AssemblyGenerator
     private void GenerateVarDeclarationStatement(VarDeclarationStatement declarationStatement)
     {
         var identifier = declarationStatement.Identifier;
-        GenerateTerm(declarationStatement.Term);
-        _variableStackOffsets[identifier.Name] = _stackOffset;
-        _stackOffset++;
+        GenerateExpression(declarationStatement.Expression);
+        SaveVariableLocation(identifier.Name);
     }
 
     private void GenerateSetVarStatement(SetVarStatement setVarStatement)
     {
-        GenerateTerm(setVarStatement.Term);
+        GenerateExpression(setVarStatement.Expression);
         _output!.Append($"""
-                             pop rax
+                             {GetPopStatement("rax")}
                              mov {GetVariableLocation(setVarStatement.Identifier.Name)}, rax
                          
                          """);
     }
 
+    private void GenerateExpression(ExpressionNode expression)
+    {
+        if (expression.Expression.Value is TermNode term)
+        {
+            GenerateTerm(term);
+        }
+        else if (expression.Expression.Value is AddExpression addExpression)
+        {
+            GenerateTerm(addExpression.Lhs);
+            GenerateExpression(addExpression.Rhs);
+            
+        }
+        else
+        {
+            throw new Exception("Expected expression");
+        }
+    }
     private void GenerateTerm(TermNode term)
     {
         if (term.Value.Value is IntLiteralToken intLiteralToken)
         {
             _output!.Append($"""
-                                 mov rax, {intLiteralToken.Value}
-                                 push rax
+                                 {GetPushStatement(intLiteralToken.Value.ToString())}
 
                              """);
         }
         else if (term.Value.Value is IdentifierToken identifierToken)
         {
             _output!.Append($"""
-                                mov rax, {GetVariableLocation(identifierToken.Name)}
-                                push rax
+                                {GetPushStatement($"QWORD {GetVariableLocation(identifierToken.Name)}")}
                             
                             """);
         }
@@ -109,9 +123,26 @@ public class AssemblyGenerator
         }
     }
 
+    private string GetPushStatement(string value)
+    {
+        _stackOffset++;
+        return $"push {value}";
+    }
+
+    private string GetPopStatement(string register)
+    {
+        _stackOffset--;
+        return $"pop {register}";
+    }
+
+    private void SaveVariableLocation(string variableName)
+    {
+        _variableStackOffsets[variableName] = _stackOffset;
+    }
+
     private string GetVariableLocation(string variableName)
     {
-        var relativeStackOffset = (_stackOffset - _variableStackOffsets[variableName] - 1) * 8;
+        var relativeStackOffset = (_stackOffset - _variableStackOffsets[variableName]) * 8;
         return $"[rsp + {relativeStackOffset}]";
     }
 

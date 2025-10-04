@@ -2,8 +2,8 @@
 
 namespace OLangCompiler.Parser.Nodes.NodeValues;
 
-public class VarDeclarationStatement(IdentifierToken identifier, TermNode term)
+public class VarDeclarationStatement(IdentifierToken identifier, ExpressionNode expression)
 {
     public IdentifierToken Identifier = identifier;
-    public TermNode Term = term;
+    public ExpressionNode Expression = expression;
 }
