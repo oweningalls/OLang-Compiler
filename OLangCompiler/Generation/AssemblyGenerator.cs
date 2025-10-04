@@ -94,7 +94,13 @@ public class AssemblyGenerator
         {
             GenerateTerm(addExpression.Lhs);
             GenerateExpression(addExpression.Rhs);
-            
+            _output.Append($"""
+                                {GetPopStatement("rdi")}
+                                {GetPopStatement("rax")}
+                                add rax, rdi
+                                {GetPushStatement("rax")}
+                                
+                            """);
         }
         else
         {
