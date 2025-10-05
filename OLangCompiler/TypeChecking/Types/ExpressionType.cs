@@ -3,4 +3,5 @@
 public enum ExpressionType
 {
     Int,
+    Bool
 }
