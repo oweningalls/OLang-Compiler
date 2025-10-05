@@ -1,5 +1,6 @@
 ﻿using OLangCompiler.Generation;
 using OLangCompiler.Tokens;
+using OLangCompiler.TypeChecking;
 
 namespace OLangCompiler;
 
@@ -32,6 +33,9 @@ public static class OLangCompiler
 
         var parser = new Parser.Parser();
         var programNode = parser.ParseProgram(tokens);
+
+        var typeChecker = new TypeChecker();
+        typeChecker.CheckTypes(programNode);
 
         var generator = new AssemblyGenerator();
         var assembly = generator.GenerateProgram(programNode);

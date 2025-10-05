@@ -7,5 +7,5 @@ public class DeclarationStatement(IdentifierToken identifier, IExpressionNode ex
 {
     public IdentifierToken Identifier = identifier;
     public IExpressionNode Expression = expression;
-    public ExpressionType? ExpressionType;
+    public ExpressionType? ExpressionType = expressionType;
 }
