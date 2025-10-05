@@ -126,6 +126,13 @@ public class AssemblyGenerator
 
                              """);
         }
+        else if (term is BoolLiteralTerm boolLiteralTerm)
+        {
+            _output!.Append($"""
+                                 {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
+
+                             """);
+        }
         else if (term is IdentifierTerm identifierTerm)
         {
             _output!.Append($"""

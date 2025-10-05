@@ -84,6 +84,11 @@ public class Parser
         {
             return new IntLiteralTerm(ilt.Value);
         }
+        
+        if (TryConsume<BoolLiteralToken>() is {} blt)
+        {
+            return new BoolLiteralTerm(blt.Value);
+        }
 
         if (TryConsume<IdentifierToken>() is { } identifier)
         { 

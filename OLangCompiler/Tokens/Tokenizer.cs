@@ -67,7 +67,9 @@ public class Tokenizer
         { "exit",  () => new ExitToken()},
         { "let", () => new LetToken() },
         { "int", () => new IntTypeToken() },
-        { "bool", () => new BoolTypeToken() }
+        { "bool", () => new BoolTypeToken() },
+        { "true", () => new BoolLiteralToken(true) },
+        { "false", () => new BoolLiteralToken(false) },
     };
 
     private IToken? TryParseOperator()
