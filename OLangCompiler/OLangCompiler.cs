@@ -11,7 +11,7 @@ public static class OLangCompiler
         CompileFile("test.ol");
     }
     
-    public static void CompileFile(string fileName, string outputFile = "test.asm")
+    public static void CompileFile(string fileName, string? outputFile = null)
     {
         if (!fileName.EndsWith(".ol"))
         {
@@ -19,7 +19,7 @@ public static class OLangCompiler
         }
 
         var baseName = fileName.Substring(0, fileName.Length - ".ol".Length);
-        var tokenizer = new Tokenizer();
+        outputFile ??= $"{baseName}.asm";
         var contents = File.ReadAllText(fileName);
 
         var assembly = GenerateAssembly(contents);

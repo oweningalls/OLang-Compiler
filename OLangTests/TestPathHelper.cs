@@ -1,4 +1,6 @@
-﻿public static class TestPathHelper
+﻿namespace OLangTests;
+
+public static class TestPathHelper
 {
     public static string GetProjectRoot()
     {

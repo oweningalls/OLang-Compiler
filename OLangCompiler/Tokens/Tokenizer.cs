@@ -54,7 +54,7 @@ public class Tokenizer
             buffer += Consume();
         }
 
-        if (_keywordMap.TryGetValue(buffer, out var tokenFunc))
+        if (KeywordMap.TryGetValue(buffer, out var tokenFunc))
         {
             return tokenFunc.Invoke();
         }
@@ -62,7 +62,7 @@ public class Tokenizer
         return new IdentifierToken(buffer);
     }
 
-    private static readonly Dictionary<string, Func<IToken>> _keywordMap = new()
+    private static readonly Dictionary<string, Func<IToken>> KeywordMap = new()
     {
         { "exit",  () => new ExitToken()},
         { "let", () => new LetToken() },
@@ -74,15 +74,15 @@ public class Tokenizer
 
     private IToken? TryParseOperator()
     {
-        if (_operatormap.ContainsKey(Peek()!.Value))
+        if (OperatorMap.ContainsKey(Peek()!.Value))
         {
-            return _operatormap[Consume()].Invoke();
+            return OperatorMap[Consume()].Invoke();
         }
 
         return null;
     }
 
-    private static readonly Dictionary<char, Func<IToken>> _operatormap = new()
+    private static readonly Dictionary<char, Func<IToken>> OperatorMap = new()
     {
         { '=',  () => new EqualsToken()},
         { ';', () => new SemicolonToken() },

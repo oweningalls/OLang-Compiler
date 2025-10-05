@@ -24,7 +24,7 @@ public class TypeChecker
                 {
                     throw new Exception($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}");
                 }
-                _variableTypes[declarationStatement.Identifier.Name] = type;
+                _variableTypes![declarationStatement.Identifier.Name] = type;
                 break;
             case ExitStatement exitStatement:
                 var exitType = GetTypeFromExpression(exitStatement.ExpressionNode);
@@ -36,7 +36,7 @@ public class TypeChecker
                 break;
             case AssignmentStatement assignmentStatement:
                 var expressionType = GetTypeFromExpression(assignmentStatement.Expression);
-                var variableType = _variableTypes[assignmentStatement.Identifier.Name];
+                var variableType = _variableTypes![assignmentStatement.Identifier.Name];
                 if (variableType != expressionType)
                 {
                     throw new Exception($"Cannot assign variable {assignmentStatement.Identifier.Name} of type {variableType} to expression of type {expressionType}");
@@ -85,7 +85,7 @@ public class TypeChecker
     {
         return term switch
         {
-            IdentifierTerm identifierTerm => _variableTypes[identifierTerm.Identifier],
+            IdentifierTerm identifierTerm => _variableTypes![identifierTerm.Identifier],
             ParenTerm parenTerm => GetTypeFromExpression(parenTerm.Expression),
             BoolLiteralTerm => ExpressionType.Bool,
             IntLiteralTerm => ExpressionType.Int,
@@ -103,5 +103,5 @@ public class TypeChecker
         return null;
     }
 
-    private Dictionary<string, ExpressionType> _variableTypes;
+    private Dictionary<string, ExpressionType>? _variableTypes;
 }
