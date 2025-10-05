@@ -102,6 +102,18 @@ public class AssemblyGenerator
                                 
                             """);
         }
+        else if (expression is SubtractExpression subtractExpression)
+        {
+            GenerateTerm(subtractExpression.Lhs);
+            GenerateExpression(subtractExpression.Rhs);
+            _output.Append($"""
+                                {GetPopStatement("rdi")}
+                                {GetPopStatement("rax")}
+                                sub rax, rdi
+                                {GetPushStatement("rax")}
+                                
+                            """);
+        }
         else
         {
             throw new Exception("Expected expression");

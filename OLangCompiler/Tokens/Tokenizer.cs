@@ -84,7 +84,8 @@ public class Tokenizer
         { ';', () => new SemicolonToken() },
         { '+', () => new PlusToken() },
         {'(', () => new LeftParenToken() },
-        {')', () => new RightParenToken() }
+        {')', () => new RightParenToken() },
+        {'-', () => new MinusToken() }
     };
     
     private string? _input;

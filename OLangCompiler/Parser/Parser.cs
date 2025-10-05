@@ -66,6 +66,14 @@ public class Parser
             return new AddExpression(term, expression);
         }
 
+        if (TryConsume<MinusToken>() != null)
+        {
+            // TODO: this needs to be left associative
+            var expression = ParseExpression();
+
+            return new SubtractExpression(term, expression);
+        }
+
         return new TermExpression(term);
     }
 
