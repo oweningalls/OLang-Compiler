@@ -1,6 +1,8 @@
-﻿namespace OLangCompiler.Tokens;
+﻿using OLangCompiler.TypeChecking.Types;
 
-public class LetToken : IToken
+namespace OLangCompiler.Tokens;
+
+public class LetToken : ITypeToken
 {
-    
+    public ExpressionType? ExpType => null;
 }

@@ -65,7 +65,8 @@ public class Tokenizer
     private static readonly Dictionary<string, Func<IToken>> _keywordMap = new()
     {
         { "exit",  () => new ExitToken()},
-        { "let", () => new LetToken() }
+        { "let", () => new LetToken() },
+        { "int", () => new IntTypeToken() }
     };
 
     private IToken? TryParseOperator()

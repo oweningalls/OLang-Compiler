@@ -1,4 +1,5 @@
-﻿using OLangCompiler.Parser.Nodes;
+﻿using System.Linq.Expressions;
+using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Parser.Nodes.NodeValues;
 using OLangCompiler.Tokens;
 
@@ -26,27 +27,24 @@ public class Parser
             throw new Exception("Expected statement");
         }
 
-        if (Peek() is ExitToken)
+        if (TryConsume<ExitToken>() != null)
         {
-            _ = Consume();
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
             return new ExitStatement(expression);
         }
 
-        if (Peek() is LetToken)
+        if (TryConsume<ITypeToken>() is { } type)
         {
-            _ = Consume();
             var identifier = TryConsume<IdentifierToken>("Expected identifier");
             TryConsume<EqualsToken>("Expected `=`");
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new DeclarationStatement(identifier, expression);
+            return new DeclarationStatement(identifier, expression, type.ExpType);
         }
 
-        if (Peek() is IdentifierToken ident)
+        if (TryConsume<IdentifierToken>() is { } ident)
         {
-            _ = Consume();
             TryConsume<EqualsToken>("Expected `=`");
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
@@ -137,6 +135,8 @@ public class Parser
 
     private T TryConsume<T>(string errorMessage) where T : class, IToken
     {
-        return Consume() as T ?? throw new Exception(errorMessage);
+        var token = Peek() as T ?? throw new Exception(errorMessage);
+        Consume();
+        return token;
     }
 }
