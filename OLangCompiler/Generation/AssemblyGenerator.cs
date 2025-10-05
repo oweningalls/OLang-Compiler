@@ -1,7 +1,5 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
-using OLangCompiler.Parser.Nodes.NodeValues;
-using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Generation;
 

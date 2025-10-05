@@ -1,7 +1,7 @@
 ﻿using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 
-namespace OLangCompiler.Parser.Nodes.NodeValues;
+namespace OLangCompiler.Parser.Nodes;
 
 public class DeclarationStatement(IdentifierToken identifier, IExpressionNode expression, ExpressionType? expressionType = null) : IStatementNode
 {

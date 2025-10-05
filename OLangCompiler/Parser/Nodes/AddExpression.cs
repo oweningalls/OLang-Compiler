@@ -1,4 +1,4 @@
-﻿namespace OLangCompiler.Parser.Nodes.NodeValues;
+﻿namespace OLangCompiler.Parser.Nodes;
 
 public class AddExpression(ITermNode lhs, IExpressionNode rhs) : IExpressionNode
 {
