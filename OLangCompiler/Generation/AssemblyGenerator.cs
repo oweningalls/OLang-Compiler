@@ -43,8 +43,8 @@ public class AssemblyGenerator
             case DeclarationStatement declarationStatement:
                 GenerateVarDeclarationStatement(declarationStatement);
                 break;
-            case SetVarStatement setVarStatement:
-                GenerateSetVarStatement(setVarStatement);
+            case AssignmentStatement assignmentStatement:
+                GenerateAssignmentStatement(assignmentStatement);
                 break;
             default:
             {
@@ -72,49 +72,47 @@ public class AssemblyGenerator
         SaveVariableLocation(identifier.Name);
     }
 
-    private void GenerateSetVarStatement(SetVarStatement setVarStatement)
+    private void GenerateAssignmentStatement(AssignmentStatement assignmentStatement)
     {
-        GenerateExpression(setVarStatement.Expression);
+        GenerateExpression(assignmentStatement.Expression);
         _output!.Append($"""
                              {GetPopStatement("rax")}
-                             mov {GetVariableLocation(setVarStatement.Identifier.Name)}, rax
+                             mov {GetVariableLocation(assignmentStatement.Identifier.Name)}, rax
                          
                          """);
     }
 
     private void GenerateExpression(IExpressionNode expression)
     {
-        if (expression is TermExpression term)
+        switch (expression)
         {
-            GenerateTerm(term.Term);
-        }
-        else if (expression is AddExpression addExpression)
-        {
-            GenerateTerm(addExpression.Lhs);
-            GenerateExpression(addExpression.Rhs);
-            _output.Append($"""
-                                {GetPopStatement("rdi")}
-                                {GetPopStatement("rax")}
-                                add rax, rdi
-                                {GetPushStatement("rax")}
-                                
-                            """);
-        }
-        else if (expression is SubtractExpression subtractExpression)
-        {
-            GenerateTerm(subtractExpression.Lhs);
-            GenerateExpression(subtractExpression.Rhs);
-            _output.Append($"""
-                                {GetPopStatement("rdi")}
-                                {GetPopStatement("rax")}
-                                sub rax, rdi
-                                {GetPushStatement("rax")}
-                                
-                            """);
-        }
-        else
-        {
-            throw new Exception("Expected expression");
+            case TermExpression term:
+                GenerateTerm(term.Term);
+                break;
+            case AddExpression addExpression:
+                GenerateTerm(addExpression.Lhs);
+                GenerateExpression(addExpression.Rhs);
+                _output!.Append($"""
+                                    {GetPopStatement("rdi")}
+                                    {GetPopStatement("rax")}
+                                    add rax, rdi
+                                    {GetPushStatement("rax")}
+                                    
+                                """);
+                break;
+            case SubtractExpression subtractExpression:
+                GenerateTerm(subtractExpression.Lhs);
+                GenerateExpression(subtractExpression.Rhs);
+                _output!.Append($"""
+                                    {GetPopStatement("rdi")}
+                                    {GetPopStatement("rax")}
+                                    sub rax, rdi
+                                    {GetPushStatement("rax")}
+                                    
+                                """);
+                break;
+            default:
+                throw new Exception("Expected expression");
         }
     }
     private void GenerateTerm(ITermNode term)

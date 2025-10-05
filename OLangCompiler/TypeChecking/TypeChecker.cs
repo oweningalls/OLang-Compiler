@@ -34,12 +34,12 @@ public class TypeChecker
                 }
 
                 break;
-            case SetVarStatement setVarStatement:
-                var expressionType = GetTypeFromExpression(setVarStatement.Expression);
-                var variableType = _variableTypes[setVarStatement.Identifier.Name];
+            case AssignmentStatement assignmentStatement:
+                var expressionType = GetTypeFromExpression(assignmentStatement.Expression);
+                var variableType = _variableTypes[assignmentStatement.Identifier.Name];
                 if (variableType != expressionType)
                 {
-                    throw new Exception($"Cannot assign variable {setVarStatement.Identifier.Name} of type {variableType} to expression of type {expressionType}");
+                    throw new Exception($"Cannot assign variable {assignmentStatement.Identifier.Name} of type {variableType} to expression of type {expressionType}");
                 }
                 break;
             default:

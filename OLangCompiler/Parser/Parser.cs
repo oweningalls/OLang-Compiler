@@ -46,7 +46,7 @@ public class Parser
             TryConsume<EqualsToken>("Expected `=`");
             var expression = ParseExpression();
             TryConsume<SemicolonToken>("Expected `;`");
-            return new SetVarStatement(ident, expression);
+            return new AssignmentStatement(ident, expression);
         }
 
         throw new Exception("Expected statement");
