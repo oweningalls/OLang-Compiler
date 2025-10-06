@@ -26,7 +26,7 @@ public class TypeChecker
                     throw ErrorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}", declarationStatement.Expression);
                 }
 
-                _variableTypes![declarationStatement.Identifier.Identifier] = type;
+                RecordExpressionType(declarationStatement.Identifier, type);
                 break;
             case ExitStatement exitStatement:
                 var exitType = GetTypeFromExpression(exitStatement.ExpressionNode);
@@ -108,11 +108,31 @@ public class TypeChecker
 
     private Dictionary<string, ExpressionType>? _variableTypes;
 
+    private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
+    {
+        if (_variableTypes!.ContainsKey(identifierToken.Identifier))
+        {
+            throw ErrorHelper.ShowErrorMessageAtToken($"Identifier '{identifierToken.Identifier}' already declared", identifierToken);
+        }
+
+        _variableTypes[identifierToken.Identifier] = expressionType;
+    }
+    
+    private void RecordExpressionType(IdentifierTerm identifierTerm, ExpressionType expressionType)
+    {
+        if (_variableTypes!.ContainsKey(identifierTerm.Identifier))
+        {
+            throw ErrorHelper.ShowErrorMessageAtNode($"Identifier '{identifierTerm.Identifier}' already declared", identifierTerm);
+        }
+
+        _variableTypes[identifierTerm.Identifier] = expressionType;
+    }
+
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
     {
         if (!_variableTypes!.ContainsKey(identifierToken.Identifier))
         {
-            ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier {identifierToken.Identifier}", identifierToken);
+            throw ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
         }
 
         return _variableTypes[identifierToken.Identifier];
@@ -121,7 +141,7 @@ public class TypeChecker
     {
         if (!_variableTypes!.ContainsKey(identifierTerm.Identifier))
         {
-            ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier {identifierTerm.Identifier}", identifierTerm);
+            throw ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
         }
 
         return _variableTypes[identifierTerm.Identifier];

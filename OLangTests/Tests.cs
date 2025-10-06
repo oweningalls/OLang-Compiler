@@ -102,6 +102,7 @@ public class Tests
     [TestCase("let a = ((1;));\nexit a;")] // incorrect semicolon
     [TestCase("bool a = true;\nint b = a;")] // assigning a bool to an int
     [TestCase("int a = true;\nbool b = a;")] // assigning an int to a bool
+    [TestCase("bool a = true;\nbool a = true;")] // declaring variable multiple times
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);

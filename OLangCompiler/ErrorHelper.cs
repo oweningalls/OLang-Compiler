@@ -23,7 +23,7 @@ public static class ErrorHelper
 
     public static Exception UnexpectedEndOfInput(IToken token)
     {
-        return ShowErrorMessageAtToken($"Unexpected end of input after {token}", token);
+        return ShowErrorMessageAtToken($"Unexpected end of input after {token.GetType().Name}", token);
     }
 
     public static Exception ShowErrorMessageAtToken(string message, IToken token)
