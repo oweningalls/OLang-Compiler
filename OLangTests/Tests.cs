@@ -84,6 +84,10 @@ public class Tests
         ("""
          let a = true;
          bool b = a;
+         """, 0),
+        ("""
+         bool a = true;
+         let b = a;
          """, 0)
     ];
 

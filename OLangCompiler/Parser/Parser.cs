@@ -139,7 +139,12 @@ public class Parser
 
     private T TryConsume<T>(string errorMessage) where T : class, IToken
     {
-        var token = Peek() as T ?? throw ErrorHelper.UnexpectedEndOfInput(Peek(-1));
+        if (Peek() == null)
+        {
+            throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
+        }
+
+        var token = Peek() as T ?? throw ErrorHelper.ExpectedToken<T>(Peek()!);
         Consume();
         return token;
     }
