@@ -48,7 +48,7 @@ public class AssemblyGenerator
                 break;
             default:
             {
-                throw new Exception($"Unknown statement type: {statement.GetType()}");
+                throw ErrorHelper.UnknownVariant("statement", statement.GetType());
             }
         }
     }
@@ -69,7 +69,7 @@ public class AssemblyGenerator
     {
         var identifier = declarationStatement.Identifier;
         GenerateExpression(declarationStatement.Expression);
-        SaveVariableLocation(identifier.Name);
+        SaveVariableLocation(identifier.Identifier);
     }
 
     private void GenerateAssignmentStatement(AssignmentStatement assignmentStatement)
@@ -77,7 +77,7 @@ public class AssemblyGenerator
         GenerateExpression(assignmentStatement.Expression);
         _output!.Append($"""
                              {GetPopStatement("rax")}
-                             mov {GetVariableLocation(assignmentStatement.Identifier.Name)}, rax
+                             mov {GetVariableLocation(assignmentStatement.Identifier.Identifier)}, rax
                          
                          """);
     }
@@ -112,7 +112,7 @@ public class AssemblyGenerator
                                 """);
                 break;
             default:
-                throw new Exception("Expected expression");
+                throw ErrorHelper.UnknownVariant("expression", expression.GetType());
         }
     }
     private void GenerateTerm(ITermNode term)
@@ -144,7 +144,7 @@ public class AssemblyGenerator
         }
         else
         {
-            throw new Exception($"Unknown term type: {term.GetType()}");
+            throw ErrorHelper.UnknownVariant("term", term.GetType());
         }
     }
 

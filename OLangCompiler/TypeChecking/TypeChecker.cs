@@ -1,4 +1,5 @@
 ﻿using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 
 namespace OLangCompiler.TypeChecking;
@@ -22,28 +23,30 @@ public class TypeChecker
                 var type = GetTypeFromExpression(declarationStatement.Expression);
                 if (declarationStatement.ExpressionType != null && type != declarationStatement.ExpressionType)
                 {
-                    throw new Exception($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}");
+                    throw ErrorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}", declarationStatement.Expression);
                 }
-                _variableTypes![declarationStatement.Identifier.Name] = type;
+
+                _variableTypes![declarationStatement.Identifier.Identifier] = type;
                 break;
             case ExitStatement exitStatement:
                 var exitType = GetTypeFromExpression(exitStatement.ExpressionNode);
                 if (exitType != ExpressionType.Int)
                 {
-                    throw new Exception("Exit code has to be an integer");
+                    throw ErrorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.ExpressionNode);
                 }
 
                 break;
             case AssignmentStatement assignmentStatement:
                 var expressionType = GetTypeFromExpression(assignmentStatement.Expression);
-                var variableType = _variableTypes![assignmentStatement.Identifier.Name];
+                var variableType = GetVariableType(assignmentStatement.Identifier);
                 if (variableType != expressionType)
                 {
-                    throw new Exception($"Cannot assign variable {assignmentStatement.Identifier.Name} of type {variableType} to expression of type {expressionType}");
+                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot assign variable {assignmentStatement.Identifier.Identifier} of type {variableType} to expression of type {expressionType}", assignmentStatement.Expression);
                 }
+
                 break;
             default:
-                throw new Exception($"Unknown statement type: {statementNode.GetType()}");
+                throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
         }
     }
 
@@ -61,13 +64,13 @@ public class TypeChecker
                 var type = GetTypeOfBinaryExpression(lhsType, rhsType);
                 if (type == null)
                 {
-                    throw new Exception($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}");
+                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                 }
 
                 return type.Value;
             }
             default:
-                throw new Exception($"Unknown binary expression type: {expression.GetType()}");
+                throw ErrorHelper.UnknownVariant("binary expression", expression.GetType());
         }
     }
 
@@ -77,7 +80,7 @@ public class TypeChecker
         {
             AddExpression => "add",
             SubtractExpression => "subtract",
-            _ => throw new Exception($"Unknown binary expression type: {binaryExpressionNode.GetType()}")
+            _ => throw ErrorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };
     }
 
@@ -85,11 +88,11 @@ public class TypeChecker
     {
         return term switch
         {
-            IdentifierTerm identifierTerm => _variableTypes![identifierTerm.Identifier],
+            IdentifierTerm identifierTerm => GetVariableType(identifierTerm),
             ParenTerm parenTerm => GetTypeFromExpression(parenTerm.Expression),
             BoolLiteralTerm => ExpressionType.Bool,
             IntLiteralTerm => ExpressionType.Int,
-            _ => throw new Exception($"Unknown term type: {term.GetType()}")
+            _ => throw ErrorHelper.UnknownVariant("term", term.GetType())
         };
     }
 
@@ -104,4 +107,23 @@ public class TypeChecker
     }
 
     private Dictionary<string, ExpressionType>? _variableTypes;
+
+    private ExpressionType GetVariableType(IdentifierToken identifierToken)
+    {
+        if (!_variableTypes!.ContainsKey(identifierToken.Identifier))
+        {
+            ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier {identifierToken.Identifier}", identifierToken);
+        }
+
+        return _variableTypes[identifierToken.Identifier];
+    }
+    private ExpressionType GetVariableType(IdentifierTerm identifierTerm)
+    {
+        if (!_variableTypes!.ContainsKey(identifierTerm.Identifier))
+        {
+            ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier {identifierTerm.Identifier}", identifierTerm);
+        }
+
+        return _variableTypes[identifierTerm.Identifier];
+    }
 }

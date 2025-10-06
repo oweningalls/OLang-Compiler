@@ -1,3 +1,5 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public interface IToken { }
+public interface IToken
+{
+}

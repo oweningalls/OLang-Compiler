@@ -22,7 +22,7 @@ public class Parser
     {
         if (Peek() == null)
         {
-            throw new Exception("Expected statement");
+            throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
         }
 
         if (TryConsume<ExitToken>() != null)
@@ -49,7 +49,7 @@ public class Parser
             return new AssignmentStatement(ident, expression);
         }
 
-        throw new Exception("Expected statement");
+        throw ErrorHelper.ExpectedValue("statement", Peek(-1)!);
     }
 
     private IExpressionNode ParseExpression()
@@ -77,7 +77,7 @@ public class Parser
     {
         if (Peek() == null)
         {
-            throw new Exception("Expected term");
+            throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
         }
 
         if (TryConsume<IntLiteralToken>() is {} ilt)
@@ -92,7 +92,7 @@ public class Parser
 
         if (TryConsume<IdentifierToken>() is { } identifier)
         { 
-            return new IdentifierTerm(identifier.Name);
+            return new IdentifierTerm(identifier.Identifier);
         }
 
         if (TryConsume<LeftParenToken>() != null)
@@ -102,16 +102,17 @@ public class Parser
             return new ParenTerm(expression);
         }
         
-        throw new Exception("Expected term");
+        throw ErrorHelper.ExpectedValue("term", Peek(-1)!);
     }
     
     private List<IToken>? _tokens;
     private int _currentIndex;
-    private IToken? Peek()
+    private IToken? Peek(int offset = 0)
     {
-        if (_currentIndex >= _tokens!.Count) return null;
+        var index = _currentIndex + offset;
+        if (index >= _tokens!.Count) return null;
 
-        return _tokens[_currentIndex];
+        return _tokens[index];
     }
 
     private IToken Consume()
@@ -120,7 +121,7 @@ public class Parser
         _currentIndex++;
         if (ret == null)
         {
-            throw new Exception("Unexpected end of token stream");
+            throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
         }
 
         return ret;
@@ -138,7 +139,7 @@ public class Parser
 
     private T TryConsume<T>(string errorMessage) where T : class, IToken
     {
-        var token = Peek() as T ?? throw new Exception(errorMessage);
+        var token = Peek() as T ?? throw ErrorHelper.UnexpectedEndOfInput(Peek(-1));
         Consume();
         return token;
     }
