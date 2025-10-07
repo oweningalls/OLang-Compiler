@@ -54,6 +54,14 @@ public class Parser
             return new ScopeStatement(ParseScope());
         }
 
+        if (TryConsume<IfToken>() != null)
+        {
+            var condition = ParseExpression();
+            var scope = ParseScope();
+
+            return new IfStatement(condition, scope);
+        }
+
         throw ErrorHelper.ExpectedValue("statement", Peek(-1)!);
     }
 

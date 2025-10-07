@@ -10,6 +10,7 @@ public class AssemblyGenerator
     {
         _output = new StringBuilder();
         _stackOffset = 0;
+        _labelCount = 0;
         _variableStackOffsets = new ScopeTracker<string, int>();
 
         _output.Append("""
@@ -49,6 +50,9 @@ public class AssemblyGenerator
                 break;
             case ScopeStatement scopeStatement:
                 GenerateScopeStatement(scopeStatement);
+                break;
+            case IfStatement ifStatement:
+                GenerateIfStatement(ifStatement);
                 break;
             default:
             {
@@ -91,6 +95,20 @@ public class AssemblyGenerator
         GenerateScope(scopeStatement.Scope);
     }
 
+    private void GenerateIfStatement(IfStatement ifStatement)
+    {
+        GenerateExpression(ifStatement.Condition);
+        var label = GetLabel();
+        _output.Append($"""
+                           {GetPopStatement("rax")}
+                           cmp rax, 0
+                           je {label}
+                       
+                       """);
+        GenerateScope(ifStatement.Scope);
+        _output.Append($"{label}:\n");
+    }
+
     private void GenerateScope(ScopeNode scopeNode)
     {
         _variableStackOffsets.BeginScope();
@@ -99,7 +117,7 @@ public class AssemblyGenerator
             GenerateStatement(statement);
         }
         var toPop = _variableStackOffsets.EndScope();
-        _output.Append($"   add rsp, {toPop.Count}\n");
+        _output.Append($"    add rsp, {toPop.Count * 8}\n");
         _stackOffset -= toPop.Count;
     }
 
@@ -192,8 +210,14 @@ public class AssemblyGenerator
         return $"[rsp + {relativeStackOffset}]";
     }
 
+    private string GetLabel()
+    {
+        return $"label{_labelCount++}";
+    }
+
     private ScopeTracker<string, int> _variableStackOffsets = null!;
     private int _stackOffset;
+    private int _labelCount;
 
     private StringBuilder? _output;
 }

@@ -50,6 +50,15 @@ public class TypeChecker
             case ScopeStatement scopeStatement:
                 CheckScopeTypes(scopeStatement.Scope);
                 break;
+            case IfStatement ifStatement:
+                var conditionType = GetTypeFromExpression(ifStatement.Condition);
+                if (conditionType != ExpressionType.Bool)
+                {
+                    throw ErrorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", ifStatement.Condition);
+                }
+                
+                CheckScopeTypes(ifStatement.Scope);
+                break;
             default:
                 throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
         }

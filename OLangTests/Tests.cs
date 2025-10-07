@@ -90,7 +90,35 @@ public class Tests
          let b = a;
          """, 0),
         ("{ let a = true; } let a = 1;", 0),
-        ("{ let a = true; { exit 6; } } let a = 1;", 6)
+        ("{ let a = true; { exit 6; } } let a = 1;", 6),
+        ("let a = true; if a {exit 1;} exit 5;", 1),
+        ("let a = false; if a {let b = 23; exit 1;} exit 5;", 5),
+        ("""
+         if true {
+             let code = 4;
+             if true {
+                 code = 6;
+             }
+             exit code;
+         }
+         """, 6),
+        ("""
+         let exitCode = 3;
+         if false {
+             exitCode = 4;
+             if true {
+                 exitCode = 6;
+             }
+         }
+         exit exitCode;
+         """, 3),
+        ("""
+         let exitCode = 3;
+         if false {
+             exitCode = 4;
+         }
+         exit exitCode;
+         """, 3)
     ];
 
     [TestCaseSource(nameof(Programs))]
@@ -112,6 +140,7 @@ public class Tests
     [TestCase("let a = true; a = 1;")] // assigning an int to a bool (using let)
     [TestCase("let a = 1; a = false;")] // assigning an int to a bool (using let)
     [TestCase("let a = 1; { let a = 2; } ")] // shadowed variable
+    [TestCase("let a = 1; if true exit 5 ")] // no braces around if block
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);
