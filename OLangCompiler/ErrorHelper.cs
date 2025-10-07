@@ -51,6 +51,8 @@ public static class ErrorHelper
         if (typeof(T) == typeof(MinusToken)) return "'-'";
         if (typeof(T) == typeof(PlusToken)) return "'+'";
         if (typeof(T) == typeof(SemicolonToken)) return "';'";
+        if (typeof(T) == typeof(LeftCurlyToken)) return "'{'";
+        if (typeof(T) == typeof(RightCurlyToken)) return "'}'";
 
         throw UnknownVariant("token type", typeof(T));
     }

@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Utility;
 
 namespace OLangCompiler.Generation;
 
@@ -9,7 +10,7 @@ public class AssemblyGenerator
     {
         _output = new StringBuilder();
         _stackOffset = 0;
-        _variableStackOffsets = new Dictionary<string, int>();
+        _variableStackOffsets = new ScopeTracker<string, int>();
 
         _output.Append("""
                        global _start
@@ -46,6 +47,9 @@ public class AssemblyGenerator
             case AssignmentStatement assignmentStatement:
                 GenerateAssignmentStatement(assignmentStatement);
                 break;
+            case ScopeStatement scopeStatement:
+                GenerateScopeStatement(scopeStatement);
+                break;
             default:
             {
                 throw ErrorHelper.UnknownVariant("statement", statement.GetType());
@@ -80,6 +84,23 @@ public class AssemblyGenerator
                              mov {GetVariableLocation(assignmentStatement.Identifier.Identifier)}, rax
                          
                          """);
+    }
+
+    private void GenerateScopeStatement(ScopeStatement scopeStatement)
+    {
+        GenerateScope(scopeStatement.Scope);
+    }
+
+    private void GenerateScope(ScopeNode scopeNode)
+    {
+        _variableStackOffsets.BeginScope();
+        foreach (var statement in scopeNode.Statements)
+        {
+            GenerateStatement(statement);
+        }
+        var toPop = _variableStackOffsets.EndScope();
+        _output.Append($"   add rsp, {toPop.Count}\n");
+        _stackOffset -= toPop.Count;
     }
 
     private void GenerateExpression(IExpressionNode expression)
@@ -162,16 +183,16 @@ public class AssemblyGenerator
 
     private void SaveVariableLocation(string variableName)
     {
-        _variableStackOffsets[variableName] = _stackOffset;
+        _variableStackOffsets.SetValue(variableName, _stackOffset);
     }
 
     private string GetVariableLocation(string variableName)
     {
-        var relativeStackOffset = (_stackOffset - _variableStackOffsets[variableName]) * 8;
+        var relativeStackOffset = (_stackOffset - _variableStackOffsets.TryGetValue(variableName)) * 8;
         return $"[rsp + {relativeStackOffset}]";
     }
 
-    private Dictionary<string, int> _variableStackOffsets = null!;
+    private ScopeTracker<string, int> _variableStackOffsets = null!;
     private int _stackOffset;
 
     private StringBuilder? _output;

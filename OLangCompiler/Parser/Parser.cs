@@ -28,28 +28,47 @@ public class Parser
         if (TryConsume<ExitToken>() != null)
         {
             var expression = ParseExpression();
-            TryConsume<SemicolonToken>("Expected `;`");
+            ConsumeType<SemicolonToken>();
             return new ExitStatement(expression);
         }
 
         if (TryConsume<ITypeToken>() is { } type)
         {
-            var identifier = TryConsume<IdentifierToken>("Expected identifier");
-            TryConsume<EqualsToken>("Expected `=`");
+            var identifier = ConsumeType<IdentifierToken>();
+            ConsumeType<EqualsToken>();
             var expression = ParseExpression();
-            TryConsume<SemicolonToken>("Expected `;`");
+            ConsumeType<SemicolonToken>();
             return new DeclarationStatement(identifier, expression, type.ExpType);
         }
 
         if (TryConsume<IdentifierToken>() is { } ident)
         {
-            TryConsume<EqualsToken>("Expected `=`");
+            ConsumeType<EqualsToken>();
             var expression = ParseExpression();
-            TryConsume<SemicolonToken>("Expected `;`");
+            ConsumeType<SemicolonToken>();
             return new AssignmentStatement(ident, expression);
         }
 
+        if (Peek() is LeftCurlyToken)
+        {
+            return new ScopeStatement(ParseScope());
+        }
+
         throw ErrorHelper.ExpectedValue("statement", Peek(-1)!);
+    }
+
+    private ScopeNode ParseScope()
+    {
+        var statements = new List<IStatementNode>();
+        ConsumeType<LeftCurlyToken>();
+        while (Peek() != null && Peek() is not RightCurlyToken)
+        {
+            statements.Add(ParseStatement());
+        }
+
+        ConsumeType<RightCurlyToken>();
+
+        return new ScopeNode(statements);
     }
 
     private IExpressionNode ParseExpression()
@@ -98,7 +117,7 @@ public class Parser
         if (TryConsume<LeftParenToken>() != null)
         {
             var expression = ParseExpression();
-            TryConsume<RightParenToken>("Expected `)`");
+            ConsumeType<RightParenToken>();
             return new ParenTerm(expression);
         }
         
@@ -137,7 +156,7 @@ public class Parser
         return null;
     }
 
-    private T TryConsume<T>(string errorMessage) where T : class, IToken
+    private T ConsumeType<T>() where T : class, IToken
     {
         if (Peek() == null)
         {

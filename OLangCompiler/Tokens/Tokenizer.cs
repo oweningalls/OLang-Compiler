@@ -89,7 +89,9 @@ public class Tokenizer
         { '+', () => new PlusToken() },
         {'(', () => new LeftParenToken() },
         {')', () => new RightParenToken() },
-        {'-', () => new MinusToken() }
+        {'-', () => new MinusToken() },
+        {'{', () => new LeftCurlyToken() },
+        {'}', () => new RightCurlyToken() }
     };
     
     private string? _input;

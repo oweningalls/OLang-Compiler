@@ -1,6 +1,8 @@
-﻿using OLangCompiler.Parser.Nodes;
+﻿using System.Reflection.Metadata;
+using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
+using OLangCompiler.Utility;
 
 namespace OLangCompiler.TypeChecking;
 
@@ -8,7 +10,7 @@ public class TypeChecker
 {
     public void CheckTypes(ProgramNode program)
     {
-        _variableTypes = new Dictionary<string, ExpressionType>();
+        _variableTypeStack = new ScopeTracker<string, ExpressionType>();
         foreach (var statement in program.Statements)
         {
             CheckStatementTypes(statement);
@@ -45,9 +47,23 @@ public class TypeChecker
                 }
 
                 break;
+            case ScopeStatement scopeStatement:
+                CheckScopeTypes(scopeStatement.Scope);
+                break;
             default:
                 throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
         }
+    }
+
+    private void CheckScopeTypes(ScopeNode scopeNode)
+    {
+        _variableTypeStack.BeginScope();
+        foreach (var statement in scopeNode.Statements)
+        {
+            CheckStatementTypes(statement);
+        }
+        
+        _variableTypeStack.EndScope();
     }
 
     private ExpressionType GetTypeFromExpression(IExpressionNode expression)
@@ -106,44 +122,38 @@ public class TypeChecker
         return null;
     }
 
-    private Dictionary<string, ExpressionType>? _variableTypes;
+    private ScopeTracker<string, ExpressionType> _variableTypeStack;
+
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
     {
-        if (_variableTypes!.ContainsKey(identifierToken.Identifier))
+        if (_variableTypeStack.TryGetValue(identifierToken.Identifier) != null)
         {
             throw ErrorHelper.ShowErrorMessageAtToken($"Identifier '{identifierToken.Identifier}' already declared", identifierToken);
         }
 
-        _variableTypes[identifierToken.Identifier] = expressionType;
+        _variableTypeStack.SetValue(identifierToken.Identifier, expressionType);
     }
-    
+
     private void RecordExpressionType(IdentifierTerm identifierTerm, ExpressionType expressionType)
     {
-        if (_variableTypes!.ContainsKey(identifierTerm.Identifier))
+        if (_variableTypeStack.TryGetValue(identifierTerm.Identifier) != null)
         {
             throw ErrorHelper.ShowErrorMessageAtNode($"Identifier '{identifierTerm.Identifier}' already declared", identifierTerm);
         }
 
-        _variableTypes[identifierTerm.Identifier] = expressionType;
+        _variableTypeStack.SetValue(identifierTerm.Identifier, expressionType);
     }
 
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
     {
-        if (!_variableTypes!.ContainsKey(identifierToken.Identifier))
-        {
-            throw ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
-        }
-
-        return _variableTypes[identifierToken.Identifier];
+        return _variableTypeStack.TryGetValue(identifierToken.Identifier) ?? 
+               throw ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
     }
+
     private ExpressionType GetVariableType(IdentifierTerm identifierTerm)
     {
-        if (!_variableTypes!.ContainsKey(identifierTerm.Identifier))
-        {
-            throw ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
-        }
-
-        return _variableTypes[identifierTerm.Identifier];
+        return _variableTypeStack.TryGetValue(identifierTerm.Identifier) ?? 
+               throw ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
     }
 }

@@ -71,11 +71,11 @@ public class Tests
          exit (b + a) + c;
          """, 44),
         ("let a = 0;", 0),
-        ("let a = (1 + (3 + 2) + 5);\nexit a;", 11),
-        ("let a = ((1));\nexit a;", 1),
-        ("let a = 12 - (3 + 2);\nexit a;", 7),
-        // ("let a = 12 - 3 - 2;\nexit a;", 7), // TODO: uncomment after implementing left associative minus
-        ("int intLiteral = 1;\n exit intLiteral;", 1),
+        ("let a = (1 + (3 + 2) + 5); exit a;", 11),
+        ("let a = ((1)); exit a;", 1),
+        ("let a = 12 - (3 + 2); exit a;", 7),
+        // ("let a = 12 - 3 - 2; exit a;", 7), // TODO: uncomment after implementing left associative minus
+        ("int intLiteral = 1; exit intLiteral;", 1),
         ("""
          bool trueBool = true;
          bool falseBool = false;
@@ -88,7 +88,9 @@ public class Tests
         ("""
          bool a = true;
          let b = a;
-         """, 0)
+         """, 0),
+        ("{ let a = true; } let a = 1;", 0),
+        ("{ let a = true; { exit 6; } } let a = 1;", 6)
     ];
 
     [TestCaseSource(nameof(Programs))]
@@ -103,10 +105,13 @@ public class Tests
     [TestCase("let a = a;")] // a hasn't been declared yet
     [TestCase("exit 4")] // missing semicolon
     [TestCase("exit (5 + 1;")] // missing semicolon
-    [TestCase("let a = ((1;));\nexit a;")] // incorrect semicolon
-    [TestCase("bool a = true;\nint b = a;")] // assigning a bool to an int
-    [TestCase("int a = true;\nbool b = a;")] // assigning an int to a bool
-    [TestCase("bool a = true;\nbool a = true;")] // declaring variable multiple times
+    [TestCase("let a = ((1;)); exit a;")] // incorrect semicolon
+    [TestCase("bool a = true; int b = a;")] // assigning a bool to an int
+    [TestCase("int a = true; bool b = a;")] // assigning an int to a bool
+    [TestCase("bool a = true; bool a = true;")] // declaring variable multiple times
+    [TestCase("let a = true; a = 1;")] // assigning an int to a bool (using let)
+    [TestCase("let a = 1; a = false;")] // assigning an int to a bool (using let)
+    [TestCase("let a = 1; { let a = 2; } ")] // shadowed variable
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);
