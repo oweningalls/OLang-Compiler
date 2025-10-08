@@ -128,7 +128,22 @@ public class Tests
          
          exit a;
          """, 2),
-        ("let test = 1 == 2;", 0)
+        ("let test = 1 == 2;", 0),
+        ("let test = 1 != 2;", 0),
+        ("""
+         let a1 = 1 != 2;
+         if a1 {
+             exit 1;
+         }
+         exit 123;
+         """, 1),
+        ("""
+         let a1 = 2 != 2;
+         if a1 {
+             exit 1;
+         }
+         exit 123;
+         """, 123)
     ];
 
     [TestCaseSource(nameof(Programs))]

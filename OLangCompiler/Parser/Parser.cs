@@ -103,6 +103,13 @@ public class Parser
 
             return new DoubleEqualsExpression(term, expression);
         }
+        
+        if (TryConsume<NotEqualToken>() != null)
+        {
+            var expression = ParseExpression();
+
+            return new NotEqualExpression(term, expression);
+        }
 
         return new TermExpression(term);
     }

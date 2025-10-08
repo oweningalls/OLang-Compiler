@@ -42,6 +42,19 @@ public class Tokenizer
                 continue;
             }
 
+            if (Peek() == '!')
+            {
+                _ = Consume();
+                if (Peek() == '=')
+                {
+                    _ = Consume();
+                    tokens.Add(new NotEqualToken());
+                    continue;
+                }
+
+                throw new Exception($"Unexpected character {Peek()}");
+            }
+
             if (TryParseOperator() is { } op)
             {
                 tokens.Add(op);

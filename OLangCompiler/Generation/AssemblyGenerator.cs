@@ -146,7 +146,20 @@ public class AssemblyGenerator
                         _output!.Append("    sub rax, rdi\n");
                         break;
                     case DoubleEqualsExpression:
-                        _output!.Append("    cmp rax, rdi\n");
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           sete al
+                                           movzx rax, al
+                                           
+                                       """);
+                        break;
+                    case NotEqualExpression:
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           setne al
+                                           movzx rax, al
+                                           
+                                       """);
                         break;
                 }
 
