@@ -56,7 +56,7 @@ public class TypeChecker
                 {
                     throw ErrorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", ifStatement.Condition);
                 }
-                
+
                 CheckScopeTypes(ifStatement.Scope);
                 break;
             default:
@@ -71,7 +71,7 @@ public class TypeChecker
         {
             CheckStatementTypes(statement);
         }
-        
+
         _variableTypeStack.EndScope();
     }
 
@@ -85,6 +85,16 @@ public class TypeChecker
             {
                 var lhsType = GetTypeFromTerm(binaryExpression.Lhs);
                 var rhsType = GetTypeFromExpression(binaryExpression.Rhs);
+
+                if (binaryExpression is BaseComparisonExpressionNode)
+                {
+                    if (lhsType != rhsType)
+                    {
+                        throw ErrorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
+                    }
+
+                    return ExpressionType.Bool;
+                }
 
                 var type = GetTypeOfBinaryExpression(lhsType, rhsType);
                 if (type == null)
@@ -156,13 +166,13 @@ public class TypeChecker
 
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
     {
-        return _variableTypeStack.TryGetValue(identifierToken.Identifier) ?? 
+        return _variableTypeStack.TryGetValue(identifierToken.Identifier) ??
                throw ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
     }
 
     private ExpressionType GetVariableType(IdentifierTerm identifierTerm)
     {
-        return _variableTypeStack.TryGetValue(identifierTerm.Identifier) ?? 
+        return _variableTypeStack.TryGetValue(identifierTerm.Identifier) ??
                throw ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
     }
 }

@@ -97,6 +97,13 @@ public class Parser
             return new SubtractExpression(term, expression);
         }
 
+        if (TryConsume<DoubleEqualsToken>() != null)
+        {
+            var expression = ParseExpression();
+
+            return new DoubleEqualsExpression(term, expression);
+        }
+
         return new TermExpression(term);
     }
 

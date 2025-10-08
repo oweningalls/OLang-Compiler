@@ -25,13 +25,13 @@ public class AssemblyGenerator
         {
             GenerateStatement(statement);
         }
-        
+
         _output!.Append("""
-                             mov rdi, 0
-                             mov rax, 60
-                             syscall
-                         
-                         """);
+                            mov rdi, 0
+                            mov rax, 60
+                            syscall
+
+                        """);
         return _output.ToString();
     }
 
@@ -68,9 +68,8 @@ public class AssemblyGenerator
                              {GetPopStatement("rdi")}
                              mov rax, 60
                              syscall
-                         
+
                          """);
-        
     }
 
     private void GenerateVarDeclarationStatement(DeclarationStatement declarationStatement)
@@ -86,7 +85,7 @@ public class AssemblyGenerator
         _output!.Append($"""
                              {GetPopStatement("rax")}
                              mov {GetVariableLocation(assignmentStatement.Identifier.Identifier)}, rax
-                         
+
                          """);
     }
 
@@ -100,11 +99,11 @@ public class AssemblyGenerator
         GenerateExpression(ifStatement.Condition);
         var label = GetLabel();
         _output.Append($"""
-                           {GetPopStatement("rax")}
-                           cmp rax, 0
-                           je {label}
-                       
-                       """);
+                            {GetPopStatement("rax")}
+                            cmp rax, 0
+                            je {label}
+
+                        """);
         GenerateScope(ifStatement.Scope);
         _output.Append($"{label}:\n");
     }
@@ -116,8 +115,9 @@ public class AssemblyGenerator
         {
             GenerateStatement(statement);
         }
+
         var toPop = _variableStackOffsets.EndScope();
-        _output.Append($"    add rsp, {toPop.Count * 8}\n");
+        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
         _stackOffset -= toPop.Count;
     }
 
@@ -128,32 +128,36 @@ public class AssemblyGenerator
             case TermExpression term:
                 GenerateTerm(term.Term);
                 break;
-            case AddExpression addExpression:
+            case BaseBinaryExpressionNode addExpression:
                 GenerateTerm(addExpression.Lhs);
                 GenerateExpression(addExpression.Rhs);
+
                 _output!.Append($"""
-                                    {GetPopStatement("rdi")}
-                                    {GetPopStatement("rax")}
-                                    add rax, rdi
-                                    {GetPushStatement("rax")}
-                                    
-                                """);
-                break;
-            case SubtractExpression subtractExpression:
-                GenerateTerm(subtractExpression.Lhs);
-                GenerateExpression(subtractExpression.Rhs);
-                _output!.Append($"""
-                                    {GetPopStatement("rdi")}
-                                    {GetPopStatement("rax")}
-                                    sub rax, rdi
-                                    {GetPushStatement("rax")}
-                                    
-                                """);
+                                     {GetPopStatement("rdi")}
+                                     {GetPopStatement("rax")}
+                                     
+                                 """);
+                switch (addExpression)
+                {
+                    case AddExpression:
+                        _output!.Append("    add rax, rdi\n");
+                        break;
+                    case SubtractExpression:
+                        _output!.Append("    sub rax, rdi\n");
+                        break;
+                    case DoubleEqualsExpression:
+                        _output!.Append("    cmp rax, rdi\n");
+                        break;
+                }
+
+                _output.Append($"    {GetPushStatement("rax")}\n");
+
                 break;
             default:
                 throw ErrorHelper.UnknownVariant("expression", expression.GetType());
         }
     }
+
     private void GenerateTerm(ITermNode term)
     {
         if (term is IntLiteralTerm intLiteralTerm)
@@ -173,9 +177,9 @@ public class AssemblyGenerator
         else if (term is IdentifierTerm identifierTerm)
         {
             _output!.Append($"""
-                                {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
-                            
-                            """);
+                                 {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
+
+                             """);
         }
         else if (term is ParenTerm parenTerm)
         {

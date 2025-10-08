@@ -118,7 +118,17 @@ public class Tests
              exitCode = 4;
          }
          exit exitCode;
-         """, 3)
+         """, 3),
+        ("""
+         let a = 1;
+         let b = 1;
+         if (a == b) {
+             a = a + 1;
+         }
+         
+         exit a;
+         """, 2),
+        ("let test = 1 == 2;", 0)
     ];
 
     [TestCaseSource(nameof(Programs))]
@@ -141,6 +151,8 @@ public class Tests
     [TestCase("let a = 1; a = false;")] // assigning an int to a bool (using let)
     [TestCase("let a = 1; { let a = 2; } ")] // shadowed variable
     [TestCase("let a = 1; if true exit 5 ")] // no braces around if block
+    [TestCase("let boolInt = 1 == true")] // comparing int to bool
+    [TestCase("let a = 1; if a = 3 { exit 4; }")] // = instead of == in if condition
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);

@@ -28,6 +28,20 @@ public class Tokenizer
                 continue;
             }
 
+            if (Peek() == '=')
+            {
+                _ = Consume();
+                if (Peek() == '=')
+                {
+                    _ = Consume();
+                    tokens.Add(new DoubleEqualsToken());
+                    continue;
+                }
+                
+                tokens.Add(new EqualsToken());
+                continue;
+            }
+
             if (TryParseOperator() is { } op)
             {
                 tokens.Add(op);
