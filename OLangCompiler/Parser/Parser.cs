@@ -62,6 +62,14 @@ public class Parser
             return new IfStatement(condition, scope);
         }
 
+        if (TryConsume<WhileToken>() != null)
+        {
+            var condition = ParseExpression();
+            var scope = ParseScope();
+
+            return new WhileStatement(condition, scope);
+        }
+
         throw ErrorHelper.ExpectedValue("statement", Peek(-1)!);
     }
 

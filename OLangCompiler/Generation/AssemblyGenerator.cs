@@ -54,6 +54,9 @@ public class AssemblyGenerator
             case IfStatement ifStatement:
                 GenerateIfStatement(ifStatement);
                 break;
+            case WhileStatement whileStatement:
+                GenerateWhileStatement(whileStatement);
+                break;
             default:
             {
                 throw ErrorHelper.UnknownVariant("statement", statement.GetType());
@@ -106,6 +109,28 @@ public class AssemblyGenerator
                         """);
         GenerateScope(ifStatement.Scope);
         _output.Append($"{label}:\n");
+    }
+
+    private void GenerateWhileStatement(WhileStatement whileStatement)
+    {
+        var whileBegin = GetLabel();
+        var whileEnd = GetLabel();
+
+        _output!.Append($"{whileBegin}:");
+        
+        GenerateExpression(whileStatement.Condition);
+        _output.Append($"""
+                            {GetPopStatement("rax")}
+                            cmp rax, 0
+                            je {whileEnd}
+
+                        """);
+        GenerateScope(whileStatement.Scope);
+        _output.Append($"""
+                            jmp {whileBegin}
+                        {whileEnd}:
+                        
+                        """);
     }
 
     private void GenerateScope(ScopeNode scopeNode)

@@ -97,7 +97,8 @@ public class Tokenizer
         { "bool", () => new BoolTypeToken() },
         { "true", () => new BoolLiteralToken(true) },
         { "false", () => new BoolLiteralToken(false) },
-        { "if", () => new IfToken() }
+        { "if", () => new IfToken() },
+        { "while", () => new WhileToken() }
     };
 
     private IToken? TryParseOperator()

@@ -59,6 +59,15 @@ public class TypeChecker
 
                 CheckScopeTypes(ifStatement.Scope);
                 break;
+            case WhileStatement whileStatement:
+                var whileConditionType = GetTypeFromExpression(whileStatement.Condition);
+                if (whileConditionType != ExpressionType.Bool)
+                {
+                    throw ErrorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", whileStatement.Condition);
+                }
+
+                CheckScopeTypes(whileStatement.Scope);
+                break;
             default:
                 throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
         }

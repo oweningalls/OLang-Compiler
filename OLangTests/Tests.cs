@@ -125,7 +125,7 @@ public class Tests
          if (a == b) {
              a = a + 1;
          }
-         
+
          exit a;
          """, 2),
         ("let test = 1 == 2;", 0),
@@ -143,7 +143,17 @@ public class Tests
              exit 1;
          }
          exit 123;
-         """, 123)
+         """, 123),
+        ("""
+         let a = 4;
+         let i = 0;
+         while i != 5 {
+             i = i + 1;
+             a = a + 1;
+         }
+
+         exit a;
+         """, 9)
     ];
 
     [TestCaseSource(nameof(Programs))]
@@ -157,7 +167,7 @@ public class Tests
 
     [TestCase("let a = a;")] // a hasn't been declared yet
     [TestCase("exit 4")] // missing semicolon
-    [TestCase("exit (5 + 1;")] // missing semicolon
+    [TestCase("exit (5 + 1;")] // missing right parenthesis
     [TestCase("let a = ((1;)); exit a;")] // incorrect semicolon
     [TestCase("bool a = true; int b = a;")] // assigning a bool to an int
     [TestCase("int a = true; bool b = a;")] // assigning an int to a bool
@@ -171,6 +181,39 @@ public class Tests
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);
+    }
+
+    [Test]
+    public void TestFibonacci()
+    {
+        for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
+        {
+            var program = $$"""
+                          let fn = 0;
+                          let fn1 = 1;
+                          let i = 1;
+
+                          while i != {{i}} {
+                              i = i + 1;
+                              let temp = fn1;
+                              fn1 = fn1 + fn;
+                              fn = temp;
+                          }
+                          exit fn1;
+                          """;
+            var olFibNum = CompileAndExecuteProgram(program);
+            var trueFibNum = Fib(i);
+            
+            Assert.That(olFibNum, Is.EqualTo(trueFibNum));
+        }
+    }
+
+    private int Fib(int n)
+    {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+
+        return Fib(n - 1) + Fib(n - 2);
     }
 
     private int CompileAndExecuteProgram(string program)
