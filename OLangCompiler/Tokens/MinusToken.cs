@@ -1,5 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class MinusToken : IToken
-{
-}
+public class MinusToken : IToken;

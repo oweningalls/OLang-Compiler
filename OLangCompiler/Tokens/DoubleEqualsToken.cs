@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class DoubleEqualsToken : IToken { }
+public class DoubleEqualsToken : IToken;

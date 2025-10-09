@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class RightCurlyToken : IToken { }
+public class RightCurlyToken : IToken;

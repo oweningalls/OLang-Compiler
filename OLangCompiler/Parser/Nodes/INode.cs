@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public interface INode { }
+public interface INode;

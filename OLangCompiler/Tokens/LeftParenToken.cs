@@ -1,5 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class LeftParenToken : IToken
-{
-}
+public class LeftParenToken : IToken;

@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class IfToken : IToken { }
+public class IfToken : IToken;

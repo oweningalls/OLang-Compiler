@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public interface IExpressionNode : INode { }
+public interface IExpressionNode : INode;
