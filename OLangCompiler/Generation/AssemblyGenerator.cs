@@ -153,6 +153,17 @@ public class AssemblyGenerator
             case TermExpression term:
                 GenerateTerm(term.Term);
                 break;
+            case NotExpression notExpression:
+                GenerateExpression(notExpression.Expression);
+                _output!.Append($"""
+                                     {GetPopStatement("rdi")}
+                                     cmp rdi, 1
+                                     setne al
+                                     movzx rax, al
+                                     {GetPushStatement("rax")}
+                                 
+                                 """);
+                break;
             case BaseBinaryExpressionNode addExpression:
                 GenerateTerm(addExpression.Lhs);
                 GenerateExpression(addExpression.Rhs);

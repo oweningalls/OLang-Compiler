@@ -89,6 +89,13 @@ public class Parser
 
     private IExpressionNode ParseExpression()
     {
+        if (TryConsume<NotToken>() != null)
+        {
+            var notTerm = ParseExpression();
+
+            return new NotExpression(notTerm);
+        }
+        
         var term = ParseTerm();
         if (TryConsume<PlusToken>() != null)
         {

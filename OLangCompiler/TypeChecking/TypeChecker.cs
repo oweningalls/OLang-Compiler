@@ -90,6 +90,14 @@ public class TypeChecker
         {
             case TermExpression term:
                 return GetTypeFromTerm(term.Term);
+            case NotExpression notExpression:
+                var notTermType = GetTypeFromExpression(notExpression.Expression);
+                if (notTermType != ExpressionType.Bool)
+                {
+                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot negate a non-boolean value of type {notTermType}", notExpression.Expression);
+                }
+
+                return ExpressionType.Bool;
             case BaseBinaryExpressionNode binaryExpression:
             {
                 var lhsType = GetTypeFromTerm(binaryExpression.Lhs);

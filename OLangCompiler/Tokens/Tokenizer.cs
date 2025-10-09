@@ -52,7 +52,8 @@ public class Tokenizer
                     continue;
                 }
 
-                throw new Exception($"Unexpected character {Peek()}");
+                tokens.Add(new NotToken());
+                continue;
             }
 
             if (TryParseOperator() is { } op)

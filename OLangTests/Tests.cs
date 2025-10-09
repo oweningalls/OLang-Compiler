@@ -153,7 +153,25 @@ public class Tests
          }
 
          exit a;
-         """, 9)
+         """, 9),
+        ("""
+         let boolValue = !false;
+         if boolValue {
+             exit 41;
+         }
+         
+         exit 12;
+         """, 41),
+        ("""
+         let boolValue = !true;
+         if boolValue {
+             exit 41;
+         }
+         
+         exit 12;
+         """, 12),
+        ("if !true == false { exit 39; }", 39),
+        ("if !true == true { exit 39; }", 0)
     ];
 
     [TestCaseSource(nameof(Programs))]
