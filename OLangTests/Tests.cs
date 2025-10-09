@@ -11,33 +11,15 @@ public class Tests
         Directory.SetCurrentDirectory($"{projectRoot}/../OLangCompiler");
     }
 
-    public static readonly List<(string, int)> Programs =
+    public static readonly List<(string, int)> AddPrograms =
     [
-        ("""
-         let a = 1;
-         let b = 3;
-
-         exit b;
-         """, 3),
-
-        ("""
-         let a = 1;
-         let b = 3;
-
-         exit a;
-         """, 1),
-
-        ("""
-         exit 1 + 3;
-         """, 4),
-
+        ("exit 1 + 3;", 4),
         ("""
          let a = 1;
          let b = 3;
 
          exit a + b;
          """, 4),
-
         ("""
          let a = 1;
          let b = 3;
@@ -46,7 +28,6 @@ public class Tests
 
          exit b;
          """, 6),
-
         ("""
          let a = 1;
          let b = 3;
@@ -54,29 +35,42 @@ public class Tests
 
          exit b + a + c;
          """, 9),
+    ];
 
-        ("""
-         let a = 1;
-         let b = 3;
-         let c = 5;
+    [TestCaseSource(nameof(AddPrograms))]
+    public void AddTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
 
-         exit b + (a + c);
-         """, 9),
-
-        ("""
-         let a = 1;
-         let b = 38;
-         let c = 5;
-
-         exit (b + a) + c;
-         """, 44),
-        ("let a = 0;", 0),
-        ("let a = (1 + (3 + 2) + 5); exit a;", 11),
-        ("let a = ((1)); exit a;", 1),
+    public static readonly List<(string, int)> SubtractionPrograms =
+    [
         ("let a = 12 - (3 + 2); exit a;", 7),
         ("let a = 12 - 3 - 2; exit a;", 7),
         ("let a = 12 - 3 + 2; exit a;", 11),
+    ];
+    [TestCaseSource(nameof(SubtractionPrograms))]
+    public void SubtractionTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+    
+    public static readonly List<(string, int)> VariablePrograms =
+    [
+        ("let a = 0;", 0),
         ("int intLiteral = 1; exit intLiteral;", 1),
+        ("""
+         let a = 1;
+         let b = 3;
+
+         exit b;
+         """, 3),
+        ("""
+         let a = 1;
+         let b = 3;
+
+         exit a;
+         """, 1),
         ("""
          bool trueBool = true;
          bool falseBool = false;
@@ -90,8 +84,53 @@ public class Tests
          bool a = true;
          let b = a;
          """, 0),
+    ];
+    
+    [TestCaseSource(nameof(VariablePrograms))]
+    public void VariableTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+    
+    public static readonly List<(string, int)> ParenthesesPrograms =
+    [
+        ("""
+         let a = 1;
+         let b = 3;
+         let c = 5;
+
+         exit b + (a + c);
+         """, 9),
+        ("""
+         let a = 1;
+         let b = 38;
+         let c = 5;
+
+         exit (b + a) + c;
+         """, 44),
+        ("let a = (1 + (3 + 2) + 5); exit a;", 11),
+        ("let a = ((1)); exit a;", 1),
+    ];
+    
+    [TestCaseSource(nameof(ParenthesesPrograms))]
+    public void ParenthesesTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> ScopePrograms =
+    [
         ("{ let a = true; } let a = 1;", 0),
         ("{ let a = true; { exit 6; } } let a = 1;", 6),
+    ];
+    [TestCaseSource(nameof(ScopePrograms))]
+    public void ScopeTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> IfPrograms =
+    [
         ("let a = true; if a {exit 1;} exit 5;", 1),
         ("let a = false; if a {let b = 23; exit 1;} exit 5;", 5),
         ("""
@@ -129,6 +168,15 @@ public class Tests
 
          exit a;
          """, 2),
+    ];
+    [TestCaseSource(nameof(IfPrograms))]
+    public void IfTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> EqualityPrograms =
+    [
         ("let test = 1 == 2;", 0),
         ("let test = 1 != 2;", 0),
         ("""
@@ -155,12 +203,26 @@ public class Tests
 
          exit a;
          """, 9),
+        ("if !true == false { exit 39; }", 39),
+        ("if !true == true { exit 39; }", 0),
+        ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
+        ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
+    ];
+    
+    [TestCaseSource(nameof(EqualityPrograms))]
+    public void EqualityTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> NegationPrograms =
+    [
         ("""
          let boolValue = !false;
          if boolValue {
              exit 41;
          }
-         
+
          exit 12;
          """, 41),
         ("""
@@ -168,17 +230,18 @@ public class Tests
          if boolValue {
              exit 41;
          }
-         
-         exit 12;
-         """, 12),
-        ("if !true == false { exit 39; }", 39),
-        ("if !true == true { exit 39; }", 0),
-        ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
-        ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
-    ];
 
-    [TestCaseSource(nameof(Programs))]
-    public void TestExitCodes((string, int) values)
+         exit 12;
+         """, 12)
+    ];
+    
+    [TestCaseSource(nameof(NegationPrograms))]
+    public void NegationTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;
         var exitCode = values.Item2;
