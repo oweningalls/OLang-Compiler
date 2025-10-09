@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class NotEqualExpression(ITermNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);
+public class NotEqualExpression(IExpressionNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);

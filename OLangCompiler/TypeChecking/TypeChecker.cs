@@ -100,7 +100,7 @@ public class TypeChecker
                 return ExpressionType.Bool;
             case BaseBinaryExpressionNode binaryExpression:
             {
-                var lhsType = GetTypeFromTerm(binaryExpression.Lhs);
+                var lhsType = GetTypeFromExpression(binaryExpression.Lhs);
                 var rhsType = GetTypeFromExpression(binaryExpression.Rhs);
 
                 if (binaryExpression is BaseComparisonExpressionNode)

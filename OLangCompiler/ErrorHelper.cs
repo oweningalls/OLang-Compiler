@@ -54,6 +54,6 @@ public static class ErrorHelper
         if (typeof(T) == typeof(LeftCurlyToken)) return "'{'";
         if (typeof(T) == typeof(RightCurlyToken)) return "'}'";
 
-        throw UnknownVariant("token type", typeof(T));
+        throw UnknownVariant("token", typeof(T));
     }
 }

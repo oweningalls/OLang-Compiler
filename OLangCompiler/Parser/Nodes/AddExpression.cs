@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class AddExpression(ITermNode lhs, IExpressionNode rhs) : BaseBinaryExpressionNode(lhs, rhs);
+public class AddExpression(IExpressionNode lhs, IExpressionNode rhs) : BaseBinaryExpressionNode(lhs, rhs);

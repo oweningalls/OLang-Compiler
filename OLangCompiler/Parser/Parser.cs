@@ -87,46 +87,35 @@ public class Parser
         return new ScopeNode(statements);
     }
 
-    private IExpressionNode ParseExpression()
+    private IExpressionNode ParseExpression(int minPrecedence = 0)
     {
         if (TryConsume<NotToken>() != null)
         {
-            var notTerm = ParseExpression();
+            var innerExpression = ParseExpression();
 
-            return new NotExpression(notTerm);
+            return new NotExpression(innerExpression);
         }
         
-        var term = ParseTerm();
-        if (TryConsume<PlusToken>() != null)
-        {
-            var expression = ParseExpression();
+        IExpressionNode expression = new TermExpression(ParseTerm());
 
-            return new AddExpression(term, expression);
+        while (Peek() is IBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
+        {
+            Consume();
+            // add one for left associative operators, don't for right associative
+            var nextMinPrecedence = binaryOperatorToken.Precedence + 1;
+            var rhs = ParseExpression(nextMinPrecedence);
+
+            expression = binaryOperatorToken switch
+            {
+                DoubleEqualsToken => new DoubleEqualsExpression(expression, rhs),
+                PlusToken => new AddExpression(expression, rhs),
+                MinusToken => new SubtractExpression(expression, rhs),
+                NotEqualToken => new NotEqualExpression(expression, rhs),
+                _ => throw ErrorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
+            };
         }
 
-        if (TryConsume<MinusToken>() != null)
-        {
-            // TODO: this needs to be left associative
-            var expression = ParseExpression();
-
-            return new SubtractExpression(term, expression);
-        }
-
-        if (TryConsume<DoubleEqualsToken>() != null)
-        {
-            var expression = ParseExpression();
-
-            return new DoubleEqualsExpression(term, expression);
-        }
-        
-        if (TryConsume<NotEqualToken>() != null)
-        {
-            var expression = ParseExpression();
-
-            return new NotEqualExpression(term, expression);
-        }
-
-        return new TermExpression(term);
+        return expression;
     }
 
     private ITermNode ParseTerm()

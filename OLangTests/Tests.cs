@@ -74,7 +74,8 @@ public class Tests
         ("let a = (1 + (3 + 2) + 5); exit a;", 11),
         ("let a = ((1)); exit a;", 1),
         ("let a = 12 - (3 + 2); exit a;", 7),
-        // ("let a = 12 - 3 - 2; exit a;", 7), // TODO: uncomment after implementing left associative minus
+        ("let a = 12 - 3 - 2; exit a;", 7),
+        ("let a = 12 - 3 + 2; exit a;", 11),
         ("int intLiteral = 1; exit intLiteral;", 1),
         ("""
          bool trueBool = true;
@@ -171,7 +172,9 @@ public class Tests
          exit 12;
          """, 12),
         ("if !true == false { exit 39; }", 39),
-        ("if !true == true { exit 39; }", 0)
+        ("if !true == true { exit 39; }", 0),
+        ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
+        ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
     ];
 
     [TestCaseSource(nameof(Programs))]

@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class DoubleEqualsExpression(ITermNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);
+public class DoubleEqualsExpression(IExpressionNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);

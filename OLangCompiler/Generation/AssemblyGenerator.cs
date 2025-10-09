@@ -165,7 +165,7 @@ public class AssemblyGenerator
                                  """);
                 break;
             case BaseBinaryExpressionNode addExpression:
-                GenerateTerm(addExpression.Lhs);
+                GenerateExpression(addExpression.Lhs);
                 GenerateExpression(addExpression.Rhs);
 
                 _output!.Append($"""
