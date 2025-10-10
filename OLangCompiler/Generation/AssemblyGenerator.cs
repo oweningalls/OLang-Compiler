@@ -171,7 +171,7 @@ public class AssemblyGenerator
                 _output!.Append($"""
                                      {GetPopStatement("rdi")}
                                      {GetPopStatement("rax")}
-                                     
+                                 
                                  """);
                 switch (addExpression)
                 {

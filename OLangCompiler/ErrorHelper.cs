@@ -13,7 +13,7 @@ public static class ErrorHelper
 
     public static Exception ExpectedToken<T>(IToken token) where T : IToken
     {
-        return ShowErrorMessageAtToken($"Expected {NameOfTokenType<T>()}", token);
+        return ShowErrorMessageAtToken($"Expected {NameOfTokenType<T>()}.", token);
     }
     
     public static Exception ExpectedValue(string expectedName, IToken token)
@@ -53,6 +53,7 @@ public static class ErrorHelper
         if (typeof(T) == typeof(SemicolonToken)) return "';'";
         if (typeof(T) == typeof(LeftCurlyToken)) return "'{'";
         if (typeof(T) == typeof(RightCurlyToken)) return "'}'";
+        if (typeof(T) == typeof(IAssignmentOperatorToken)) return "set operator";
 
         throw UnknownVariant("token", typeof(T));
     }

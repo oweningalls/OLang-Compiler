@@ -240,6 +240,19 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> OpEqualsPrograms =
+    [
+        ("let value1 = 3; value1 += 1; exit value1;", 4),
+        ("let value1 = 3; let value2 = 6; value1 += value2; value1 += 1; exit value1;", 10),
+        ("let value1 = 3; let value2 = 6; value1 -= value2; value1 += 4; exit value1;", 1)
+    ];
+    
+    [TestCaseSource(nameof(OpEqualsPrograms))]
+    public void OpEqualsTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
 
     private void TestProgramExitCode((string, int) values)
     {
@@ -278,9 +291,9 @@ public class Tests
                           let i = 1;
 
                           while i != {{i}} {
-                              i = i + 1;
+                              i += 1;
                               let temp = fn1;
-                              fn1 = fn1 + fn;
+                              fn1 += fn;
                               fn = temp;
                           }
                           exit fn1;

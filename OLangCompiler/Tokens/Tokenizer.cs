@@ -56,6 +56,12 @@ public class Tokenizer
                 continue;
             }
 
+            if (TryParseEqualsToken() is { } token)
+            {
+                tokens.Add(token);
+                continue;
+            }
+            
             if (TryParseOperator() is { } op)
             {
                 tokens.Add(op);
@@ -73,6 +79,33 @@ public class Tokenizer
 
         return tokens;
     }
+
+    private IToken? TryParseEqualsToken()
+    {
+        if (EqualsOperatorMap.ContainsKey(Peek()!.Value))
+        {
+            var funcs = EqualsOperatorMap[Consume()];
+            if (Peek() is '=')
+            {
+                _ = Consume();
+                return funcs.Item2.Invoke();
+            }
+
+            return funcs.Item1.Invoke();
+        }
+
+        return null;
+    }
+    
+    // operators that could be x, or could be x= (e.g. ! and !=)
+    // first function makes x token, second makes the x= token
+    private static readonly Dictionary<char, (Func<IToken>, Func<IToken>)> EqualsOperatorMap = new()
+    {
+        { '=',  (() => new EqualsToken(), () => new DoubleEqualsToken())},
+        { '+',  (() => new PlusToken(), () => new PlusEqualsToken())},
+        { '-',  (() => new MinusToken(), () => new MinusEqualsToken())},
+    };
+    
 
     private IToken TokenizeLetter()
     {
@@ -119,7 +152,6 @@ public class Tokenizer
         { '+', () => new PlusToken() },
         {'(', () => new LeftParenToken() },
         {')', () => new RightParenToken() },
-        {'-', () => new MinusToken() },
         {'{', () => new LeftCurlyToken() },
         {'}', () => new RightCurlyToken() }
     };
