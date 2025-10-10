@@ -110,7 +110,7 @@ public class Tokenizer
     private IToken TokenizeLetter()
     {
         var buffer = "";
-        while (Peek() is {} c && char.IsLetterOrDigit(c))
+        while (Peek() is {} c && (char.IsLetterOrDigit(c) || c == '_'))
         {
             buffer += Consume();
         }
