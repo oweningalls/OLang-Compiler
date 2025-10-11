@@ -92,7 +92,8 @@ public class Tokenizer
         { '+',  (() => new PlusToken(), () => new PlusEqualsToken())},
         { '-',  (() => new MinusToken(), () => new MinusEqualsToken())},
         { '!',  (() => new NotToken(), () => new NotEqualToken())},
-        { '>',  (() => new GreaterToken(), () => new GreaterOrEqualToken())}
+        { '>',  (() => new GreaterToken(), () => new GreaterOrEqualToken())},
+        { '<',  (() => new LessToken(), () => new LessOrEqualToken())}
     };
     
 

@@ -150,7 +150,7 @@ public class AssemblyGenerator
         var addExpression = new AddExpression(identifierExpression, new TermExpression(new IntLiteralTerm(1)));
         scope.Statements.Add(new AssignmentStatement(forStatement.Identifier, addExpression));
 
-        var condition = new NotEqualExpression(identifierExpression, forStatement.End); // TODO change this to LessThanExpression after implementing that
+        var condition = new LessExpression(identifierExpression, forStatement.End);
         var whileStatement = new WhileStatement(condition, scope);
 
         GenerateWhileStatement(whileStatement);
@@ -233,6 +233,22 @@ public class AssemblyGenerator
                         _output.Append("""
                                            cmp rax, rdi
                                            setge al
+                                           movzx rax, al
+
+                                       """);
+                        break;
+                    case LessExpression:
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           setl al
+                                           movzx rax, al
+
+                                       """);
+                        break;
+                    case LessOrEqualExpression:
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           setle al
                                            movzx rax, al
 
                                        """);

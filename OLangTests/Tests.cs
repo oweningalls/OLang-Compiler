@@ -196,6 +196,14 @@ public class Tests
          }
          exit 123;
          """, 123),
+        ("if !true == false { exit 39; }", 39),
+        ("if !true == true { exit 39; }", 0),
+        ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
+        ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
+    ];
+
+    public static readonly List<(string, int)> WhilePrograms =
+    [
         ("""
          let a = 4;
          let i = 0;
@@ -206,11 +214,14 @@ public class Tests
 
          exit a;
          """, 9),
-        ("if !true == false { exit 39; }", 39),
-        ("if !true == true { exit 39; }", 0),
-        ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
-        ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
+        ("while 1 != 1 { exit 35; } ", 0)
     ];
+
+    [TestCaseSource(nameof(WhilePrograms))]
+    public void WhileTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
 
     [TestCaseSource(nameof(EqualityPrograms))]
     public void EqualityTests((string, int) values)
@@ -275,11 +286,11 @@ public class Tests
 
          exit a;
          """, 17),
-        // ("""
-        //  for i in 10..6 {
-        //      exit 20;
-        //  }
-        //  """, 0), // TODO: uncomment after implementing less than
+        ("""
+         for i in 10..6 {
+             exit 20;
+         }
+         """, 0),
         ("""
          let start = 3;
          let end = 6;
@@ -289,15 +300,15 @@ public class Tests
              }
          }
          """, 4),
-//         ("""
-//          let start = 8;
-//          let end = 1;
-//          for i in start..end {
-//              exit i;
-//          }
-//
-//          exit 2;
-//          """, 2) // TODO: uncomment after implementing less than
+         ("""
+          let start = 8;
+          let end = 1;
+          for i in start..end {
+              exit i;
+          }
+
+          exit 2;
+          """, 2),
         ("for i in 1..2{} for i in 1..2{}", 0),
         ("for i in 0..0 {exit 1;}", 0)
     ];
@@ -338,10 +349,63 @@ public class Tests
          
          exit 4;
          """, 2),
+        ("""
+         if 2 >= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 4),
+        ("""
+         if 5 >= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 2)
     ];
     
     [TestCaseSource(nameof(GreaterOrEqualPrograms))]
     public void GreaterOrEqualTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+    
+    public static readonly List<(string, int)> LessOrEqualPrograms =
+    [
+        ("""
+         let a = 3;
+         if a < 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 4),
+        ("""
+         if 3 <= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 2),
+        ("""
+         if 2 <= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 2),
+        ("""
+         if 5 <= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 4),
+    ];
+    
+    [TestCaseSource(nameof(LessOrEqualPrograms))]
+    public void LessOrEqualTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
