@@ -150,6 +150,8 @@ public class Parser
                 PlusToken => new AddExpression(expression, rhs),
                 MinusToken => new SubtractExpression(expression, rhs),
                 NotEqualToken => new NotEqualExpression(expression, rhs),
+                GreaterToken => new GreaterExpression(expression, rhs),
+                GreaterOrEqualToken => new GreaterOrEqualExpression(expression, rhs),
                 _ => throw ErrorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
             };
         }

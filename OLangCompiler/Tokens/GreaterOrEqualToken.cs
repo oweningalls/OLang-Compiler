@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class PlusToken : IBinaryOperatorToken
+public class GreaterOrEqualToken : IBinaryOperatorToken
 {
     public int Precedence => 3;
 }

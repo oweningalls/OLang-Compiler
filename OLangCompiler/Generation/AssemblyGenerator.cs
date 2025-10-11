@@ -122,7 +122,7 @@ public class AssemblyGenerator
         var whileEnd = GetLabel();
 
         _output!.Append($"{whileBegin}:\n");
-        
+
         GenerateExpression(whileStatement.Condition);
         _output.Append($"""
                             {GetPopStatement("rax")}
@@ -134,14 +134,14 @@ public class AssemblyGenerator
         _output.Append($"""
                             jmp {whileBegin}
                         {whileEnd}:
-                        
+
                         """);
     }
 
     private void GenerateForStatement(ForStatement forStatement)
     {
         _variableStackOffsets.BeginScope();
-        
+
         var declaration = new DeclarationStatement(forStatement.Identifier, forStatement.Start, ExpressionType.Int);
         GenerateVarDeclarationStatement(declaration);
 
@@ -152,7 +152,7 @@ public class AssemblyGenerator
 
         var condition = new NotEqualExpression(identifierExpression, forStatement.End); // TODO change this to LessThanExpression after implementing that
         var whileStatement = new WhileStatement(condition, scope);
-        
+
         GenerateWhileStatement(whileStatement);
         _variableStackOffsets.EndScope();
     }
@@ -185,19 +185,19 @@ public class AssemblyGenerator
                                      setne al
                                      movzx rax, al
                                      {GetPushStatement("rax")}
-                                 
+
                                  """);
                 break;
-            case BaseBinaryExpressionNode addExpression:
-                GenerateExpression(addExpression.Lhs);
-                GenerateExpression(addExpression.Rhs);
+            case BaseBinaryExpressionNode binaryExpressionNode:
+                GenerateExpression(binaryExpressionNode.Lhs);
+                GenerateExpression(binaryExpressionNode.Rhs);
 
                 _output!.Append($"""
                                      {GetPopStatement("rdi")}
                                      {GetPopStatement("rax")}
-                                 
+
                                  """);
-                switch (addExpression)
+                switch (binaryExpressionNode)
                 {
                     case AddExpression:
                         _output!.Append("    add rax, rdi\n");
@@ -210,7 +210,7 @@ public class AssemblyGenerator
                                            cmp rax, rdi
                                            sete al
                                            movzx rax, al
-                                       
+
                                        """);
                         break;
                     case NotEqualExpression:
@@ -218,9 +218,27 @@ public class AssemblyGenerator
                                            cmp rax, rdi
                                            setne al
                                            movzx rax, al
-                                       
+
                                        """);
                         break;
+                    case GreaterExpression:
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           setg al
+                                           movzx rax, al
+
+                                       """);
+                        break;
+                    case GreaterOrEqualExpression:
+                        _output.Append("""
+                                           cmp rax, rdi
+                                           setge al
+                                           movzx rax, al
+
+                                       """);
+                        break;
+                    default:
+                        throw ErrorHelper.UnknownVariant("expression", expression.GetType());
                 }
 
                 _output.Append($"    {GetPushStatement("rax")}\n");

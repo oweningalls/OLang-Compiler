@@ -2,5 +2,5 @@
 
 public class DoubleEqualsToken : IBinaryOperatorToken
 {
-    public int Precedence => 0;
+    public int Precedence => 2;
 }

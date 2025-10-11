@@ -311,7 +311,8 @@ public class Tests
     public static readonly List<(string, int)> NegativeIntLiteralPrograms =
     [
         ("let a = -3; exit a + 7;", 4),
-        ("let a = 3; exit a + -1;", 2)
+        ("let a = 3; exit a + -1;", 2),
+        ("let a = -3; a += -4; exit a + 9;", 2)
     ];
     
     [TestCaseSource(nameof(NegativeIntLiteralPrograms))]
@@ -319,6 +320,32 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> GreaterOrEqualPrograms =
+    [
+        ("""
+         let a = 3;
+         if a > 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 4),
+        ("""
+         if 3 >= 3 {
+             exit 2;
+         }
+         
+         exit 4;
+         """, 2),
+    ];
+    
+    [TestCaseSource(nameof(GreaterOrEqualPrograms))]
+    public void GreaterOrEqualTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+    
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;
@@ -342,6 +369,8 @@ public class Tests
     [TestCase("let a = 1; if a = 3 { exit 4; }")] // = instead of == in if condition
     [TestCase("for i in 0..5 {} exit i;")] // i is in for loop scope
     [TestCase("for i in i..5 {}")] // i not yet declared
+    [TestCase("let a = 0; a = a > 2;")] // greater returns bool
+    [TestCase("let a = 0; a = a >= 2;")] // greater returns bool
     public void TestInvalidPrograms(string program)
     {
         Assert.That(() => OLangCompiler.OLangCompiler.GenerateAssembly(program), Throws.Exception);

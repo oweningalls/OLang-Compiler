@@ -2,5 +2,5 @@
 
 public class NotEqualToken : IBinaryOperatorToken
 {
-    public int Precedence => 0;
+    public int Precedence => 2;
 }
