@@ -308,6 +308,17 @@ public class Tests
         TestProgramExitCode(values);
     }
 
+    public static readonly List<(string, int)> NegativeIntLiteralPrograms =
+    [
+        ("let a = -3; exit a + 7;", 4),
+        ("let a = 3; exit a + -1;", 2)
+    ];
+    
+    [TestCaseSource(nameof(NegativeIntLiteralPrograms))]
+    public void NegativeIntLiteralTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;

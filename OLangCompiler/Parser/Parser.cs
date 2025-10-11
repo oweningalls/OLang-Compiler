@@ -186,6 +186,18 @@ public class Parser
             return new ParenTerm(expression);
         }
 
+        if (TryConsume<MinusToken>() != null)
+        {
+            if (Peek() == null)
+            {
+                throw EndOfInputException();
+            }
+        
+            var intLiteral = TryConsume<IntLiteralToken>() ?? throw ErrorHelper.ExpectedValue("int literal", Peek()!);
+        
+            return new IntLiteralTerm(-intLiteral.Value);
+        }
+
         throw ErrorHelper.ExpectedValue("term", Peek()!);
     }
 
