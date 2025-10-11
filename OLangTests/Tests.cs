@@ -49,12 +49,13 @@ public class Tests
         ("let a = 12 - 3 - 2; exit a;", 7),
         ("let a = 12 - 3 + 2; exit a;", 11),
     ];
+
     [TestCaseSource(nameof(SubtractionPrograms))]
     public void SubtractionTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
-    
+
     public static readonly List<(string, int)> VariablePrograms =
     [
         ("let a = 0;", 0),
@@ -85,13 +86,13 @@ public class Tests
          let b = a;
          """, 0),
     ];
-    
+
     [TestCaseSource(nameof(VariablePrograms))]
     public void VariableTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
-    
+
     public static readonly List<(string, int)> ParenthesesPrograms =
     [
         ("""
@@ -111,7 +112,7 @@ public class Tests
         ("let a = (1 + (3 + 2) + 5); exit a;", 11),
         ("let a = ((1)); exit a;", 1),
     ];
-    
+
     [TestCaseSource(nameof(ParenthesesPrograms))]
     public void ParenthesesTests((string, int) values)
     {
@@ -123,6 +124,7 @@ public class Tests
         ("{ let a = true; } let a = 1;", 0),
         ("{ let a = true; { exit 6; } } let a = 1;", 6),
     ];
+
     [TestCaseSource(nameof(ScopePrograms))]
     public void ScopeTests((string, int) values)
     {
@@ -169,6 +171,7 @@ public class Tests
          exit a;
          """, 2),
     ];
+
     [TestCaseSource(nameof(IfPrograms))]
     public void IfTests((string, int) values)
     {
@@ -208,7 +211,7 @@ public class Tests
         ("if 1 + 3 == 2 + 2 { exit 39; }", 39),
         ("if 1 + 1 == 2 + 2 { exit 39; }", 0),
     ];
-    
+
     [TestCaseSource(nameof(EqualityPrograms))]
     public void EqualityTests((string, int) values)
     {
@@ -234,22 +237,73 @@ public class Tests
          exit 12;
          """, 12)
     ];
-    
+
     [TestCaseSource(nameof(NegationPrograms))]
     public void NegationTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
-    
+
     public static readonly List<(string, int)> OpEqualsPrograms =
     [
         ("let value1 = 3; value1 += 1; exit value1;", 4),
         ("let value1 = 3; let value2 = 6; value1 += value2; value1 += 1; exit value1;", 10),
         ("let value1 = 3; let value2 = 6; value1 -= value2; value1 += 4; exit value1;", 1)
     ];
-    
+
     [TestCaseSource(nameof(OpEqualsPrograms))]
     public void OpEqualsTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> ForLoopPrograms =
+    [
+        ("""
+         let a = 3;
+         for i in 0..4 {
+             a += i;
+         }
+
+         exit a;
+         """, 9),
+        ("""
+         let a = 3;
+         for i in 2..6 {
+             a += i;
+         }
+
+         exit a;
+         """, 17),
+        // ("""
+        //  for i in 10..6 {
+        //      exit 20;
+        //  }
+        //  """, 0), // TODO: uncomment after implementing less than
+        ("""
+         let start = 3;
+         let end = 6;
+         for i in start..end {
+             if i == 4 {
+                 exit i;
+             }
+         }
+         """, 4),
+//         ("""
+//          let start = 8;
+//          let end = 1;
+//          for i in start..end {
+//              exit i;
+//          }
+//
+//          exit 2;
+//          """, 2) // TODO: uncomment after implementing less than
+        ("for i in 1..2{} for i in 1..2{}", 0),
+        ("for i in 0..0 {exit 1;}", 0)
+    ];
+
+    [TestCaseSource(nameof(ForLoopPrograms))]
+    public void ForLoopTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
@@ -273,36 +327,39 @@ public class Tests
     [TestCase("let a = 1; a = false;")] // assigning an int to a bool (using let)
     [TestCase("let a = 1; { let a = 2; } ")] // shadowed variable
     [TestCase("let a = 1; if true exit 5 ")] // no braces around if block
-    [TestCase("let boolInt = 1 == true")] // comparing int to bool
+    [TestCase("let boolInt = 1 == true;")] // comparing int to bool
     [TestCase("let a = 1; if a = 3 { exit 4; }")] // = instead of == in if condition
+    [TestCase("for i in 0..5 {} exit i;")] // i is in for loop scope
+    [TestCase("for i in i..5 {}")] // i not yet declared
     public void TestInvalidPrograms(string program)
     {
-        Assert.That(() => CompileAndExecuteProgram(program), Throws.Exception);
+        Assert.That(() => OLangCompiler.OLangCompiler.GenerateAssembly(program), Throws.Exception);
     }
 
     [Test]
     public void TestFibonacci()
     {
-        for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
+        Assert.Multiple(() =>
         {
-            var program = $$"""
-                          let fn = 0;
-                          let fn1 = 1;
-                          let i = 1;
+            for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
+            {
+                var program = $$"""
+                                let fn = 0;
+                                let fn1 = 1;
 
-                          while i != {{i}} {
-                              i += 1;
-                              let temp = fn1;
-                              fn1 += fn;
-                              fn = temp;
-                          }
-                          exit fn1;
-                          """;
-            var olFibNum = CompileAndExecuteProgram(program);
-            var trueFibNum = Fib(i);
-            
-            Assert.That(olFibNum, Is.EqualTo(trueFibNum));
-        }
+                                for i in 1..{{i}} {
+                                    let temp = fn1;
+                                    fn1 += fn;
+                                    fn = temp;
+                                }
+                                exit fn1;
+                                """;
+                var olFibNum = CompileAndExecuteProgram(program);
+                var trueFibNum = Fib(i);
+
+                Assert.That(olFibNum, Is.EqualTo(trueFibNum));
+            }
+        });
     }
 
     private int Fib(int n)

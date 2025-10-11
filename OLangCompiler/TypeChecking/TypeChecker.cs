@@ -13,11 +13,11 @@ public class TypeChecker
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
         foreach (var statement in program.Statements)
         {
-            CheckStatementTypes(statement);
+            CheckStatementType(statement);
         }
     }
 
-    private void CheckStatementTypes(IStatementNode statementNode)
+    private void CheckStatementType(IStatementNode statementNode)
     {
         switch (statementNode)
         {
@@ -68,6 +68,23 @@ public class TypeChecker
 
                 CheckScopeTypes(whileStatement.Scope);
                 break;
+            case ForStatement forStatement:
+                _variableTypeStack.BeginScope();
+                var startType = GetTypeFromExpression(forStatement.Start);
+                if (startType != ExpressionType.Int)
+                {
+                    throw ErrorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.Start);
+                }
+                var endType = GetTypeFromExpression(forStatement.End);
+                if (endType != ExpressionType.Int)
+                {
+                    throw ErrorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.End);
+                }
+                
+                RecordExpressionType(forStatement.Identifier, ExpressionType.Int);
+                CheckScopeTypes(forStatement.Scope);
+                _variableTypeStack.EndScope();
+                break;
             default:
                 throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
         }
@@ -78,7 +95,7 @@ public class TypeChecker
         _variableTypeStack.BeginScope();
         foreach (var statement in scopeNode.Statements)
         {
-            CheckStatementTypes(statement);
+            CheckStatementType(statement);
         }
 
         _variableTypeStack.EndScope();

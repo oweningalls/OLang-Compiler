@@ -28,38 +28,28 @@ public class Tokenizer
                 continue;
             }
 
-            if (Peek() == '=')
-            {
-                _ = Consume();
-                if (Peek() == '=')
-                {
-                    _ = Consume();
-                    tokens.Add(new DoubleEqualsToken());
-                    continue;
-                }
-                
-                tokens.Add(new EqualsToken());
-                continue;
-            }
-
-            if (Peek() == '!')
-            {
-                _ = Consume();
-                if (Peek() == '=')
-                {
-                    _ = Consume();
-                    tokens.Add(new NotEqualToken());
-                    continue;
-                }
-
-                tokens.Add(new NotToken());
-                continue;
-            }
-
             if (TryParseEqualsToken() is { } token)
             {
                 tokens.Add(token);
                 continue;
+            }
+
+            if (Peek() == '.')
+            {
+                _ = Consume();
+                if (Peek() == '.')
+                {
+                    _ = Consume();
+                    tokens.Add(new RangeToken());
+                    continue;
+                }
+
+                if (Peek() is null)
+                {
+                    throw ErrorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
+                }
+
+                throw ErrorHelper.UnexpectedChar(Peek()!.Value);
             }
             
             if (TryParseOperator() is { } op)
@@ -82,19 +72,16 @@ public class Tokenizer
 
     private IToken? TryParseEqualsToken()
     {
-        if (EqualsOperatorMap.ContainsKey(Peek()!.Value))
+        if (!EqualsOperatorMap.ContainsKey(Peek()!.Value)) return null;
+        var funcs = EqualsOperatorMap[Consume()];
+        if (Peek() is '=')
         {
-            var funcs = EqualsOperatorMap[Consume()];
-            if (Peek() is '=')
-            {
-                _ = Consume();
-                return funcs.Item2.Invoke();
-            }
-
-            return funcs.Item1.Invoke();
+            _ = Consume();
+            return funcs.Item2.Invoke();
         }
 
-        return null;
+        return funcs.Item1.Invoke();
+
     }
     
     // operators that could be x, or could be x= (e.g. ! and !=)
@@ -104,6 +91,7 @@ public class Tokenizer
         { '=',  (() => new EqualsToken(), () => new DoubleEqualsToken())},
         { '+',  (() => new PlusToken(), () => new PlusEqualsToken())},
         { '-',  (() => new MinusToken(), () => new MinusEqualsToken())},
+        { '!',  (() => new NotToken(), () => new NotEqualToken())}
     };
     
 
@@ -132,7 +120,9 @@ public class Tokenizer
         { "true", () => new BoolLiteralToken(true) },
         { "false", () => new BoolLiteralToken(false) },
         { "if", () => new IfToken() },
-        { "while", () => new WhileToken() }
+        { "while", () => new WhileToken() },
+        { "for", () => new ForToken() },
+        { "in", () => new InToken() }
     };
 
     private IToken? TryParseOperator()
@@ -159,11 +149,12 @@ public class Tokenizer
     private string? _input;
     private int _currentIndex;
 
-    private char? Peek()
+    private char? Peek(int offset = 0)
     {
-        if (_currentIndex >= _input!.Length) return null;
+        var index = _currentIndex + offset;
+        if (index >= _input!.Length) return null;
 
-        return _input[_currentIndex];
+        return _input[index];
     }
 
     private char Consume()

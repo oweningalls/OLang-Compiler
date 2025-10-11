@@ -5,7 +5,6 @@ namespace OLangCompiler;
 
 public static class ErrorHelper
 {
-    
     public static Exception UnknownVariant(string name, Type type)
     {
         return new Exception($"Unknown {name} type: {type}");
@@ -34,6 +33,16 @@ public static class ErrorHelper
     public static Exception ShowErrorMessageAtNode(string message, INode node)
     {
         return new Exception(message);
+    }
+
+    public static Exception UnexpectedChar(char c)
+    {
+        return new Exception($"Unexpected character: `{c}`");
+    }
+
+    public static Exception UnexpectedEndOfInputAfterChar(char c)
+    {
+        return new Exception($"Unexpected end of input after `{c}`");
     }
 
     private static string NameOfTokenType<T>() where T : IToken

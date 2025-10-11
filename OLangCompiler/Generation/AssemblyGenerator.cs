@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Tokens;
+using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
 
 namespace OLangCompiler.Generation;
@@ -56,6 +58,9 @@ public class AssemblyGenerator
                 break;
             case WhileStatement whileStatement:
                 GenerateWhileStatement(whileStatement);
+                break;
+            case ForStatement forStatement:
+                GenerateForStatement(forStatement);
                 break;
             default:
             {
@@ -116,7 +121,7 @@ public class AssemblyGenerator
         var whileBegin = GetLabel();
         var whileEnd = GetLabel();
 
-        _output!.Append($"{whileBegin}:");
+        _output!.Append($"{whileBegin}:\n");
         
         GenerateExpression(whileStatement.Condition);
         _output.Append($"""
@@ -131,6 +136,25 @@ public class AssemblyGenerator
                         {whileEnd}:
                         
                         """);
+    }
+
+    private void GenerateForStatement(ForStatement forStatement)
+    {
+        _variableStackOffsets.BeginScope();
+        
+        var declaration = new DeclarationStatement(forStatement.Identifier, forStatement.Start, ExpressionType.Int);
+        GenerateVarDeclarationStatement(declaration);
+
+        var scope = forStatement.Scope;
+        var identifierExpression = new TermExpression(new IdentifierTerm(forStatement.Identifier.Identifier));
+        var addExpression = new AddExpression(identifierExpression, new TermExpression(new IntLiteralTerm(1)));
+        scope.Statements.Add(new AssignmentStatement(forStatement.Identifier, addExpression));
+
+        var condition = new NotEqualExpression(identifierExpression, forStatement.End); // TODO change this to LessThanExpression after implementing that
+        var whileStatement = new WhileStatement(condition, scope);
+        
+        GenerateWhileStatement(whileStatement);
+        _variableStackOffsets.EndScope();
     }
 
     private void GenerateScope(ScopeNode scopeNode)
@@ -186,7 +210,7 @@ public class AssemblyGenerator
                                            cmp rax, rdi
                                            sete al
                                            movzx rax, al
-                                           
+                                       
                                        """);
                         break;
                     case NotEqualExpression:
@@ -194,7 +218,7 @@ public class AssemblyGenerator
                                            cmp rax, rdi
                                            setne al
                                            movzx rax, al
-                                           
+                                       
                                        """);
                         break;
                 }

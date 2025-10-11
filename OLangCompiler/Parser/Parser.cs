@@ -1,5 +1,6 @@
 ﻿using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Tokens;
+using OLangCompiler.TypeChecking.Types;
 
 namespace OLangCompiler.Parser;
 
@@ -94,6 +95,18 @@ public class Parser
             var scope = ParseScope();
 
             return new WhileStatement(condition, scope);
+        }
+
+        if (TryConsume<ForToken>() != null)
+        {
+            var identifier = ConsumeType<IdentifierToken>();
+            _ = ConsumeType<InToken>();
+            var start = ParseExpression();
+            _ = ConsumeType<RangeToken>();
+            var end = ParseExpression();
+            var scope = ParseScope();
+            
+            return new ForStatement(identifier, start, end, scope);
         }
 
         throw ErrorHelper.ExpectedValue("statement", Peek()!);
