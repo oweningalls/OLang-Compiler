@@ -6,7 +6,7 @@ public static class TestPathHelper
     {
         var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
 
-        while (dir != null && !dir.GetFiles("*.csproj").Any())
+        while (dir != null && dir.GetFiles("*.csproj").Length == 0)
         {
             dir = dir.Parent;
         }

@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
-using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
 
@@ -106,7 +105,7 @@ public class AssemblyGenerator
     {
         GenerateExpression(ifStatement.Condition);
         var label = GetLabel();
-        _output.Append($"""
+        _output!.Append($"""
                             {GetPopStatement("rax")}
                             cmp rax, 0
                             je {label}
@@ -267,34 +266,31 @@ public class AssemblyGenerator
 
     private void GenerateTerm(ITermNode term)
     {
-        if (term is IntLiteralTerm intLiteralTerm)
+        switch (term)
         {
-            _output!.Append($"""
-                                 {GetPushStatement(intLiteralTerm.Value.ToString())}
+            case IntLiteralTerm intLiteralTerm:
+                _output!.Append($"""
+                                     {GetPushStatement(intLiteralTerm.Value.ToString())}
 
-                             """);
-        }
-        else if (term is BoolLiteralTerm boolLiteralTerm)
-        {
-            _output!.Append($"""
-                                 {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
+                                 """);
+                break;
+            case BoolLiteralTerm boolLiteralTerm:
+                _output!.Append($"""
+                                     {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
 
-                             """);
-        }
-        else if (term is IdentifierTerm identifierTerm)
-        {
-            _output!.Append($"""
-                                 {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
+                                 """);
+                break;
+            case IdentifierTerm identifierTerm:
+                _output!.Append($"""
+                                     {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
 
-                             """);
-        }
-        else if (term is ParenTerm parenTerm)
-        {
-            GenerateExpression(parenTerm.Expression);
-        }
-        else
-        {
-            throw ErrorHelper.UnknownVariant("term", term.GetType());
+                                 """);
+                break;
+            case ParenTerm parenTerm:
+                GenerateExpression(parenTerm.Expression);
+                break;
+            default:
+                throw ErrorHelper.UnknownVariant("term", term.GetType());
         }
     }
 

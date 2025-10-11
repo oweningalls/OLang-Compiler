@@ -1,6 +1,5 @@
 ﻿using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Tokens;
-using OLangCompiler.TypeChecking.Types;
 
 namespace OLangCompiler.Parser;
 
@@ -21,10 +20,7 @@ public class Parser
 
     private IStatementNode ParseStatement()
     {
-        if (Peek() == null)
-        {
-            throw EndOfInputException();
-        }
+        CheckEndOfInput();
 
         if (TryConsume<ExitToken>() != null)
         {
@@ -44,11 +40,8 @@ public class Parser
 
         if (TryConsume<IdentifierToken>() is { } ident)
         {
-            var assignmentOperatorToken = TryConsume<IAssignmentOperatorToken>();
-            if (assignmentOperatorToken == null)
-            {
-                throw ErrorHelper.ExpectedToken<IAssignmentOperatorToken>(Peek());
-            }
+            CheckEndOfInput();
+            var assignmentOperatorToken = ConsumeType<IAssignmentOperatorToken>();
 
             var expression = ParseExpression();
             ConsumeType<SemicolonToken>();
@@ -60,18 +53,12 @@ public class Parser
 
             var lhs = new TermExpression(new IdentifierTerm(ident.Identifier));
 
-            BaseBinaryExpressionNode reformedExpression;
-            switch (assignmentOperatorToken)
+            BaseBinaryExpressionNode reformedExpression = assignmentOperatorToken switch
             {
-                case PlusEqualsToken:
-                    reformedExpression = new AddExpression(lhs, expression);
-                    break;
-                case MinusEqualsToken:
-                    reformedExpression = new SubtractExpression(lhs, expression);
-                    break;
-                default:
-                    throw ErrorHelper.UnknownVariant("assignment operator", assignmentOperatorToken!.GetType());
-            }
+                PlusEqualsToken => new AddExpression(lhs, expression),
+                MinusEqualsToken => new SubtractExpression(lhs, expression),
+                _ => throw ErrorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
+            };
 
             return new AssignmentStatement(ident, reformedExpression);
         }
@@ -163,10 +150,7 @@ public class Parser
 
     private ITermNode ParseTerm()
     {
-        if (Peek() == null)
-        {
-            throw EndOfInputException();
-        }
+        CheckEndOfInput();
 
         if (TryConsume<IntLiteralToken>() is { } ilt)
         {
@@ -192,10 +176,7 @@ public class Parser
 
         if (TryConsume<MinusToken>() != null)
         {
-            if (Peek() == null)
-            {
-                throw EndOfInputException();
-            }
+            CheckEndOfInput();
         
             var intLiteral = TryConsume<IntLiteralToken>() ?? throw ErrorHelper.ExpectedValue("int literal", Peek()!);
         
@@ -228,6 +209,14 @@ public class Parser
         return ret;
     }
 
+    private void CheckEndOfInput()
+    {
+        if (Peek() == null)
+        {
+            throw EndOfInputException();
+        }
+    }
+
     private Exception EndOfInputException()
     {
         throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
@@ -245,11 +234,6 @@ public class Parser
 
     private T ConsumeType<T>() where T : class, IToken
     {
-        if (Peek() == null)
-        {
-            throw EndOfInputException();
-        }
-
         var token = Peek() as T ?? throw ErrorHelper.ExpectedToken<T>(Peek()!);
         Consume();
         return token;

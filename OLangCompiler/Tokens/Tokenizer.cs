@@ -7,67 +7,75 @@ public class Tokenizer
         _input = input;
         _currentIndex = 0;
         var tokens = new List<IToken>();
-        while (Peek() != null)
+        var token = GetNextToken();
+        while (token != null)
         {
-            if (char.IsLetter(Peek()!.Value))
-            {
-                tokens.Add(TokenizeLetter());
-                continue;
-            }
-
-            if (char.IsDigit(Peek()!.Value))
-            {
-                var buffer = "";
-                buffer += Consume();
-                while (Peek() is { } c && char.IsDigit(c))
-                {
-                    buffer += Consume();
-                }
-                
-                tokens.Add(new IntLiteralToken(int.Parse(buffer)));
-                continue;
-            }
-
-            if (TryParseEqualsToken() is { } token)
-            {
-                tokens.Add(token);
-                continue;
-            }
-
-            if (Peek() == '.')
-            {
-                _ = Consume();
-                if (Peek() == '.')
-                {
-                    _ = Consume();
-                    tokens.Add(new RangeToken());
-                    continue;
-                }
-
-                if (Peek() is null)
-                {
-                    throw ErrorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
-                }
-
-                throw ErrorHelper.UnexpectedChar(Peek()!.Value);
-            }
-            
-            if (TryParseOperator() is { } op)
-            {
-                tokens.Add(op);
-                continue;
-            }
-
-            if (char.IsWhiteSpace(Peek()!.Value))
-            {
-                _ = Consume();
-                continue;
-            }
-
-            throw new Exception($"Unexpected character: `{Peek()}`");
+            tokens.Add(token);
+            token = GetNextToken();
         }
 
         return tokens;
+    }
+
+    private IToken? GetNextToken()
+    {
+        if (Peek() == null)
+        {
+            return null;
+        }
+        
+        if (char.IsLetter(Peek()!.Value))
+        {
+            return TokenizeLetter();
+            
+        }
+
+        if (char.IsDigit(Peek()!.Value))
+        {
+            var buffer = "";
+            buffer += Consume();
+            while (Peek() is { } c && char.IsDigit(c))
+            {
+                buffer += Consume();
+            }
+
+            return new IntLiteralToken(int.Parse(buffer));
+        }
+
+        if (TryParseEqualsToken() is { } token)
+        {
+            return token;
+        }
+
+        if (Peek() == '.')
+        {
+            _ = Consume();
+            if (Peek() == '.')
+            {
+                _ = Consume();
+                return new RangeToken();
+            }
+
+            if (Peek() is null)
+            {
+                throw ErrorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
+            }
+
+            throw ErrorHelper.UnexpectedChar(Peek()!.Value);
+        }
+
+        if (TryParseOperator() is { } op)
+        {
+            return op;
+        }
+
+        if (char.IsWhiteSpace(Peek()!.Value))
+        {
+            _ = Consume();
+            return GetNextToken();
+        }
+
+        throw new Exception($"Unexpected character: `{Peek()}`");
     }
 
     private IToken? TryParseEqualsToken()
@@ -81,26 +89,25 @@ public class Tokenizer
         }
 
         return funcs.Item1.Invoke();
-
     }
-    
+
     // operators that could be x, or could be x= (e.g. ! and !=)
     // first function makes x token, second makes the x= token
     private static readonly Dictionary<char, (Func<IToken>, Func<IToken>)> EqualsOperatorMap = new()
     {
-        { '=',  (() => new EqualsToken(), () => new DoubleEqualsToken())},
-        { '+',  (() => new PlusToken(), () => new PlusEqualsToken())},
-        { '-',  (() => new MinusToken(), () => new MinusEqualsToken())},
-        { '!',  (() => new NotToken(), () => new NotEqualToken())},
-        { '>',  (() => new GreaterToken(), () => new GreaterOrEqualToken())},
-        { '<',  (() => new LessToken(), () => new LessOrEqualToken())}
+        { '=', (() => new EqualsToken(), () => new DoubleEqualsToken()) },
+        { '+', (() => new PlusToken(), () => new PlusEqualsToken()) },
+        { '-', (() => new MinusToken(), () => new MinusEqualsToken()) },
+        { '!', (() => new NotToken(), () => new NotEqualToken()) },
+        { '>', (() => new GreaterToken(), () => new GreaterOrEqualToken()) },
+        { '<', (() => new LessToken(), () => new LessOrEqualToken()) }
     };
-    
+
 
     private IToken TokenizeLetter()
     {
         var buffer = "";
-        while (Peek() is {} c && (char.IsLetterOrDigit(c) || c == '_'))
+        while (Peek() is { } c && (char.IsLetterOrDigit(c) || c == '_'))
         {
             buffer += Consume();
         }
@@ -115,7 +122,7 @@ public class Tokenizer
 
     private static readonly Dictionary<string, Func<IToken>> KeywordMap = new()
     {
-        { "exit",  () => new ExitToken()},
+        { "exit", () => new ExitToken() },
         { "let", () => new LetToken() },
         { "int", () => new IntTypeToken() },
         { "bool", () => new BoolTypeToken() },
@@ -139,15 +146,15 @@ public class Tokenizer
 
     private static readonly Dictionary<char, Func<IToken>> OperatorMap = new()
     {
-        { '=',  () => new EqualsToken()},
+        { '=', () => new EqualsToken() },
         { ';', () => new SemicolonToken() },
         { '+', () => new PlusToken() },
-        {'(', () => new LeftParenToken() },
-        {')', () => new RightParenToken() },
-        {'{', () => new LeftCurlyToken() },
-        {'}', () => new RightCurlyToken() }
+        { '(', () => new LeftParenToken() },
+        { ')', () => new RightParenToken() },
+        { '{', () => new LeftCurlyToken() },
+        { '}', () => new RightCurlyToken() }
     };
-    
+
     private string? _input;
     private int _currentIndex;
 

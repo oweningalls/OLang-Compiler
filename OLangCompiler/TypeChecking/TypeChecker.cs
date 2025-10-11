@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata;
-using OLangCompiler.Parser.Nodes;
+﻿using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
@@ -124,7 +123,7 @@ public class TypeChecker
                 {
                     if (lhsType != rhsType)
                     {
-                        throw ErrorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
+                        throw ErrorHelper.ShowErrorMessageAtNode($"Cannot compare expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                     }
 
                     return ExpressionType.Bool;
@@ -143,12 +142,13 @@ public class TypeChecker
         }
     }
 
-    private string GetNameOfOperator(BaseBinaryExpressionNode binaryExpressionNode)
+    private static string GetNameOfOperator(BaseBinaryExpressionNode binaryExpressionNode)
     {
         return binaryExpressionNode switch
         {
             AddExpression => "add",
             SubtractExpression => "subtract",
+            BaseComparisonExpressionNode => "compare",
             _ => throw ErrorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };
     }
@@ -175,7 +175,7 @@ public class TypeChecker
         return null;
     }
 
-    private ScopeTracker<string, ExpressionType> _variableTypeStack;
+    private ScopeTracker<string, ExpressionType> _variableTypeStack = null!;
 
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
@@ -186,16 +186,6 @@ public class TypeChecker
         }
 
         _variableTypeStack.SetValue(identifierToken.Identifier, expressionType);
-    }
-
-    private void RecordExpressionType(IdentifierTerm identifierTerm, ExpressionType expressionType)
-    {
-        if (_variableTypeStack.TryGetValue(identifierTerm.Identifier) != null)
-        {
-            throw ErrorHelper.ShowErrorMessageAtNode($"Identifier '{identifierTerm.Identifier}' already declared", identifierTerm);
-        }
-
-        _variableTypeStack.SetValue(identifierTerm.Identifier, expressionType);
     }
 
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
