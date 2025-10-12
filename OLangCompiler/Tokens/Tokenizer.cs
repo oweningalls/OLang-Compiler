@@ -2,22 +2,59 @@
 
 public class Tokenizer
 {
-    public List<IToken> Tokenize(string input)
+    private ErrorHelper _errorHelper;
+    public List<BaseToken> Tokenize(string input, ErrorHelper errorHelper)
     {
+        _errorHelper = errorHelper;
         _input = input;
         _currentIndex = 0;
-        var tokens = new List<IToken>();
+        _characterNumber = 0;
+        _lineNumber = 1;
+        var tokens = new List<BaseToken>();
+        var startChar = _characterNumber;
+        var absoluteCharacterNumber = _absoluteCharacterNumber;
+        
+        SkipWhitespace();
         var token = GetNextToken();
+        SetLineAndCharNumbers(token, startChar, absoluteCharacterNumber);
+        
         while (token != null)
         {
+            SkipWhitespace();
             tokens.Add(token);
+            startChar = _characterNumber;
+            absoluteCharacterNumber = _absoluteCharacterNumber;
             token = GetNextToken();
+            SetLineAndCharNumbers(token, startChar, absoluteCharacterNumber);
         }
 
         return tokens;
     }
 
-    private IToken? GetNextToken()
+    private void SkipWhitespace()
+    {
+        while (Peek() is { } c && char.IsWhiteSpace(c))
+        {
+            _ = Consume();
+        }
+    }
+
+    private void SetLineAndCharNumbers(BaseToken? token, int startCharNumber, int absoluteStartCharNumber)
+    {
+        if (token == null)
+        {
+            return;
+        }
+        
+        token.RelativeStartCharNumber = startCharNumber;
+        token.LineNumber = _lineNumber;
+        token.AbsoluteStartCharNumber = absoluteStartCharNumber;
+
+        token.RelativeEndCharNumber = _characterNumber - 1;
+        token.AbsoluteEndCharNumber = _absoluteCharacterNumber - 1;
+    }
+
+    private BaseToken? GetNextToken()
     {
         if (Peek() == null)
         {
@@ -58,10 +95,10 @@ public class Tokenizer
 
             if (Peek() is null)
             {
-                throw ErrorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
+                throw _errorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
             }
 
-            throw ErrorHelper.UnexpectedChar(Peek()!.Value);
+            throw _errorHelper.UnexpectedChar(Peek()!.Value);
         }
 
         if (TryParseOperator() is { } op)
@@ -69,16 +106,10 @@ public class Tokenizer
             return op;
         }
 
-        if (char.IsWhiteSpace(Peek()!.Value))
-        {
-            _ = Consume();
-            return GetNextToken();
-        }
-
         throw new Exception($"Unexpected character: `{Peek()}`");
     }
 
-    private IToken? TryParseEqualsToken()
+    private BaseToken? TryParseEqualsToken()
     {
         if (!EqualsOperatorMap.ContainsKey(Peek()!.Value)) return null;
         var funcs = EqualsOperatorMap[Consume()];
@@ -93,7 +124,7 @@ public class Tokenizer
 
     // operators that could be x, or could be x= (e.g. ! and !=)
     // first function makes x token, second makes the x= token
-    private static readonly Dictionary<char, (Func<IToken>, Func<IToken>)> EqualsOperatorMap = new()
+    private static readonly Dictionary<char, (Func<BaseToken>, Func<BaseToken>)> EqualsOperatorMap = new()
     {
         { '=', (() => new EqualsToken(), () => new DoubleEqualsToken()) },
         { '+', (() => new PlusToken(), () => new PlusEqualsToken()) },
@@ -104,7 +135,7 @@ public class Tokenizer
     };
 
 
-    private IToken TokenizeLetter()
+    private BaseToken TokenizeLetter()
     {
         var buffer = "";
         while (Peek() is { } c && (char.IsLetterOrDigit(c) || c == '_'))
@@ -120,7 +151,7 @@ public class Tokenizer
         return new IdentifierToken(buffer);
     }
 
-    private static readonly Dictionary<string, Func<IToken>> KeywordMap = new()
+    private static readonly Dictionary<string, Func<BaseToken>> KeywordMap = new()
     {
         { "exit", () => new ExitToken() },
         { "let", () => new LetToken() },
@@ -134,7 +165,7 @@ public class Tokenizer
         { "in", () => new InToken() }
     };
 
-    private IToken? TryParseOperator()
+    private BaseToken? TryParseOperator()
     {
         if (OperatorMap.ContainsKey(Peek()!.Value))
         {
@@ -144,7 +175,7 @@ public class Tokenizer
         return null;
     }
 
-    private static readonly Dictionary<char, Func<IToken>> OperatorMap = new()
+    private static readonly Dictionary<char, Func<BaseToken>> OperatorMap = new()
     {
         { '=', () => new EqualsToken() },
         { ';', () => new SemicolonToken() },
@@ -157,6 +188,10 @@ public class Tokenizer
 
     private string? _input;
     private int _currentIndex;
+
+    private int _lineNumber;
+    private int _characterNumber;
+    private int _absoluteCharacterNumber;
 
     private char? Peek(int offset = 0)
     {
@@ -173,6 +208,17 @@ public class Tokenizer
         if (ret == null)
         {
             throw new Exception("Unexpected end of input");
+        }
+
+        _absoluteCharacterNumber++;
+        if (ret == '\n')
+        {
+            _characterNumber = 0;
+            _lineNumber++;
+        }
+        else
+        {
+            _characterNumber++;
         }
 
         return (char)ret;

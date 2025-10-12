@@ -28,17 +28,18 @@ public static class OLangCompiler
 
     public static string GenerateAssembly(string program)
     {
+        var errorHelper = new ErrorHelper(program);
         var tokenizer = new Tokenizer();
-        var tokens = tokenizer.Tokenize(program);
+        var tokens = tokenizer.Tokenize(program, errorHelper);
 
         var parser = new Parser.Parser();
-        var programNode = parser.ParseProgram(tokens);
+        var programNode = parser.ParseProgram(tokens, errorHelper);
 
         var typeChecker = new TypeChecker();
-        typeChecker.CheckTypes(programNode);
+        typeChecker.CheckTypes(programNode, errorHelper);
 
         var generator = new AssemblyGenerator();
-        var assembly = generator.GenerateProgram(programNode);
+        var assembly = generator.GenerateProgram(programNode, errorHelper);
 
         return assembly;
     }

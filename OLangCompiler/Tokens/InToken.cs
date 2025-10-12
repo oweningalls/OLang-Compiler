@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class InToken : IToken;
+public class InToken : BaseToken;

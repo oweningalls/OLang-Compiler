@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class NotEqualToken : IBinaryOperatorToken
+public class NotEqualToken : BaseBinaryOperatorToken
 {
-    public int Precedence => 2;
+    public override int Precedence => 2;
 }

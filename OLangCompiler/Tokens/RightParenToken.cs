@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class RightParenToken : IToken;
+public class RightParenToken : BaseToken;

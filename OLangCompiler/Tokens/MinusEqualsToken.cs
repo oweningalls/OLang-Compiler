@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class MinusEqualsToken : IAssignmentOperatorToken;
+public class MinusEqualsToken : BaseAssignmentOperatorToken;

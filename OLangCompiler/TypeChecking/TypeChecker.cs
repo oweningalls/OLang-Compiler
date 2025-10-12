@@ -7,8 +7,10 @@ namespace OLangCompiler.TypeChecking;
 
 public class TypeChecker
 {
-    public void CheckTypes(ProgramNode program)
+    private ErrorHelper _errorHelper;
+    public void CheckTypes(ProgramNode program, ErrorHelper errorHelper)
     {
+        _errorHelper = errorHelper;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
         foreach (var statement in program.Statements)
         {
@@ -24,7 +26,7 @@ public class TypeChecker
                 var type = GetTypeFromExpression(declarationStatement.Expression);
                 if (declarationStatement.ExpressionType != null && type != declarationStatement.ExpressionType)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}", declarationStatement.Expression);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}", declarationStatement.Expression);
                 }
 
                 RecordExpressionType(declarationStatement.Identifier, type);
@@ -33,7 +35,7 @@ public class TypeChecker
                 var exitType = GetTypeFromExpression(exitStatement.ExpressionNode);
                 if (exitType != ExpressionType.Int)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.ExpressionNode);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.ExpressionNode);
                 }
 
                 break;
@@ -42,7 +44,7 @@ public class TypeChecker
                 var variableType = GetVariableType(assignmentStatement.Identifier);
                 if (variableType != expressionType)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot assign variable {assignmentStatement.Identifier.Identifier} of type {variableType} to expression of type {expressionType}", assignmentStatement.Expression);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Cannot assign variable {assignmentStatement.Identifier.Identifier} of type {variableType} to expression of type {expressionType}", assignmentStatement.Expression);
                 }
 
                 break;
@@ -53,7 +55,7 @@ public class TypeChecker
                 var conditionType = GetTypeFromExpression(ifStatement.Condition);
                 if (conditionType != ExpressionType.Bool)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", ifStatement.Condition);
+                    throw _errorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", ifStatement.Condition);
                 }
 
                 CheckScopeTypes(ifStatement.Scope);
@@ -62,7 +64,7 @@ public class TypeChecker
                 var whileConditionType = GetTypeFromExpression(whileStatement.Condition);
                 if (whileConditionType != ExpressionType.Bool)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", whileStatement.Condition);
+                    throw _errorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", whileStatement.Condition);
                 }
 
                 CheckScopeTypes(whileStatement.Scope);
@@ -72,12 +74,12 @@ public class TypeChecker
                 var startType = GetTypeFromExpression(forStatement.Start);
                 if (startType != ExpressionType.Int)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.Start);
+                    throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.Start);
                 }
                 var endType = GetTypeFromExpression(forStatement.End);
                 if (endType != ExpressionType.Int)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.End);
+                    throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.End);
                 }
                 
                 RecordExpressionType(forStatement.Identifier, ExpressionType.Int);
@@ -85,7 +87,7 @@ public class TypeChecker
                 _variableTypeStack.EndScope();
                 break;
             default:
-                throw ErrorHelper.UnknownVariant("statement", statementNode.GetType());
+                throw _errorHelper.UnknownVariant("statement", statementNode.GetType());
         }
     }
 
@@ -110,7 +112,7 @@ public class TypeChecker
                 var notTermType = GetTypeFromExpression(notExpression.Expression);
                 if (notTermType != ExpressionType.Bool)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot negate a non-boolean value of type {notTermType}", notExpression.Expression);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Cannot negate a non-boolean value of type {notTermType}", notExpression.Expression);
                 }
 
                 return ExpressionType.Bool;
@@ -123,7 +125,7 @@ public class TypeChecker
                 {
                     if (lhsType != rhsType)
                     {
-                        throw ErrorHelper.ShowErrorMessageAtNode($"Cannot compare expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
+                        throw _errorHelper.ShowErrorMessageAtNode($"Cannot compare expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                     }
 
                     return ExpressionType.Bool;
@@ -132,24 +134,24 @@ public class TypeChecker
                 var type = GetTypeOfBinaryExpression(lhsType, rhsType);
                 if (type == null)
                 {
-                    throw ErrorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                 }
 
                 return type.Value;
             }
             default:
-                throw ErrorHelper.UnknownVariant("binary expression", expression.GetType());
+                throw _errorHelper.UnknownVariant("binary expression", expression.GetType());
         }
     }
 
-    private static string GetNameOfOperator(BaseBinaryExpressionNode binaryExpressionNode)
+    private string GetNameOfOperator(BaseBinaryExpressionNode binaryExpressionNode)
     {
         return binaryExpressionNode switch
         {
             AddExpression => "add",
             SubtractExpression => "subtract",
             BaseComparisonExpressionNode => "compare",
-            _ => throw ErrorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
+            _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };
     }
 
@@ -161,7 +163,7 @@ public class TypeChecker
             ParenTerm parenTerm => GetTypeFromExpression(parenTerm.Expression),
             BoolLiteralTerm => ExpressionType.Bool,
             IntLiteralTerm => ExpressionType.Int,
-            _ => throw ErrorHelper.UnknownVariant("term", term.GetType())
+            _ => throw _errorHelper.UnknownVariant("term", term.GetType())
         };
     }
 
@@ -182,7 +184,7 @@ public class TypeChecker
     {
         if (_variableTypeStack.TryGetValue(identifierToken.Identifier) != null)
         {
-            throw ErrorHelper.ShowErrorMessageAtToken($"Identifier '{identifierToken.Identifier}' already declared", identifierToken);
+            throw _errorHelper.ShowErrorMessageAtToken($"Identifier '{identifierToken.Identifier}' already declared", identifierToken);
         }
 
         _variableTypeStack.SetValue(identifierToken.Identifier, expressionType);
@@ -191,12 +193,12 @@ public class TypeChecker
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
     {
         return _variableTypeStack.TryGetValue(identifierToken.Identifier) ??
-               throw ErrorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
+               throw _errorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
     }
 
     private ExpressionType GetVariableType(IdentifierTerm identifierTerm)
     {
         return _variableTypeStack.TryGetValue(identifierTerm.Identifier) ??
-               throw ErrorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
+               throw _errorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
     }
 }

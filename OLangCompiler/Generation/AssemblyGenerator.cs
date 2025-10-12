@@ -7,8 +7,10 @@ namespace OLangCompiler.Generation;
 
 public class AssemblyGenerator
 {
-    public string GenerateProgram(ProgramNode program)
+    private ErrorHelper _errorHelper;
+    public string GenerateProgram(ProgramNode program, ErrorHelper errorHelper)
     {
+        _errorHelper = errorHelper;
         _output = new StringBuilder();
         _stackOffset = 0;
         _labelCount = 0;
@@ -63,7 +65,7 @@ public class AssemblyGenerator
                 break;
             default:
             {
-                throw ErrorHelper.UnknownVariant("statement", statement.GetType());
+                throw _errorHelper.UnknownVariant("statement", statement.GetType());
             }
         }
     }
@@ -253,14 +255,14 @@ public class AssemblyGenerator
                                        """);
                         break;
                     default:
-                        throw ErrorHelper.UnknownVariant("expression", expression.GetType());
+                        throw _errorHelper.UnknownVariant("expression", expression.GetType());
                 }
 
                 _output.Append($"    {GetPushStatement("rax")}\n");
 
                 break;
             default:
-                throw ErrorHelper.UnknownVariant("expression", expression.GetType());
+                throw _errorHelper.UnknownVariant("expression", expression.GetType());
         }
     }
 
@@ -290,7 +292,7 @@ public class AssemblyGenerator
                 GenerateExpression(parenTerm.Expression);
                 break;
             default:
-                throw ErrorHelper.UnknownVariant("term", term.GetType());
+                throw _errorHelper.UnknownVariant("term", term.GetType());
         }
     }
 

@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Tokens;
 
-public class LetToken : ITypeToken
+public class LetToken : BaseTypeToken
 {
-    public ExpressionType? ExpType => null;
+    public override ExpressionType? ExpType => null;
 }

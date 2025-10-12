@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class BoolLiteralToken(bool value) : IToken
+public class BoolLiteralToken(bool value) : BaseToken
 {
     public bool Value = value;
 }

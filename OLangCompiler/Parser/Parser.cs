@@ -5,8 +5,10 @@ namespace OLangCompiler.Parser;
 
 public class Parser
 {
-    public ProgramNode ParseProgram(List<IToken> tokens)
+    private ErrorHelper _errorHelper;
+    public ProgramNode ParseProgram(List<BaseToken> tokens, ErrorHelper errorHelper)
     {
+        _errorHelper = errorHelper;
         _tokens = tokens;
         _currentIndex = 0;
         var statements = new List<IStatementNode>();
@@ -29,7 +31,7 @@ public class Parser
             return new ExitStatement(expression);
         }
 
-        if (TryConsume<ITypeToken>() is { } type)
+        if (TryConsume<BaseTypeToken>() is { } type)
         {
             var identifier = ConsumeType<IdentifierToken>();
             ConsumeType<EqualsToken>();
@@ -41,7 +43,7 @@ public class Parser
         if (TryConsume<IdentifierToken>() is { } ident)
         {
             CheckEndOfInput();
-            var assignmentOperatorToken = ConsumeType<IAssignmentOperatorToken>();
+            var assignmentOperatorToken = ConsumeType<BaseAssignmentOperatorToken>();
 
             var expression = ParseExpression();
             ConsumeType<SemicolonToken>();
@@ -57,7 +59,7 @@ public class Parser
             {
                 PlusEqualsToken => new AddExpression(lhs, expression),
                 MinusEqualsToken => new SubtractExpression(lhs, expression),
-                _ => throw ErrorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
+                _ => throw _errorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
             };
 
             return new AssignmentStatement(ident, reformedExpression);
@@ -96,7 +98,7 @@ public class Parser
             return new ForStatement(identifier, start, end, scope);
         }
 
-        throw ErrorHelper.ExpectedValue("statement", Peek()!);
+        throw _errorHelper.ExpectedValue("statement", Peek()!);
     }
 
     private ScopeNode ParseScope()
@@ -124,7 +126,7 @@ public class Parser
 
         IExpressionNode expression = new TermExpression(ParseTerm());
 
-        while (Peek() is IBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
+        while (Peek() is BaseBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
         {
             Consume();
             // add one for left associative operators, don't for right associative
@@ -141,7 +143,7 @@ public class Parser
                 GreaterOrEqualToken => new GreaterOrEqualExpression(expression, rhs),
                 LessToken => new LessExpression(expression, rhs),
                 LessOrEqualToken => new LessOrEqualExpression(expression, rhs),
-                _ => throw ErrorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
+                _ => throw _errorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
             };
         }
 
@@ -178,18 +180,18 @@ public class Parser
         {
             CheckEndOfInput();
         
-            var intLiteral = TryConsume<IntLiteralToken>() ?? throw ErrorHelper.ExpectedValue("int literal", Peek()!);
+            var intLiteral = TryConsume<IntLiteralToken>() ?? throw _errorHelper.ExpectedValue("int literal", Peek()!);
         
             return new IntLiteralTerm(-intLiteral.Value);
         }
 
-        throw ErrorHelper.ExpectedValue("term", Peek()!);
+        throw _errorHelper.ExpectedValue("term", Peek()!);
     }
 
-    private List<IToken>? _tokens;
+    private List<BaseToken>? _tokens;
     private int _currentIndex;
 
-    private IToken? Peek(int offset = 0)
+    private BaseToken? Peek(int offset = 0)
     {
         var index = _currentIndex + offset;
         if (index >= _tokens!.Count) return null;
@@ -197,7 +199,7 @@ public class Parser
         return _tokens[index];
     }
 
-    private IToken Consume()
+    private BaseToken Consume()
     {
         var ret = Peek();
         _currentIndex++;
@@ -219,10 +221,10 @@ public class Parser
 
     private Exception EndOfInputException()
     {
-        throw ErrorHelper.UnexpectedEndOfInput(Peek(-1)!);
+        throw _errorHelper.UnexpectedEndOfInput(Peek(-1)!);
     }
 
-    private T? TryConsume<T>() where T : class, IToken
+    private T? TryConsume<T>() where T : BaseToken
     {
         if (Peek() is T)
         {
@@ -232,9 +234,9 @@ public class Parser
         return null;
     }
 
-    private T ConsumeType<T>() where T : class, IToken
+    private T ConsumeType<T>() where T : BaseToken
     {
-        var token = Peek() as T ?? throw ErrorHelper.ExpectedToken<T>(Peek()!);
+        var token = Peek() as T ?? throw _errorHelper.ExpectedToken<T>(Peek()!);
         Consume();
         return token;
     }

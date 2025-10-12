@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class SemicolonToken : IToken;
+public class SemicolonToken : BaseToken;

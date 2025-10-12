@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class ExitToken : IToken;
+public class ExitToken : BaseToken;

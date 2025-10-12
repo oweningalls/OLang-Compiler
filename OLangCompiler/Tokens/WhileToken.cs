@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class WhileToken : IToken;
+public class WhileToken : BaseToken;

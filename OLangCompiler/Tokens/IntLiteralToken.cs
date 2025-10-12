@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class IntLiteralToken(int value) : IToken
+public class IntLiteralToken(int value) : BaseToken
 {
     public int Value = value;
 }

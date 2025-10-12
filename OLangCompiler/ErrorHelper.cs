@@ -3,49 +3,66 @@ using OLangCompiler.Tokens;
 
 namespace OLangCompiler;
 
-public static class ErrorHelper
+public class ErrorHelper(string input)
 {
-    public static Exception UnknownVariant(string name, Type type)
+    private string _input = input;
+    private string[] _inputLines = input.Split('\n');
+    
+    public Exception UnknownVariant(string name, Type type)
     {
         return new Exception($"Unknown {name} type: {type}");
     }
 
-    public static Exception ExpectedToken<T>(IToken token) where T : IToken
+    public Exception ExpectedToken<T>(BaseToken token) where T : BaseToken
     {
         return ShowErrorMessageAtToken($"Expected {NameOfTokenType<T>()}.", token);
     }
     
-    public static Exception ExpectedValue(string expectedName, IToken token)
+    public Exception ExpectedValue(string expectedName, BaseToken token)
     {
         return ShowErrorMessageAtToken($"Expected {expectedName}", token);
     }
 
-    public static Exception UnexpectedEndOfInput(IToken token)
+    public Exception UnexpectedEndOfInput(BaseToken token)
     {
         return ShowErrorMessageAtToken($"Unexpected end of input after {token.GetType().Name}", token);
     }
 
-    public static Exception ShowErrorMessageAtToken(string message, IToken token)
+    public Exception ShowErrorMessageAtToken(string message, BaseToken token)
     {
-        return new Exception(message);
+        var quotedCode = GetInputLine(token);
+        var indicator = GetIndicator(token.RelativeStartCharNumber + 1, token.RelativeEndCharNumber + 1);
+        var errorMessage = $"{message} on line {token.LineNumber}, character {token.RelativeStartCharNumber}\n`{quotedCode}`\n{indicator}";
+        return new Exception(errorMessage);
+    }
+
+    private string GetIndicator(int pointerStart, int pointerEnd)
+    {
+        return $"{new string(' ', pointerStart)}{new string('^', pointerEnd - pointerStart + 1)}";
     }
     
-    public static Exception ShowErrorMessageAtNode(string message, INode node)
+    public Exception ShowErrorMessageAtNode(string message, INode node)
     {
         return new Exception(message);
     }
 
-    public static Exception UnexpectedChar(char c)
+    public Exception UnexpectedChar(char c)
     {
         return new Exception($"Unexpected character: `{c}`");
     }
 
-    public static Exception UnexpectedEndOfInputAfterChar(char c)
+    public Exception UnexpectedEndOfInputAfterChar(char c)
     {
         return new Exception($"Unexpected end of input after `{c}`");
     }
 
-    private static string NameOfTokenType<T>() where T : IToken
+    private string GetInputLine(BaseToken token)
+    {
+        return _inputLines[token.LineNumber - 1];
+        // return _input.Substring(token.AbsoluteStartCharNumber, token.AbsoluteEndCharNumber - token.AbsoluteStartCharNumber + 1);
+    }
+
+    private string NameOfTokenType<T>() where T : BaseToken
     {
         if (typeof(T) == typeof(BoolLiteralToken)) return "boolean literal";
         if (typeof(T) == typeof(BoolTypeToken)) return "'bool'";
@@ -62,7 +79,7 @@ public static class ErrorHelper
         if (typeof(T) == typeof(SemicolonToken)) return "';'";
         if (typeof(T) == typeof(LeftCurlyToken)) return "'{'";
         if (typeof(T) == typeof(RightCurlyToken)) return "'}'";
-        if (typeof(T) == typeof(IAssignmentOperatorToken)) return "set operator";
+        if (typeof(T) == typeof(BaseAssignmentOperatorToken)) return "set operator";
 
         throw UnknownVariant("token", typeof(T));
     }

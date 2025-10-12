@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Tokens;
 
-public class BoolTypeToken : ITypeToken
+public class BoolTypeToken : BaseTypeToken
 {
-    public ExpressionType? ExpType => ExpressionType.Bool;
+    public override ExpressionType? ExpType => ExpressionType.Bool;
 }

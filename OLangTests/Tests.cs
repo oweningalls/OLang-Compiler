@@ -437,6 +437,7 @@ public class Tests
     [TestCase("let a = 0; a = a >= 2;")] // greater returns bool
     public void TestInvalidPrograms(string program)
     {
+        // OLangCompiler.OLangCompiler.GenerateAssembly(program);
         Assert.That(() => OLangCompiler.OLangCompiler.GenerateAssembly(program), Throws.Exception);
     }
 

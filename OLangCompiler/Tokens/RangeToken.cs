@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class RangeToken : IToken;
+public class RangeToken : BaseToken;
