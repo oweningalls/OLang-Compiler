@@ -3,6 +3,7 @@
 public class Tokenizer
 {
     private ErrorHelper _errorHelper;
+
     public List<BaseToken> Tokenize(string input, ErrorHelper errorHelper)
     {
         _errorHelper = errorHelper;
@@ -13,14 +14,14 @@ public class Tokenizer
         var tokens = new List<BaseToken>();
         var startChar = _characterNumber;
         var absoluteCharacterNumber = _absoluteCharacterNumber;
-        
-        SkipWhitespace();
+
+        SkipWhitespaceAndComments();
         var token = GetNextToken();
         SetLineAndCharNumbers(token, startChar, absoluteCharacterNumber);
-        
+
         while (token != null)
         {
-            SkipWhitespace();
+            SkipWhitespaceAndComments();
             tokens.Add(token);
             startChar = _characterNumber;
             absoluteCharacterNumber = _absoluteCharacterNumber;
@@ -31,9 +32,76 @@ public class Tokenizer
         return tokens;
     }
 
+    private void SkipWhitespaceAndComments()
+    {
+        int inputPlace;
+        do
+        {
+            inputPlace = _currentIndex;
+            SkipComments();
+            SkipWhitespace();
+        } while (inputPlace != _currentIndex);
+    }
+
     private void SkipWhitespace()
     {
         while (Peek() is { } c && char.IsWhiteSpace(c))
+        {
+            _ = Consume();
+        }
+    }
+
+    private void SkipComments()
+    {
+        SkipBlockComment();
+        SkipLineComment();
+    }
+
+    private void SkipBlockComment()
+    {
+        if (!(Peek() == '/' && Peek(1) == '*'))
+        {
+            return;
+        }
+
+        Consume();
+        Consume();
+
+        while (true)
+        {
+            if (Peek() == null)
+            {
+                throw _errorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
+            }
+
+            if (Peek(1) == null)
+            {
+                _errorHelper.UnexpectedEndOfInputAfterChar(Peek()!.Value);
+            }
+
+            if (Peek() == '*' && Peek(1) == '/')
+            {
+                Consume();
+                Consume();
+
+                return;
+            }
+
+            Consume();
+        }
+    }
+
+    private void SkipLineComment()
+    {
+        if (!(Peek() == '/' && Peek(1) == '/'))
+        {
+            return;
+        }
+
+        Consume();
+        Consume();
+
+        while (Peek() != null && Peek() != '\n')
         {
             _ = Consume();
         }
@@ -45,7 +113,7 @@ public class Tokenizer
         {
             return;
         }
-        
+
         token.RelativeStartCharNumber = startCharNumber;
         token.LineNumber = _lineNumber;
         token.AbsoluteStartCharNumber = absoluteStartCharNumber;
@@ -60,11 +128,10 @@ public class Tokenizer
         {
             return null;
         }
-        
+
         if (char.IsLetter(Peek()!.Value))
         {
             return TokenizeLetter();
-            
         }
 
         if (char.IsDigit(Peek()!.Value))

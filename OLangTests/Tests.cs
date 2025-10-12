@@ -429,6 +429,34 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> CommentPrograms =
+    [
+        ("// exit 1;\nexit 3;", 3),
+        ("""
+         // comment
+         // another comment
+         exit 6;
+         // third comment
+         """, 6),
+        ("""
+         /*
+         exit 6;
+         */
+         """, 0),
+        ("/**//**/ exit 6;", 6),
+        ("""
+         // /*
+         exit 3;
+         // */
+         """, 3),
+    ];
+    
+    [TestCaseSource(nameof(CommentPrograms))]
+    public void CommentTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
