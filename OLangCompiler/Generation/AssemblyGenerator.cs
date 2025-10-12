@@ -206,6 +206,9 @@ public class AssemblyGenerator
                     case SubtractExpression:
                         _output!.Append("    sub rax, rdi\n");
                         break;
+                    case TimesExpression:
+                        _output!.Append("    mul rdi\n");
+                        break;
                     case DoubleEqualsExpression:
                         _output.Append("""
                                            cmp rax, rdi

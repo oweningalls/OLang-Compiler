@@ -409,7 +409,27 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+
+    public static readonly List<(string, int)> MultiplicationPrograms =
+    [
+        ("exit 2 * 3;", 6),
+        ("let a = 4; exit 2 * a;", 8),
+        ("exit 2 + 3 * 4;", 14),
+        ("exit 2 * 3 + 4;", 10),
+        ("exit 2 * 3 * 4;", 24),
+        ("exit (2 + 3) * 4;", 20),
+        ("int a = (2 + 3) * 4;", 0),
+        ("int a = 0 * 40; exit a;", 0),
+        ("int a = -2 * 40; exit a + 100;", 20),
+        ("exit -3 * -5;", 15),
+    ];
     
+    [TestCaseSource(nameof(MultiplicationPrograms))]
+    public void MultiplicationTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+        
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;
@@ -435,6 +455,7 @@ public class Tests
     [TestCase("for i in i..5 {}")] // i not yet declared
     [TestCase("let a = 0; a = a > 2;")] // greater returns bool
     [TestCase("let a = 0; a = a >= 2;")] // greater returns bool
+    [TestCase("let a = 4 * true;")] // greater returns bool
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);

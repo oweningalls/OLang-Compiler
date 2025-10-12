@@ -59,6 +59,7 @@ public class Parser
             {
                 PlusEqualsToken => new AddExpression(lhs, expression),
                 MinusEqualsToken => new SubtractExpression(lhs, expression),
+                TimesEqualsToken => new TimesExpression(lhs, expression),
                 _ => throw _errorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
             };
 
@@ -138,6 +139,7 @@ public class Parser
                 DoubleEqualsToken => new DoubleEqualsExpression(expression, rhs),
                 PlusToken => new AddExpression(expression, rhs),
                 MinusToken => new SubtractExpression(expression, rhs),
+                TimesToken => new TimesExpression(expression, rhs),
                 NotEqualToken => new NotEqualExpression(expression, rhs),
                 GreaterToken => new GreaterExpression(expression, rhs),
                 GreaterOrEqualToken => new GreaterOrEqualExpression(expression, rhs),
@@ -236,6 +238,7 @@ public class Parser
 
     private T ConsumeType<T>() where T : BaseToken
     {
+        CheckEndOfInput();
         var token = Peek() as T ?? throw _errorHelper.ExpectedToken<T>(Peek()!);
         Consume();
         return token;

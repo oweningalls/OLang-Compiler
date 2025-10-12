@@ -25,7 +25,7 @@ public class ErrorHelper(string input)
 
     public Exception UnexpectedEndOfInput(BaseToken token)
     {
-        return ShowErrorMessageAtToken($"Unexpected end of input after {token.GetType().Name}", token);
+        return ShowErrorMessageAtToken($"Unexpected end of input after `{GetContainedValue(token)}`", token);
     }
 
     public Exception ShowErrorMessageAtToken(string message, BaseToken token)
@@ -34,6 +34,11 @@ public class ErrorHelper(string input)
         var indicator = GetIndicator(token.RelativeStartCharNumber + 1, token.RelativeEndCharNumber + 1);
         var errorMessage = $"{message} on line {token.LineNumber}, character {token.RelativeStartCharNumber}\n`{quotedCode}`\n{indicator}";
         return new Exception(errorMessage);
+    }
+
+    private string GetContainedValue(BaseToken token)
+    {
+        return _input.Substring(token.AbsoluteStartCharNumber, token.AbsoluteEndCharNumber - token.AbsoluteStartCharNumber + 1);
     }
 
     private string GetIndicator(int pointerStart, int pointerEnd)
