@@ -459,7 +459,9 @@ public class Tests
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);
-        Assert.That(() => OLangCompiler.OLangCompiler.GenerateAssembly(program), Throws.Exception);
+        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program));
+        
+        Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
     }
 
     [Test]

@@ -150,6 +150,7 @@ public class TypeChecker
         {
             AddExpression => "add",
             SubtractExpression => "subtract",
+            TimesExpression => "multiply",
             BaseComparisonExpressionNode => "compare",
             _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };
