@@ -12,6 +12,7 @@ public class TypeChecker
     {
         _errorHelper = errorHelper;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
+        
         foreach (var statement in program.Statements)
         {
             CheckStatementType(statement);
@@ -86,9 +87,24 @@ public class TypeChecker
                 CheckScopeTypes(forStatement.Scope);
                 _variableTypeStack.EndScope();
                 break;
+            case FunctionDeclarationStatement functionDeclaration:
+                CheckFunctionDeclarationTypes(functionDeclaration);
+                break;
+            case InvocationStatement invocationStatement:
+                break;
             default:
                 throw _errorHelper.UnknownVariant("statement", statementNode.GetType());
         }
+    }
+
+    private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)
+    {
+        var originalTypeStack = _variableTypeStack;
+        _variableTypeStack = new ScopeTracker<string, ExpressionType>();
+
+        CheckScopeTypes(functionDeclaration.Scope);
+
+        _variableTypeStack = originalTypeStack;
     }
 
     private void CheckScopeTypes(ScopeNode scopeNode)
@@ -183,7 +199,7 @@ public class TypeChecker
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
     {
-        if (_variableTypeStack.TryGetValue(identifierToken.Identifier) != null)
+        if (_variableTypeStack.ContainsKey(identifierToken.Identifier))
         {
             throw _errorHelper.ShowErrorMessageAtToken($"Identifier '{identifierToken.Identifier}' already declared", identifierToken);
         }
@@ -193,13 +209,22 @@ public class TypeChecker
 
     private ExpressionType GetVariableType(IdentifierToken identifierToken)
     {
-        return _variableTypeStack.TryGetValue(identifierToken.Identifier) ??
-               throw _errorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
+        if (!_variableTypeStack.ContainsKey(identifierToken.Identifier))
+        {
+            throw _errorHelper.ShowErrorMessageAtToken($"Unknown identifier '{identifierToken.Identifier}'", identifierToken);
+        }
+
+        return _variableTypeStack.GetValue(identifierToken.Identifier);
+
     }
 
     private ExpressionType GetVariableType(IdentifierTerm identifierTerm)
     {
-        return _variableTypeStack.TryGetValue(identifierTerm.Identifier) ??
-               throw _errorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
+        if (!_variableTypeStack.ContainsKey(identifierTerm.Identifier))
+        {
+            throw _errorHelper.ShowErrorMessageAtNode($"Unknown identifier '{identifierTerm.Identifier}'", identifierTerm);
+        }
+
+        return _variableTypeStack.GetValue(identifierTerm.Identifier);
     }
 }

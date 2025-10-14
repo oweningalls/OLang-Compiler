@@ -230,7 +230,8 @@ public class Tokenizer
         { "if", () => new IfToken() },
         { "while", () => new WhileToken() },
         { "for", () => new ForToken() },
-        { "in", () => new InToken() }
+        { "in", () => new InToken() },
+        { "void", () => new VoidToken() },
     };
 
     private BaseToken? TryParseOperator()

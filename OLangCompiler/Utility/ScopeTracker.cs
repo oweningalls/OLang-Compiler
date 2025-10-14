@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Utility;
 
-public class ScopeTracker<TKey, TValue> where TKey : notnull where TValue : struct
+public class ScopeTracker<TKey, TValue> where TKey : notnull
 {
     private List<Dictionary<TKey, TValue>> _list = [new()];
 
@@ -16,7 +16,7 @@ public class ScopeTracker<TKey, TValue> where TKey : notnull where TValue : stru
         _list.Add(new());
     }
 
-    public TValue? TryGetValue(TKey identifier)
+    public TValue GetValue(TKey identifier)
     {
         for (var i = _list.Count - 1; i >= 0; i--)
         {
@@ -27,7 +27,12 @@ public class ScopeTracker<TKey, TValue> where TKey : notnull where TValue : stru
             }
         }
 
-        return null;
+        throw new Exception($"Unknown identifier: {identifier}");
+    }
+
+    public bool ContainsKey(TKey identifier)
+    {
+        return _list.Any(x => x.ContainsKey(identifier));
     }
 
     public void SetValue(TKey key, TValue value)

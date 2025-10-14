@@ -457,6 +457,66 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> FunctionPrograms =
+    [
+        ("""
+         void function() {
+         }
+         
+         exit 6;
+         """, 6),
+        // TODO: implement non-void functions
+        // ("""
+        //  int function() {
+        //      return 6;
+        //  }
+        //  """, 6),
+        // ("""
+        //  int function() {
+        //      return 6;
+        //  }
+        //  
+        //  exit function();
+        //  """, 6),
+        ("""
+         void function() {
+             exit 31;
+         }
+         
+         function();
+         """, 31),
+        ("""
+         let a = 1;
+         void function() {
+             bool a = false;
+             if (a) {
+                 exit 13;
+             }
+             exit 81;
+         }
+         
+         function();
+         """, 81),
+        ("""
+         let a = 1;
+         {
+             void function() { exit 81; }
+         }
+         
+         {
+             void function() { exit 9; }
+             function();
+         }
+         
+         """, 9)
+    ];
+    
+    [TestCaseSource(nameof(FunctionPrograms))]
+    public void FunctionTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
@@ -482,11 +542,30 @@ public class Tests
     [TestCase("for i in 0..5 {} exit i;")] // i is in for loop scope
     [TestCase("for i in i..5 {}")] // i not yet declared
     [TestCase("let a = 0; a = a > 2;")] // greater returns bool
-    [TestCase("let a = 0; a = a >= 2;")] // greater returns bool
-    [TestCase("let a = 4 * true;")] // greater returns bool
+    [TestCase("let a = 0; a = a >= 2;")] // setting int to bool
+    [TestCase("let a = 4 * true;")] // setting int to bool
+    // TODO: implement non-void functions
+    // [TestCase("void function() { return 1;}")] // void cannot have return value
+    // [TestCase("int function() { return; }")] // void cannot have return value
+    // [TestCase("""
+    //           int f() {
+    //               if (true) {
+    //                   return 3;
+    //               }
+    //           }
+    //           """)] // not all code paths return value
+    [TestCase("""
+                     let variable = 1;
+                     void a() {
+                         variable += 1;
+                         if variable > 8 {
+                             exit variable;
+                         }
+                     }
+                     """)]
     public void TestInvalidPrograms(string program)
     {
-        // OLangCompiler.OLangCompiler.GenerateAssembly(program);
+        OLangCompiler.OLangCompiler.GenerateAssembly(program);
         var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program));
         
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);

@@ -6,6 +6,7 @@ namespace OLangCompiler.Parser;
 public class Parser
 {
     private ErrorHelper _errorHelper;
+
     public ProgramNode ParseProgram(List<BaseToken> tokens, ErrorHelper errorHelper)
     {
         _errorHelper = errorHelper;
@@ -22,8 +23,6 @@ public class Parser
 
     private IStatementNode ParseStatement()
     {
-        CheckEndOfInput();
-
         if (TryConsume<ExitToken>() != null)
         {
             var expression = ParseExpression();
@@ -31,17 +30,21 @@ public class Parser
             return new ExitStatement(expression);
         }
 
-        if (TryConsume<BaseTypeToken>() is { } type)
+        if (TryParseDeclaration() is { } declaration)
         {
-            var identifier = ConsumeType<IdentifierToken>();
-            ConsumeType<EqualsToken>();
-            var expression = ParseExpression();
-            ConsumeType<SemicolonToken>();
-            return new DeclarationStatement(identifier, expression, type.ExpType);
+            return declaration;
         }
 
         if (TryConsume<IdentifierToken>() is { } ident)
         {
+            if (TryConsume<LeftParenToken>() != null)
+            {
+                ConsumeType<RightParenToken>();
+                ConsumeType<SemicolonToken>();
+                
+                return new InvocationStatement(ident);
+            }
+            
             CheckEndOfInput();
             var assignmentOperatorToken = ConsumeType<BaseAssignmentOperatorToken>();
 
@@ -95,11 +98,70 @@ public class Parser
             _ = ConsumeType<RangeToken>();
             var end = ParseExpression();
             var scope = ParseScope();
-            
+
             return new ForStatement(identifier, start, end, scope);
         }
 
         throw _errorHelper.ExpectedValue("statement", Peek()!);
+    }
+
+    private IStatementNode? TryParseDeclaration()
+    {
+        if (Peek() is not (BaseTypeToken or LetToken or VoidToken)) return null;
+        
+        var token = Consume();
+        if (!IsVariableType(token) && !IsFunctionType(token))
+        {
+            throw _errorHelper.ShowErrorMessageAtToken("Expected a variable or function type", token);
+        }
+
+        var identifier = ConsumeType<IdentifierToken>();
+        switch (token)
+        {
+            case LetToken:
+                ConsumeType<EqualsToken>();
+                var expression = ParseExpression();
+                ConsumeType<SemicolonToken>();
+                return new DeclarationStatement(identifier, expression);
+            case VoidToken:
+                ConsumeType<LeftParenToken>();
+                ConsumeType<RightParenToken>();
+                var scope = ParseScope();
+
+                return new FunctionDeclarationStatement(null, identifier, scope);
+            case BaseTypeToken typeToken:
+                if (TryConsume<EqualsToken>() != null)
+                {
+                    expression = ParseExpression();
+                    ConsumeType<SemicolonToken>();
+                    return new DeclarationStatement(identifier, expression, (typeToken).ExpType);
+                }
+
+                // TODO: implement non-void functions
+                // if (TryConsume<LeftParenToken>() != null)
+                // {
+                //     ConsumeType<RightParenToken>();
+                //     scope = ParseScope();
+                //
+                //     return new FunctionStatement(null, identifier, scope);
+                // }
+
+                throw _errorHelper.ShowErrorMessageAtToken("Expected variable or function declaration", Consume());
+            default:
+                throw new Exception($"You shouldn't be able to get here. token type: {token.GetType()}");
+        }
+
+        return null;
+    }
+
+    private bool IsVariableType(BaseToken token)
+    {
+        return token is BaseTypeToken or LetToken;
+    }
+
+    private bool IsFunctionType(BaseToken token)
+    {
+        return token is BaseTypeToken or VoidToken;
     }
 
     private ScopeNode ParseScope()
@@ -181,9 +243,9 @@ public class Parser
         if (TryConsume<MinusToken>() != null)
         {
             CheckEndOfInput();
-        
+
             var intLiteral = TryConsume<IntLiteralToken>() ?? throw _errorHelper.ExpectedValue("int literal", Peek()!);
-        
+
             return new IntLiteralTerm(-intLiteral.Value);
         }
 
@@ -203,12 +265,9 @@ public class Parser
 
     private BaseToken Consume()
     {
+        CheckEndOfInput();
         var ret = Peek();
         _currentIndex++;
-        if (ret == null)
-        {
-            throw EndOfInputException();
-        }
 
         return ret;
     }
@@ -228,6 +287,7 @@ public class Parser
 
     private T? TryConsume<T>() where T : BaseToken
     {
+        CheckEndOfInput();
         if (Peek() is T)
         {
             return Consume() as T;
@@ -238,9 +298,7 @@ public class Parser
 
     private T ConsumeType<T>() where T : BaseToken
     {
-        CheckEndOfInput();
-        var token = Peek() as T ?? throw _errorHelper.ExpectedToken<T>(Peek()!);
-        Consume();
+        var token = TryConsume<T>() ?? throw _errorHelper.ExpectedToken<T>(Peek()!);
         return token;
     }
 }
