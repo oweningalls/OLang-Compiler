@@ -466,19 +466,6 @@ public class Tests
          
          exit 6;
          """, 6),
-        // TODO: implement non-void functions
-        // ("""
-        //  int function() {
-        //      return 6;
-        //  }
-        //  """, 6),
-        // ("""
-        //  int function() {
-        //      return 6;
-        //  }
-        //  
-        //  exit function();
-        //  """, 6),
         ("""
          void function() {
              exit 31;
@@ -509,7 +496,54 @@ public class Tests
              function();
          }
          
-         """, 9)
+         """, 9),
+        ("""
+         let a = 5;
+         let b = 3;
+         void func() { }
+         
+         func();
+         func();
+         exit a;
+         """, 5),
+        ("""
+         let a = 5;
+         let b = 3;
+         void func() { }
+         
+         exit b;
+         """, 3),
+        ("int func() { return 1; } func();", 0),
+        ("""
+         int function() {
+             return 6;
+         }
+         
+         function();
+         """, 0),
+        ("""
+         int function() {
+             return 6;
+         }
+         
+         exit function();
+         """, 6),
+        ("""
+         int innerFunction() {
+             return 4;
+         }
+         
+         int outerFunction() {
+             return innerFunction() + 3;
+         }
+         
+         exit outerFunction();
+         """, 7),
+        ("""
+         bool trueFunc() { return true; }
+         if !trueFunc() { exit 1; }
+         exit 3;
+         """, 3)
     ];
     
     [TestCaseSource(nameof(FunctionPrograms))]
@@ -565,7 +599,7 @@ public class Tests
                      """)]
     public void TestInvalidPrograms(string program)
     {
-        OLangCompiler.OLangCompiler.GenerateAssembly(program);
+        // OLangCompiler.OLangCompiler.GenerateAssembly(program);
         var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program));
         
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);

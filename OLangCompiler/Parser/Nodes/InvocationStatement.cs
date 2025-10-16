@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.Nodes;
 
-public class InvocationStatement(IdentifierToken identifier) : IStatementNode
+public class InvocationStatement(InvocationNode invocationNode) : IStatementNode
 {
-    public IdentifierToken Identifier = identifier;
+    public InvocationNode InvocationNode = invocationNode;
 }

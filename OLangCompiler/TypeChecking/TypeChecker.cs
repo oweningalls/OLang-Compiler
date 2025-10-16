@@ -8,11 +8,13 @@ namespace OLangCompiler.TypeChecking;
 public class TypeChecker
 {
     private ErrorHelper _errorHelper;
+
     public void CheckTypes(ProgramNode program, ErrorHelper errorHelper)
     {
         _errorHelper = errorHelper;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
-        
+        _functionTypeStack = new ScopeTracker<string, ExpressionType?>();
+
         foreach (var statement in program.Statements)
         {
             CheckStatementType(statement);
@@ -71,21 +73,22 @@ public class TypeChecker
                 CheckScopeTypes(whileStatement.Scope);
                 break;
             case ForStatement forStatement:
-                _variableTypeStack.BeginScope();
+                BeginScope();
                 var startType = GetTypeFromExpression(forStatement.Start);
                 if (startType != ExpressionType.Int)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.Start);
                 }
+
                 var endType = GetTypeFromExpression(forStatement.End);
                 if (endType != ExpressionType.Int)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.End);
                 }
-                
+
                 RecordExpressionType(forStatement.Identifier, ExpressionType.Int);
                 CheckScopeTypes(forStatement.Scope);
-                _variableTypeStack.EndScope();
+                EndScope();
                 break;
             case FunctionDeclarationStatement functionDeclaration:
                 CheckFunctionDeclarationTypes(functionDeclaration);
@@ -99,23 +102,45 @@ public class TypeChecker
 
     private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)
     {
+        _functionTypeStack.SetValue(functionDeclaration.Identifier.Identifier, functionDeclaration.Type);
+        
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
 
-        CheckScopeTypes(functionDeclaration.Scope);
+        CheckFunctionScopeTypes(functionDeclaration.FunctionScope);
+        CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
 
         _variableTypeStack = originalTypeStack;
     }
 
+    private void CheckFunctionScopeTypes(FunctionScopeNode scopeNode)
+    {
+        BeginScope();
+        foreach (var statement in scopeNode.Statements)
+        {
+            if (statement is NormalFunctionStatement normalStatement)
+            {
+                CheckStatementType(normalStatement.Statement);
+            }
+        }
+
+        EndScope();
+    }
+
+    private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclarationStatement declarationStatement)
+    {
+        
+    }
+
     private void CheckScopeTypes(ScopeNode scopeNode)
     {
-        _variableTypeStack.BeginScope();
+        BeginScope();
         foreach (var statement in scopeNode.Statements)
         {
             CheckStatementType(statement);
         }
 
-        _variableTypeStack.EndScope();
+        EndScope();
     }
 
     private ExpressionType GetTypeFromExpression(IExpressionNode expression)
@@ -180,8 +205,20 @@ public class TypeChecker
             ParenTerm parenTerm => GetTypeFromExpression(parenTerm.Expression),
             BoolLiteralTerm => ExpressionType.Bool,
             IntLiteralTerm => ExpressionType.Int,
+            InvocationTerm invocation => GetTypeFromInvocation(invocation.InvocationNode) ??
+                                         throw _errorHelper.ShowErrorMessageAtNode("Cannot get value from void function", invocation.InvocationNode),
             _ => throw _errorHelper.UnknownVariant("term", term.GetType())
         };
+    }
+
+    private ExpressionType? GetTypeFromInvocation(InvocationNode invocation)
+    {
+        if (!_functionTypeStack.ContainsKey(invocation.Identifier.Identifier))
+        {
+            throw _errorHelper.ShowErrorMessageAtNode($"Unknown function: {invocation.Identifier}", invocation);
+        }
+
+        return _functionTypeStack.GetValue(invocation.Identifier.Identifier);
     }
 
     private ExpressionType? GetTypeOfBinaryExpression(ExpressionType type1, ExpressionType type2)
@@ -194,8 +231,20 @@ public class TypeChecker
         return null;
     }
 
-    private ScopeTracker<string, ExpressionType> _variableTypeStack = null!;
+    private void BeginScope()
+    {
+        _variableTypeStack.BeginScope();
+        _functionTypeStack.BeginScope();
+    }
+    
+    private void EndScope()
+    {
+        _variableTypeStack.EndScope();
+        _functionTypeStack.EndScope();
+    }
 
+    private ScopeTracker<string, ExpressionType> _variableTypeStack = null!;
+    private ScopeTracker<string, ExpressionType?> _functionTypeStack = null!;
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
     {
@@ -215,7 +264,6 @@ public class TypeChecker
         }
 
         return _variableTypeStack.GetValue(identifierToken.Identifier);
-
     }
 
     private ExpressionType GetVariableType(IdentifierTerm identifierTerm)

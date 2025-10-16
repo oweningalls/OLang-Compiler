@@ -35,16 +35,14 @@ public class Parser
             return declaration;
         }
 
+        if (TryParseInvocation() is { } invocation)
+        {
+            ConsumeType<SemicolonToken>();
+            return new InvocationStatement(invocation);
+        }
+
         if (TryConsume<IdentifierToken>() is { } ident)
         {
-            if (TryConsume<LeftParenToken>() != null)
-            {
-                ConsumeType<RightParenToken>();
-                ConsumeType<SemicolonToken>();
-                
-                return new InvocationStatement(ident);
-            }
-            
             CheckEndOfInput();
             var assignmentOperatorToken = ConsumeType<BaseAssignmentOperatorToken>();
 
@@ -105,6 +103,23 @@ public class Parser
         throw _errorHelper.ExpectedValue("statement", Peek()!);
     }
 
+    private IFunctionStatementNode ParseFunctionStatement()
+    {
+        if (TryConsume<ReturnToken>() != null)
+        {
+            if (TryConsume<SemicolonToken>() != null)
+            {
+                return new ReturnFunctionStatement();
+            }
+
+            var expression = ParseExpression();
+            TryConsume<SemicolonToken>();
+            return new ReturnValueFunctionStatement(expression);
+        }
+
+        return new NormalFunctionStatement(ParseStatement());
+    }
+
     private IStatementNode? TryParseDeclaration()
     {
         if (Peek() is not (BaseTypeToken or LetToken or VoidToken)) return null;
@@ -126,7 +141,7 @@ public class Parser
             case VoidToken:
                 ConsumeType<LeftParenToken>();
                 ConsumeType<RightParenToken>();
-                var scope = ParseScope();
+                var scope = ParseFunctionScope();
 
                 return new FunctionDeclarationStatement(null, identifier, scope);
             case BaseTypeToken typeToken:
@@ -137,14 +152,13 @@ public class Parser
                     return new DeclarationStatement(identifier, expression, (typeToken).ExpType);
                 }
 
-                // TODO: implement non-void functions
-                // if (TryConsume<LeftParenToken>() != null)
-                // {
-                //     ConsumeType<RightParenToken>();
-                //     scope = ParseScope();
-                //
-                //     return new FunctionStatement(null, identifier, scope);
-                // }
+                if (TryConsume<LeftParenToken>() != null)
+                {
+                    ConsumeType<RightParenToken>();
+                    var functionScope = ParseFunctionScope();
+                
+                    return new FunctionDeclarationStatement(typeToken.ExpType, identifier, functionScope);
+                }
 
                 throw _errorHelper.ShowErrorMessageAtToken("Expected variable or function declaration", Consume());
             default:
@@ -152,6 +166,20 @@ public class Parser
         }
 
         return null;
+    }
+
+    private InvocationNode? TryParseInvocation()
+    {
+        if (Peek() is not IdentifierToken || Peek(1) is not LeftParenToken)
+        {
+            return null;
+        }
+
+        var identifier = ConsumeType<IdentifierToken>();
+        ConsumeType<LeftParenToken>();
+        ConsumeType<RightParenToken>();
+
+        return new InvocationNode(identifier);
     }
 
     private bool IsVariableType(BaseToken token)
@@ -176,6 +204,20 @@ public class Parser
         ConsumeType<RightCurlyToken>();
 
         return new ScopeNode(statements);
+    }
+
+    private FunctionScopeNode ParseFunctionScope()
+    {
+        var statements = new List<IFunctionStatementNode>();
+        ConsumeType<LeftCurlyToken>();
+        while (Peek() != null && Peek() is not RightCurlyToken)
+        {
+            statements.Add(ParseFunctionStatement());
+        }
+
+        ConsumeType<RightCurlyToken>();
+
+        return new FunctionScopeNode(statements);
     }
 
     private IExpressionNode ParseExpression(int minPrecedence = 0)
@@ -216,8 +258,12 @@ public class Parser
 
     private ITermNode ParseTerm()
     {
-        CheckEndOfInput();
-
+        var invocation = TryParseInvocation();
+        if (invocation != null)
+        {
+            return new InvocationTerm(invocation);
+        }
+        
         if (TryConsume<IntLiteralToken>() is { } ilt)
         {
             return new IntLiteralTerm(ilt.Value);

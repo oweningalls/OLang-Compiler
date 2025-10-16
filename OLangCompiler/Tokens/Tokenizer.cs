@@ -232,6 +232,7 @@ public class Tokenizer
         { "for", () => new ForToken() },
         { "in", () => new InToken() },
         { "void", () => new VoidToken() },
+        { "return", () => new ReturnToken() },
     };
 
     private BaseToken? TryParseOperator()

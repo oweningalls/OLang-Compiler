@@ -37,6 +37,7 @@ public class AssemblyGenerator
                             mov rax, 60
                             syscall
 
+                        
                         """);
         foreach (var function in _functions)
         {
@@ -76,7 +77,7 @@ public class AssemblyGenerator
                 StoreFunctionDeclaration(functionDeclarationStatement);
                 break;
             case InvocationStatement invocationStatement:
-                GenerateInvocationStatement(invocationStatement);
+                GenerateInvocation(invocationStatement.InvocationNode, false);
                 break;
             default:
             {
@@ -179,24 +180,28 @@ public class AssemblyGenerator
     private void StoreFunctionDeclaration(FunctionDeclarationStatement functionDeclaration)
     {
         var label = GetLabel();
+        var returnLabel = $"{label}return";
         _functionTracker.SetValue(functionDeclaration.Identifier.Identifier, label);
         var functionOutput = new StringBuilder();
         var currentOutput = _output;
         _output = functionOutput;
         _functions.Add(functionOutput);
 
-        _output.Append($"    {label}:\n");
-
-        var (pushes, pops) = MakeMatchingPushAndPops("rbx", "rbp", "r12", "r13", "r14", "r15");
+        _output.Append($"{label}:\n");
 
         // save callee-saved registers
+        var registersToSave = new[] { "rbx", "rbp", "r12", "r13", "r14", "r15" };
+        var pushes = MakePushes(registersToSave);
         _output.Append($"{pushes}");
 
-        GenerateScope(functionDeclaration.Scope);
+        GenerateFunctionScope(functionDeclaration.FunctionScope, returnLabel);
 
         // restore callee-saved registers
-        _output.Append($"{pops}");
-        _output.Append("    ret");
+        _output.Append($"""
+                        {returnLabel}:
+                        {MakeReversePops(registersToSave)}
+                            ret
+                        """);
 
         _output = currentOutput;
     }
@@ -205,26 +210,31 @@ public class AssemblyGenerator
     // call pushes an 8-byte return address, so increment stack tracker based on that and then make sure the stack is aligned
     // only rbx, rbp, r12, r13, r14, and r15 are preserved
     // return values in rax and rdx (if needed)
-    private void GenerateInvocationStatement(InvocationStatement invocationStatement)
+    private void GenerateInvocation(InvocationNode invocationNode, bool hasReturnValue)
     {
-        var funcName = invocationStatement.Identifier.Identifier;
+        var funcName = invocationNode.Identifier.Identifier;
         if (!_functionTracker.ContainsKey(funcName))
         {
-            throw _errorHelper.ShowErrorMessageAtNode($"Unknown function name: {funcName}", invocationStatement);
+            throw _errorHelper.ShowErrorMessageAtNode($"Unknown function name: {funcName}", invocationNode);
         }
 
-        var (pushes, pops) = MakeMatchingPushAndPops("rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
+        // Not preserving rax since that's where the return value goes
+        var pushes = MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
+        var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
+        var returnPushes = "";
+        if (hasReturnValue)
+        {
+            returnPushes = $"\n    {GetPushStatement("rax")}\n";
+        }
         var label = _functionTracker.GetValue(funcName);
         _output.Append($"""
-                        {pushes}
-                            
-                            call {label}
-                            
+                        {pushes}    call {label}
                         {pops}
                         """);
+        _output.Append(returnPushes);
     }
 
-    private (string, string) MakeMatchingPushAndPops(params string[] registers)
+    private string MakePushes(params string[] registers)
     {
         var pushes = new StringBuilder();
         foreach (var reg in registers)
@@ -232,13 +242,17 @@ public class AssemblyGenerator
             pushes.Append($"    {GetPushStatement(reg)}\n");
         }
 
+        return pushes.ToString();
+    }
+
+    private string MakeReversePops(params string[] registers){
         var pops = new StringBuilder();
         foreach (var reg in registers.Reverse())
         {
             pops.Append($"    {GetPopStatement(reg)}\n");
         }
 
-        return (pushes.ToString(), pops.ToString());
+        return pops.ToString();
     }
 
     private void GenerateScope(ScopeNode scopeNode)
@@ -252,6 +266,55 @@ public class AssemblyGenerator
         var toPop = EndScope();
         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
         _stackOffset -= toPop.Count;
+    }
+    
+    private void GenerateFunctionScope(FunctionScopeNode functionScope, string returnLabel)
+    {
+        BeginScope();
+        foreach (var statement in functionScope.Statements)
+        {
+            GenerateFunctionStatement(statement, returnLabel);
+        }
+
+        var toPop = EndScope();
+        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+        _stackOffset -= toPop.Count;
+    }
+
+    private void GenerateFunctionStatement(IFunctionStatementNode functionStatementNode, string returnLabel)
+    {
+        switch (functionStatementNode)
+        {
+            case NormalFunctionStatement normalFunctionStatement:
+                GenerateStatement(normalFunctionStatement.Statement);
+                return;
+            case ReturnFunctionStatement returnFunctionStatement:
+                GenerateReturnFunctionStatement(returnFunctionStatement, returnLabel);
+                return;
+            case ReturnValueFunctionStatement returnValueFunctionStatement:
+                GenerateReturnValueFunctionStatement(returnValueFunctionStatement, returnLabel);
+                return;
+        }
+    }
+
+    private void GenerateReturnFunctionStatement(ReturnFunctionStatement returnFunctionStatement, string returnLabel)
+    {
+        _output!.Append($"""
+                         
+                             jmp {returnLabel}
+                         
+                         """);
+    }
+    
+    private void GenerateReturnValueFunctionStatement(ReturnValueFunctionStatement returnValue, string returnLabel)
+    {
+        GenerateExpression(returnValue.Expression);
+
+        _output!.Append($"""
+                             {GetPopStatement("rax")}
+                             jmp {returnLabel}
+                         
+                         """);
     }
 
     private void GenerateExpression(IExpressionNode expression)
@@ -376,6 +439,9 @@ public class AssemblyGenerator
                 break;
             case ParenTerm parenTerm:
                 GenerateExpression(parenTerm.Expression);
+                break;
+            case InvocationTerm invocationTerm:
+                GenerateInvocation(invocationTerm.InvocationNode, true);
                 break;
             default:
                 throw _errorHelper.UnknownVariant("term", term.GetType());
