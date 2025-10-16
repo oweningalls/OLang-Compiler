@@ -513,6 +513,24 @@ public class Tests
          
          exit b;
          """, 3),
+        ("""
+         void fun() {
+             return;
+             exit 35;
+         }
+         
+         exit 19;
+         """, 19)
+    ];
+    
+    [TestCaseSource(nameof(FunctionPrograms))]
+    public void FunctionTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+
+    public static readonly List<(string, int)> ReturnValueFunctionPrograms =
+    [
         ("int func() { return 1; } func();", 0),
         ("""
          int function() {
@@ -546,8 +564,8 @@ public class Tests
          """, 3)
     ];
     
-    [TestCaseSource(nameof(FunctionPrograms))]
-    public void FunctionTests((string, int) values)
+    [TestCaseSource(nameof(ReturnValueFunctionPrograms))]
+    public void ReturnValueFunctionTests((string, int) values)
     {
         TestProgramExitCode(values);
     }
