@@ -6,7 +6,7 @@ namespace OLangCompiler;
 public class ErrorHelper(string input)
 {
     private string _input = input;
-    private string[] _inputLines = input.Split('\n');
+    private string[] _inputLines = input.Split('\n').Select(x => x.TrimEnd()).ToArray();
     
     public Exception UnknownVariant(string name, Type type)
     {

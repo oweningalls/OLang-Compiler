@@ -95,6 +95,26 @@ public class TypeChecker
                 break;
             case InvocationStatement invocationStatement:
                 break;
+            case ReturnStatement returnStatement:
+                if (!_isInFunction)
+                {
+                    throw _errorHelper.ShowErrorMessageAtNode("Cannot return outside of a function", returnStatement);
+                }
+
+                break;
+            case ReturnValueStatement returnValueStatement:
+                if (!_isInFunction)
+                {
+                    throw _errorHelper.ShowErrorMessageAtNode("Cannot return outside of a function", returnValueStatement);
+                }
+
+                expressionType = GetTypeFromExpression(returnValueStatement.Expression);
+                if (expressionType != _currentFunctionType)
+                {
+                    throw _errorHelper.ShowErrorMessageAtNode($"Function of type {_currentFunctionType.ToString()} cannot return expression of type {expressionType.ToString()}", returnValueStatement.Expression);
+                }
+
+                break;
             default:
                 throw _errorHelper.UnknownVariant("statement", statementNode.GetType());
         }
@@ -103,33 +123,39 @@ public class TypeChecker
     private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)
     {
         _functionTypeStack.SetValue(functionDeclaration.Identifier.Identifier, functionDeclaration.Type);
-        
+
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
 
-        CheckFunctionScopeTypes(functionDeclaration.FunctionScope);
-        CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
+        var wasInFunction = _isInFunction;
+        _isInFunction = true;
+        var previousFunctionType = _currentFunctionType;
+        _currentFunctionType = functionDeclaration.Type;
 
-        _variableTypeStack = originalTypeStack;
-    }
-
-    private void CheckFunctionScopeTypes(FunctionScopeNode scopeNode)
-    {
-        BeginScope();
-        foreach (var statement in scopeNode.Statements)
+        CheckScopeTypes(functionDeclaration.Scope);
+        if (functionDeclaration.Type != null)
         {
-            if (statement is NormalFunctionStatement normalStatement)
-            {
-                CheckStatementType(normalStatement.Statement);
-            }
+            CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
         }
 
-        EndScope();
+        _variableTypeStack = originalTypeStack;
+        _currentFunctionType = previousFunctionType;
+
+        _isInFunction = wasInFunction;
     }
 
     private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclarationStatement declarationStatement)
     {
-        
+        // TODO: update after implementing else
+        foreach (var statement in declarationStatement.Scope.Statements)
+        {
+            if (statement is ReturnValueStatement)
+            {
+                return;
+            }
+        }
+
+        throw _errorHelper.ShowErrorMessageAtNode("Not all function paths return a value", declarationStatement);
     }
 
     private void CheckScopeTypes(ScopeNode scopeNode)
@@ -236,7 +262,7 @@ public class TypeChecker
         _variableTypeStack.BeginScope();
         _functionTypeStack.BeginScope();
     }
-    
+
     private void EndScope()
     {
         _variableTypeStack.EndScope();
@@ -245,6 +271,8 @@ public class TypeChecker
 
     private ScopeTracker<string, ExpressionType> _variableTypeStack = null!;
     private ScopeTracker<string, ExpressionType?> _functionTypeStack = null!;
+    private ExpressionType? _currentFunctionType = null;
+    private bool _isInFunction = false;
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
     {

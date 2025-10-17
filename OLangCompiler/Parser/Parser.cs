@@ -1,5 +1,6 @@
 ﻿using OLangCompiler.Parser.Nodes;
 using OLangCompiler.Tokens;
+using OLangCompiler.TypeChecking.Types;
 
 namespace OLangCompiler.Parser;
 
@@ -99,31 +100,26 @@ public class Parser
 
             return new ForStatement(identifier, start, end, scope);
         }
-
-        throw _errorHelper.ExpectedValue("statement", Peek()!);
-    }
-
-    private IFunctionStatementNode ParseFunctionStatement()
-    {
+        
         if (TryConsume<ReturnToken>() != null)
         {
             if (TryConsume<SemicolonToken>() != null)
             {
-                return new ReturnFunctionStatement();
+                return new ReturnStatement();
             }
 
             var expression = ParseExpression();
             TryConsume<SemicolonToken>();
-            return new ReturnValueFunctionStatement(expression);
+            return new ReturnValueStatement(expression);
         }
 
-        return new NormalFunctionStatement(ParseStatement());
+        throw _errorHelper.ExpectedValue("statement", Peek()!);
     }
 
     private IStatementNode? TryParseDeclaration()
     {
         if (Peek() is not (BaseTypeToken or LetToken or VoidToken)) return null;
-        
+
         var token = Consume();
         if (!IsVariableType(token) && !IsFunctionType(token))
         {
@@ -139,11 +135,7 @@ public class Parser
                 ConsumeType<SemicolonToken>();
                 return new DeclarationStatement(identifier, expression);
             case VoidToken:
-                ConsumeType<LeftParenToken>();
-                ConsumeType<RightParenToken>();
-                var scope = ParseFunctionScope();
-
-                return new FunctionDeclarationStatement(null, identifier, scope);
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(null, identifier);
             case BaseTypeToken typeToken:
                 if (TryConsume<EqualsToken>() != null)
                 {
@@ -152,20 +144,36 @@ public class Parser
                     return new DeclarationStatement(identifier, expression, (typeToken).ExpType);
                 }
 
-                if (TryConsume<LeftParenToken>() != null)
-                {
-                    ConsumeType<RightParenToken>();
-                    var functionScope = ParseFunctionScope();
-                
-                    return new FunctionDeclarationStatement(typeToken.ExpType, identifier, functionScope);
-                }
-
-                throw _errorHelper.ShowErrorMessageAtToken("Expected variable or function declaration", Consume());
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(typeToken.ExpType, identifier);
             default:
                 throw new Exception($"You shouldn't be able to get here. token type: {token.GetType()}");
         }
+    }
 
-        return null;
+    private FunctionDeclarationStatement ParseFunctionDeclarationAfterTypeAndIdentifier(ExpressionType? type, IdentifierToken identifier)
+    {
+        ConsumeType<LeftParenToken>();
+        var parameters = ParseParameterList();
+        ConsumeType<RightParenToken>();
+        var scope = ParseScope();
+
+        return new FunctionDeclarationStatement(type, identifier, parameters, scope);
+    }
+
+    private ParameterListNode ParseParameterList()
+    {
+        var parameters = new List<(ExpressionType, IdentifierToken)>();
+        while (TryConsume<BaseTypeToken>() is { } type)
+        {
+            var identifierToken = ConsumeType<IdentifierToken>();
+            parameters.Add((type.ExpType!.Value, identifierToken));
+            if (TryConsume<CommaToken>() is null)
+            {
+                break;
+            }
+        }
+
+        return new ParameterListNode(parameters);
     }
 
     private InvocationNode? TryParseInvocation()
@@ -204,20 +212,6 @@ public class Parser
         ConsumeType<RightCurlyToken>();
 
         return new ScopeNode(statements);
-    }
-
-    private FunctionScopeNode ParseFunctionScope()
-    {
-        var statements = new List<IFunctionStatementNode>();
-        ConsumeType<LeftCurlyToken>();
-        while (Peek() != null && Peek() is not RightCurlyToken)
-        {
-            statements.Add(ParseFunctionStatement());
-        }
-
-        ConsumeType<RightCurlyToken>();
-
-        return new FunctionScopeNode(statements);
     }
 
     private IExpressionNode ParseExpression(int minPrecedence = 0)
@@ -263,7 +257,7 @@ public class Parser
         {
             return new InvocationTerm(invocation);
         }
-        
+
         if (TryConsume<IntLiteralToken>() is { } ilt)
         {
             return new IntLiteralTerm(ilt.Value);

@@ -561,7 +561,17 @@ public class Tests
          bool trueFunc() { return true; }
          if !trueFunc() { exit 1; }
          exit 3;
-         """, 3)
+         """, 3),
+        ("""
+         bool func() {
+             if (true) { return false; }
+             return true;
+         }
+         
+         if func() { exit 10; }
+         
+         exit 4;
+         """, 4)
     ];
     
     [TestCaseSource(nameof(ReturnValueFunctionPrograms))]
@@ -596,16 +606,15 @@ public class Tests
     [TestCase("let a = 0; a = a > 2;")] // greater returns bool
     [TestCase("let a = 0; a = a >= 2;")] // setting int to bool
     [TestCase("let a = 4 * true;")] // setting int to bool
-    // TODO: implement non-void functions
-    // [TestCase("void function() { return 1;}")] // void cannot have return value
-    // [TestCase("int function() { return; }")] // void cannot have return value
-    // [TestCase("""
-    //           int f() {
-    //               if (true) {
-    //                   return 3;
-    //               }
-    //           }
-    //           """)] // not all code paths return value
+    [TestCase("void function() { return 1;}")] // void cannot have return value
+    [TestCase("int function() { return; }")] // void cannot have return value
+    [TestCase("""
+              int f() {
+                  if (true) {
+                      return 3;
+                  }
+              }
+              """)] // not all code paths return value
     [TestCase("""
                      let variable = 1;
                      void a() {
@@ -615,6 +624,9 @@ public class Tests
                          }
                      }
                      """)]
+    [TestCase("""
+              int a() { return true; }
+              """)]
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);

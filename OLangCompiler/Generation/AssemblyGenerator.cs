@@ -79,6 +79,12 @@ public class AssemblyGenerator
             case InvocationStatement invocationStatement:
                 GenerateInvocation(invocationStatement.InvocationNode, false);
                 break;
+            case ReturnValueStatement returnValueStatement:
+                GenerateReturnValueFunctionStatement(returnValueStatement);
+                break;
+            case ReturnStatement returnStatement:
+                GenerateReturnFunctionStatement(returnStatement);
+                break;
             default:
             {
                 throw _errorHelper.UnknownVariant("statement", statement.GetType());
@@ -181,6 +187,10 @@ public class AssemblyGenerator
     {
         var label = GetLabel();
         var returnLabel = $"{label}return";
+
+        var currentReturnLabel = _currentFunctionReturnLabel;
+        _currentFunctionReturnLabel = returnLabel;
+        
         _functionTracker.SetValue(functionDeclaration.Identifier.Identifier, label);
         var functionOutput = new StringBuilder();
         var currentOutput = _output;
@@ -194,7 +204,7 @@ public class AssemblyGenerator
         var pushes = MakePushes(registersToSave);
         _output.Append($"{pushes}");
 
-        GenerateFunctionScope(functionDeclaration.FunctionScope, returnLabel);
+        GenerateFunctionScope(functionDeclaration.Scope, returnLabel);
 
         // restore callee-saved registers
         _output.Append($"""
@@ -204,6 +214,7 @@ public class AssemblyGenerator
                         """);
 
         _output = currentOutput;
+        _currentFunctionReturnLabel = currentReturnLabel;
     }
 
     // rsp must be 16-byte aligned before a call
@@ -268,12 +279,12 @@ public class AssemblyGenerator
         _stackOffset -= toPop.Count;
     }
     
-    private void GenerateFunctionScope(FunctionScopeNode functionScope, string returnLabel)
+    private void GenerateFunctionScope(ScopeNode functionScope, string returnLabel)
     {
         BeginScope();
         foreach (var statement in functionScope.Statements)
         {
-            GenerateFunctionStatement(statement, returnLabel);
+            GenerateStatement(statement);
         }
 
         var toPop = EndScope();
@@ -281,38 +292,22 @@ public class AssemblyGenerator
         _stackOffset -= toPop.Count;
     }
 
-    private void GenerateFunctionStatement(IFunctionStatementNode functionStatementNode, string returnLabel)
-    {
-        switch (functionStatementNode)
-        {
-            case NormalFunctionStatement normalFunctionStatement:
-                GenerateStatement(normalFunctionStatement.Statement);
-                return;
-            case ReturnFunctionStatement returnFunctionStatement:
-                GenerateReturnFunctionStatement(returnFunctionStatement, returnLabel);
-                return;
-            case ReturnValueFunctionStatement returnValueFunctionStatement:
-                GenerateReturnValueFunctionStatement(returnValueFunctionStatement, returnLabel);
-                return;
-        }
-    }
-
-    private void GenerateReturnFunctionStatement(ReturnFunctionStatement returnFunctionStatement, string returnLabel)
+    private void GenerateReturnFunctionStatement(ReturnStatement returnStatement)
     {
         _output!.Append($"""
                          
-                             jmp {returnLabel}
+                             jmp {_currentFunctionReturnLabel}
                          
                          """);
     }
     
-    private void GenerateReturnValueFunctionStatement(ReturnValueFunctionStatement returnValue, string returnLabel)
+    private void GenerateReturnValueFunctionStatement(ReturnValueStatement returnValue)
     {
         GenerateExpression(returnValue.Expression);
 
         _output!.Append($"""
                              {GetPopStatement("rax")}
-                             jmp {returnLabel}
+                             jmp {_currentFunctionReturnLabel}
                          
                          """);
     }
@@ -493,6 +488,7 @@ public class AssemblyGenerator
     private int _stackOffset;
     private int _labelCount;
 
+    private string? _currentFunctionReturnLabel;
     private StringBuilder? _output;
     private List<StringBuilder> _functions;
 }
