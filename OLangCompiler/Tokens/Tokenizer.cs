@@ -250,6 +250,7 @@ public class Tokenizer
         { ",", () => new CommaToken() },
         { "..", () => new RangeToken() },
         { "&&", () => new BooleanAndToken() },
+        { "||", () => new BooleanOrToken() },
     };
 
     private string? _input;

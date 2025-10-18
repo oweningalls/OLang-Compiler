@@ -684,6 +684,23 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> OrPrograms =
+    [
+        ("if true || false {exit 3;}", 3),
+        ("if false || false {exit 3;}", 0),
+        ("if false || true {exit 3;}", 3),
+        ("if true || true {exit 3;}", 3),
+        ("if 2 == 2 || 1 == 1 {exit 3;}", 3),
+        ("if 2 == 0 || 1 == 1 {exit 3;}", 3),
+        ("if 2 == 0 || 1 == 10 {exit 3;}", 0),
+    ];
+    
+    [TestCaseSource(nameof(OrPrograms))]
+    public void OrTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {

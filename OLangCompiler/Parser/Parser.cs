@@ -262,6 +262,7 @@ public class Parser
                 LessToken => new LessExpression(expression, rhs),
                 LessOrEqualToken => new LessOrEqualExpression(expression, rhs),
                 BooleanAndToken => new BooleanAndExpression(expression, rhs),
+                BooleanOrToken => new BooleanOrExpression(expression, rhs),
                 _ => throw _errorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
             };
         }

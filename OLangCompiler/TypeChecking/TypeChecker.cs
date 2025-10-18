@@ -201,11 +201,23 @@ public class TypeChecker
                     {
                         throw _errorHelper.ShowErrorMessageAtNode($"Cannot && expressions of type {lhsType} and {rhsType}", binaryExpression);
                     }
+
+                    return ExpressionType.Bool;
+                }
+                
+                if (binaryExpression is BooleanOrExpression)
+                {
+                    if (lhsType != ExpressionType.Bool || rhsType != ExpressionType.Bool)
+                    {
+                        throw _errorHelper.ShowErrorMessageAtNode($"Cannot || expressions of type {lhsType} and {rhsType}", binaryExpression);
+                    }
+
+                    return ExpressionType.Bool;
                 }
 
                 if (binaryExpression is BaseComparisonExpressionNode)
                 {
-                    if (lhsType != rhsType)
+                    if (GetTypeOfBinaryExpression(lhsType, rhsType) == null)
                     {
                         throw _errorHelper.ShowErrorMessageAtNode($"Cannot compare expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                     }

@@ -438,6 +438,9 @@ public class AssemblyGenerator
                     case BooleanAndExpression:
                         _output!.Append("    and rax, rdi\n");
                         break;
+                    case BooleanOrExpression:
+                        _output!.Append("    or rax, rdi\n");
+                        break;
                     default:
                         throw _errorHelper.UnknownVariant("expression", expression.GetType());
                 }
