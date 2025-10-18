@@ -195,6 +195,14 @@ public class TypeChecker
                 var lhsType = GetTypeFromExpression(binaryExpression.Lhs);
                 var rhsType = GetTypeFromExpression(binaryExpression.Rhs);
 
+                if (binaryExpression is BooleanAndExpression)
+                {
+                    if (lhsType != ExpressionType.Bool || rhsType != ExpressionType.Bool)
+                    {
+                        throw _errorHelper.ShowErrorMessageAtNode($"Cannot && expressions of type {lhsType} and {rhsType}", binaryExpression);
+                    }
+                }
+
                 if (binaryExpression is BaseComparisonExpressionNode)
                 {
                     if (lhsType != rhsType)
@@ -226,6 +234,7 @@ public class TypeChecker
             SubtractExpression => "subtract",
             TimesExpression => "multiply",
             DivideExpression => "divide",
+            BooleanAndExpression => "logically and",
             BaseComparisonExpressionNode => "compare",
             _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };

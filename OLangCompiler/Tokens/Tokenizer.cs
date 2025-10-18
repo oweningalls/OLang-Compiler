@@ -151,13 +151,26 @@ public class Tokenizer
             return token;
         }
 
-        if (Peek() == '.')
+        if (TryConsume('.') != null)
         {
-            _ = Consume();
-            if (Peek() == '.')
+            if (TryConsume('.') != null)
             {
-                _ = Consume();
                 return new RangeToken();
+            }
+
+            if (Peek() is null)
+            {
+                throw _errorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
+            }
+
+            throw _errorHelper.UnexpectedChar(Peek()!.Value);
+        }
+
+        if (TryConsume('&') != null)
+        {
+            if (TryConsume('&') != null)
+            {
+                return new BooleanAndToken();
             }
 
             if (Peek() is null)
@@ -292,5 +305,15 @@ public class Tokenizer
         }
 
         return (char)ret;
+    }
+
+    private char? TryConsume(char c)
+    {
+        if (Peek() == c)
+        {
+            return Consume();
+        }
+
+        return null;
     }
 }
