@@ -197,6 +197,7 @@ public class Tokenizer
         { '+', (() => new PlusToken(), () => new PlusEqualsToken()) },
         { '-', (() => new MinusToken(), () => new MinusEqualsToken()) },
         { '*', (() => new TimesToken(), () => new TimesEqualsToken()) },
+        { '/', (() => new DivideToken(), () => new DivideEqualsToken()) },
         { '!', (() => new NotToken(), () => new NotEqualToken()) },
         { '>', (() => new GreaterToken(), () => new GreaterOrEqualToken()) },
         { '<', (() => new LessToken(), () => new LessOrEqualToken()) }

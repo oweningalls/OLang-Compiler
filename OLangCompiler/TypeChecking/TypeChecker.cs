@@ -225,6 +225,7 @@ public class TypeChecker
             AddExpression => "add",
             SubtractExpression => "subtract",
             TimesExpression => "multiply",
+            DivideExpression => "divide",
             BaseComparisonExpressionNode => "compare",
             _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
         };

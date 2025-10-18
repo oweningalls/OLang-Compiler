@@ -383,6 +383,10 @@ public class AssemblyGenerator
                     case TimesExpression:
                         _output!.Append("    mul rdi\n");
                         break;
+                    case DivideExpression:
+                        _output!.Append("    cqo\n"); // extends RAX into RDX
+                        _output!.Append("    idiv rdi\n"); // does 128 signed division of RDX:RAX / RDI
+                        break;
                     case DoubleEqualsExpression:
                         _output.Append("""
                                            cmp rax, rdi

@@ -62,6 +62,7 @@ public class Parser
                 PlusEqualsToken => new AddExpression(lhs, expression),
                 MinusEqualsToken => new SubtractExpression(lhs, expression),
                 TimesEqualsToken => new TimesExpression(lhs, expression),
+                DivideEqualsToken => new DivideExpression(lhs, expression),
                 _ => throw _errorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
             };
 
@@ -254,6 +255,7 @@ public class Parser
                 PlusToken => new AddExpression(expression, rhs),
                 MinusToken => new SubtractExpression(expression, rhs),
                 TimesToken => new TimesExpression(expression, rhs),
+                DivideToken => new DivideExpression(expression, rhs),
                 NotEqualToken => new NotEqualExpression(expression, rhs),
                 GreaterToken => new GreaterExpression(expression, rhs),
                 GreaterOrEqualToken => new GreaterOrEqualExpression(expression, rhs),

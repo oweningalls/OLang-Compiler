@@ -647,6 +647,27 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+
+    public static readonly List<(string, int)> DivisionPrograms =
+    [
+        ("let a = 2 / 1; exit a;", 2),
+        ("let a = 10 / 5; exit a;", 2),
+        ("let a = 10 / 3; exit a;", 3),
+        ("let a = 0 / 5; exit a;", 0),
+        ("let a = 2 / 3; exit a;", 0),
+        ("let a = 1 + 2 / 3 * 4; exit a;", 1),
+        ("let a = 5 + 4 / 3 * 2; exit a;", 7),
+        ("let a = 5 + 6 / (3 * 2); exit a;", 6),
+        ("let a = 8 / 2 + 3; exit a;", 7),
+        ("exit -5 / -1;", 5),
+        ("let a = -6 / (1 - 4); exit a;", 2),
+    ];
+    
+    [TestCaseSource(nameof(DivisionPrograms))]
+    public void DivisionTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
@@ -695,6 +716,7 @@ public class Tests
     [TestCase("""
               int a() { return true; }
               """)]
+    [TestCase("let a = 1 / true;")]
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);
