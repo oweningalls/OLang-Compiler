@@ -728,6 +728,30 @@ public class Tests
             }
         });
     }
+    
+    [Test]
+    public void TestRecursiveFibonacci()
+    {
+        Assert.Multiple(() =>
+        {
+            for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
+            {
+                var program = $$"""
+                                int fib(int n) {
+                                    if n == 0 { return 0; }
+                                    if n == 1 { return 1; }
+                                    return fib(n - 1) + fib(n - 2);
+                                }
+                                
+                                exit fib({{i}});
+                                """;
+                var olFibNum = CompileAndExecuteProgram(program);
+                var trueFibNum = Fib(i);
+
+                Assert.That(olFibNum, Is.EqualTo(trueFibNum));
+            }
+        });
+    }
 
     private int Fib(int n)
     {
