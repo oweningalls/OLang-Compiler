@@ -185,9 +185,25 @@ public class Parser
 
         var identifier = ConsumeType<IdentifierToken>();
         ConsumeType<LeftParenToken>();
+        var arguments = ParseArgumentList();
         ConsumeType<RightParenToken>();
 
-        return new InvocationNode(identifier);
+        return new InvocationNode(identifier, arguments);
+    }
+
+    private ArgumentList ParseArgumentList()
+    {
+        var expressions = new List<IExpressionNode>();
+        while (Peek() is not RightParenToken)
+        {
+            expressions.Add(ParseExpression());
+            if (TryConsume<CommaToken>() is null)
+            {
+                break;
+            }
+        }
+
+        return new ArgumentList(expressions);
     }
 
     private bool IsVariableType(BaseToken token)

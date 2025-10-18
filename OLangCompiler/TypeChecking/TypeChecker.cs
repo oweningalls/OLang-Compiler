@@ -127,6 +127,13 @@ public class TypeChecker
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
 
+        foreach ((ExpressionType, IdentifierToken) val in functionDeclaration.Parameters.Parameters)
+        {
+            var (type, ident) = val;
+            
+            _variableTypeStack.SetValue(ident.Identifier, type);
+        }
+
         var wasInFunction = _isInFunction;
         _isInFunction = true;
         var previousFunctionType = _currentFunctionType;
@@ -149,7 +156,7 @@ public class TypeChecker
         // TODO: update after implementing else
         foreach (var statement in declarationStatement.Scope.Statements)
         {
-            if (statement is ReturnValueStatement)
+            if (statement is ReturnValueStatement or ExitStatement)
             {
                 return;
             }

@@ -247,13 +247,12 @@ public class Tokenizer
 
     private static readonly Dictionary<char, Func<BaseToken>> OperatorMap = new()
     {
-        { '=', () => new EqualsToken() },
         { ';', () => new SemicolonToken() },
-        { '+', () => new PlusToken() },
         { '(', () => new LeftParenToken() },
         { ')', () => new RightParenToken() },
         { '{', () => new LeftCurlyToken() },
-        { '}', () => new RightCurlyToken() }
+        { '}', () => new RightCurlyToken() },
+        { ',', () => new CommaToken() }
     };
 
     private string? _input;

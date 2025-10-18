@@ -520,7 +520,15 @@ public class Tests
          }
          
          exit 19;
-         """, 19)
+         """, 19),
+        ("""
+         void other() {
+             for i in 0..1 {
+             }
+         }
+         
+         other();
+         """, 0)
     ];
     
     [TestCaseSource(nameof(FunctionPrograms))]
@@ -576,6 +584,66 @@ public class Tests
     
     [TestCaseSource(nameof(ReturnValueFunctionPrograms))]
     public void ReturnValueFunctionTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
+    
+    public static readonly List<(string, int)> ParameterPrograms =
+    [
+        ("""
+         void func(int exit_value) {
+             exit exit_value;
+         }
+         
+         func(5);
+         """, 5),
+        ("""
+         int add(int a, int b) {
+             return a + b;
+         }
+         
+         exit add(2, 5);
+         """, 7),
+        ("""
+         int triangleNumber(int n) {
+             let total = 0;
+             for i in 1..n+1 {
+                 total += i;
+             }
+             
+             return total;
+         }
+         
+         exit triangleNumber(4);
+         """, 10),
+        ("""
+         bool or(bool a, bool b) {
+             if a { return true; }
+             if b { return true; }
+             
+             return false;
+         }
+         
+         let a = true;
+         let b = false;
+         if or(a, b) { exit 3; }
+         """, 3),
+        ("""
+         bool or(bool a, bool b) {
+             if a { return true; }
+             if b { return true; }
+             
+             return false;
+         }
+         
+         let a = false;
+         let b = false;
+         if or(a, b) { exit 3; }
+         """, 0)
+    ];
+
+    [TestCaseSource(nameof(ParameterPrograms))]
+    public void ParameterTests((string, int) values)
     {
         TestProgramExitCode(values);
     }

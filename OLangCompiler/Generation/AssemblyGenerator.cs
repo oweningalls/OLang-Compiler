@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
 
@@ -83,7 +84,7 @@ public class AssemblyGenerator
                 GenerateReturnValueFunctionStatement(returnValueStatement);
                 break;
             case ReturnStatement returnStatement:
-                GenerateReturnFunctionStatement(returnStatement);
+                GenerateReturnFunctionStatement();
                 break;
             default:
             {
@@ -128,7 +129,7 @@ public class AssemblyGenerator
     private void GenerateIfStatement(IfStatement ifStatement)
     {
         GenerateExpression(ifStatement.Condition);
-        var label = GetLabel();
+        var label = GetLabel("ifEnd");
         _output!.Append($"""
                              {GetPopStatement("rax")}
                              cmp rax, 0
@@ -141,8 +142,8 @@ public class AssemblyGenerator
 
     private void GenerateWhileStatement(WhileStatement whileStatement)
     {
-        var whileBegin = GetLabel();
-        var whileEnd = GetLabel();
+        var whileBegin = GetLabel("whileBegin");
+        var whileEnd = GetLabel("whileEnd");
 
         _output!.Append($"{whileBegin}:\n");
 
@@ -177,7 +178,9 @@ public class AssemblyGenerator
         var whileStatement = new WhileStatement(condition, scope);
 
         GenerateWhileStatement(whileStatement);
-        EndScope();
+        var toPop = EndScope();
+        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+        _stackOffset -= toPop.Count;
     }
 
     // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
@@ -185,8 +188,8 @@ public class AssemblyGenerator
     // preserve rbx, rbp, r12, r13, r14, and r15
     private void StoreFunctionDeclaration(FunctionDeclarationStatement functionDeclaration)
     {
-        var label = GetLabel();
-        var returnLabel = $"{label}return";
+        var label = GetLabel($"{functionDeclaration.Identifier.Identifier}Start");
+        var returnLabel = GetLabel($"{functionDeclaration.Identifier.Identifier}Return");
 
         var currentReturnLabel = _currentFunctionReturnLabel;
         _currentFunctionReturnLabel = returnLabel;
@@ -204,13 +207,13 @@ public class AssemblyGenerator
         var pushes = MakePushes(registersToSave);
         _output.Append($"{pushes}");
 
-        GenerateFunctionScope(functionDeclaration.Scope, returnLabel);
+        var removeLocalVars = GenerateFunctionScope(functionDeclaration.Scope, functionDeclaration.Parameters);
 
         // restore callee-saved registers
         _output.Append($"""
                         {returnLabel}:
-                        {MakeReversePops(registersToSave)}
-                            ret
+                            {removeLocalVars}
+                        {MakeReversePops(registersToSave)}    ret
                         """);
 
         _output = currentOutput;
@@ -230,7 +233,22 @@ public class AssemblyGenerator
         }
 
         // Not preserving rax since that's where the return value goes
-        var pushes = MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
+        _output!.Append(MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"));
+        
+        var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+        var args = invocationNode.Arguments.Expressions;
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (i >= argRegisters.Count)
+            {
+                throw new Exception("Too many parameters");
+            }
+            
+            GenerateExpression(args[i]);
+            
+            _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
+        }
+        
         var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
         var returnPushes = "";
         if (hasReturnValue)
@@ -239,7 +257,7 @@ public class AssemblyGenerator
         }
         var label = _functionTracker.GetValue(funcName);
         _output.Append($"""
-                        {pushes}    call {label}
+                            call {label}
                         {pops}
                         """);
         _output.Append(returnPushes);
@@ -279,20 +297,35 @@ public class AssemblyGenerator
         _stackOffset -= toPop.Count;
     }
     
-    private void GenerateFunctionScope(ScopeNode functionScope, string returnLabel)
+    // returns statement to remove local vars from the stack
+    private string GenerateFunctionScope(ScopeNode functionScope, ParameterListNode parameterList)
     {
         BeginScope();
+        // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
+        var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+        
+        for(var i = 0; i < parameterList.Parameters.Count; i++)
+        {
+            var identifier = parameterList.Parameters[i].Item2;
+            if (i >= argRegisters.Count)
+            {
+                throw new Exception("Too many parameters");
+            }
+            _output!.Append($"    {GetPushStatement(argRegisters[i])}\n");
+            SaveVariableLocation(identifier.Identifier);
+        }
+        
         foreach (var statement in functionScope.Statements)
         {
             GenerateStatement(statement);
         }
 
         var toPop = EndScope();
-        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
         _stackOffset -= toPop.Count;
+        return $"add rsp, {toPop.Count * 8}";
     }
 
-    private void GenerateReturnFunctionStatement(ReturnStatement returnStatement)
+    private void GenerateReturnFunctionStatement()
     {
         _output!.Append($"""
                          
@@ -466,9 +499,9 @@ public class AssemblyGenerator
         return $"[rsp + {relativeStackOffset}]";
     }
 
-    private string GetLabel()
+    private string GetLabel(string type)
     {
-        return $"label{_labelCount++}";
+        return $"{type}{_labelCount++}";
     }
 
     private void BeginScope()
