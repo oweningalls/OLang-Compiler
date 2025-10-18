@@ -151,36 +151,6 @@ public class Tokenizer
             return token;
         }
 
-        if (TryConsume('.') != null)
-        {
-            if (TryConsume('.') != null)
-            {
-                return new RangeToken();
-            }
-
-            if (Peek() is null)
-            {
-                throw _errorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
-            }
-
-            throw _errorHelper.UnexpectedChar(Peek()!.Value);
-        }
-
-        if (TryConsume('&') != null)
-        {
-            if (TryConsume('&') != null)
-            {
-                return new BooleanAndToken();
-            }
-
-            if (Peek() is null)
-            {
-                throw _errorHelper.UnexpectedEndOfInputAfterChar(Peek(-1)!.Value);
-            }
-
-            throw _errorHelper.UnexpectedChar(Peek()!.Value);
-        }
-
         if (TryParseOperator() is { } op)
         {
             return op;
@@ -251,22 +221,35 @@ public class Tokenizer
 
     private BaseToken? TryParseOperator()
     {
-        if (OperatorMap.ContainsKey(Peek()!.Value))
+        if (OperatorMap.ContainsKey(Peek()!.Value.ToString()))
         {
-            return OperatorMap[Consume()].Invoke();
+            return OperatorMap[Consume().ToString()].Invoke();
+        }
+
+        if (Peek(1) != null)
+        {
+            var nextTwoChars = Peek()!.Value.ToString() + Peek(1)!.Value;
+            if (OperatorMap.ContainsKey(nextTwoChars))
+            {
+                Consume();
+                Consume();
+                return OperatorMap[nextTwoChars].Invoke();
+            }
         }
 
         return null;
     }
 
-    private static readonly Dictionary<char, Func<BaseToken>> OperatorMap = new()
+    private static readonly Dictionary<string, Func<BaseToken>> OperatorMap = new()
     {
-        { ';', () => new SemicolonToken() },
-        { '(', () => new LeftParenToken() },
-        { ')', () => new RightParenToken() },
-        { '{', () => new LeftCurlyToken() },
-        { '}', () => new RightCurlyToken() },
-        { ',', () => new CommaToken() }
+        { ";", () => new SemicolonToken() },
+        { "(", () => new LeftParenToken() },
+        { ")", () => new RightParenToken() },
+        { "{", () => new LeftCurlyToken() },
+        { "}", () => new RightCurlyToken() },
+        { ",", () => new CommaToken() },
+        { "..", () => new RangeToken() },
+        { "&&", () => new BooleanAndToken() },
     };
 
     private string? _input;
