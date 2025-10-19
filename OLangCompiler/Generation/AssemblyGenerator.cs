@@ -137,7 +137,20 @@ public class AssemblyGenerator
 
                          """);
         GenerateScope(ifStatement.Scope);
-        _output.Append($"{label}:\n");
+        if (ifStatement.ElseBlock != null)
+        {
+            var elseEndLabel = GetLabel("elseEnd");
+            _output.Append($"    jmp {elseEndLabel}\n");
+            
+            _output.Append($"{label}:\n");
+            GenerateScope(ifStatement.ElseBlock.Scope);
+            
+            _output.Append($"{elseEndLabel}:\n");
+        }
+        else
+        {
+            _output.Append($"{label}:\n");
+        }
     }
 
     private void GenerateWhileStatement(WhileStatement whileStatement)

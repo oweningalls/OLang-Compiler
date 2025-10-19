@@ -701,6 +701,46 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> ElsePrograms =
+    [
+        ("""
+         if true {exit 3;}
+         else { exit 5; }
+         """, 3),
+        ("""
+         if false {exit 3;}
+         else { exit 5; }
+         """, 5),
+        ("""
+         int twoOrFour(bool val) {
+             if val {
+                 return 2;
+             } else {
+                 return 4; 
+             }
+         }
+         
+         exit twoOrFour(true);
+         """, 2),
+        ("""
+         int twoOrFour(bool val) {
+             if val {
+                 return 2;
+             } else {
+                 return 4; 
+             }
+         }
+         
+         exit twoOrFour(false);
+         """, 4),
+    ];
+    
+    [TestCaseSource(nameof(ElsePrograms))]
+    public void ElseTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {

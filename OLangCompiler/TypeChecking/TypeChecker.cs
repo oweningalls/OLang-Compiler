@@ -153,16 +153,34 @@ public class TypeChecker
 
     private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclarationStatement declarationStatement)
     {
-        // TODO: update after implementing else
-        foreach (var statement in declarationStatement.Scope.Statements)
+        if (!DoesScopeAlwaysReturn(declarationStatement.Scope))
+        {
+            throw _errorHelper.ShowErrorMessageAtNode("Not all function paths return a value", declarationStatement);
+        }
+    }
+
+    private bool DoesScopeAlwaysReturn(ScopeNode scope)
+    {
+        foreach (var statement in scope.Statements)
         {
             if (statement is ReturnValueStatement or ExitStatement)
             {
-                return;
+                return true;
+            }
+
+            if (statement is not IfStatement ifStatement) continue;
+            if (ifStatement.ElseBlock == null)
+            {
+                continue;
+            }
+
+            if (DoesScopeAlwaysReturn(ifStatement.Scope) && DoesScopeAlwaysReturn(ifStatement.ElseBlock.Scope))
+            {
+                return true;
             }
         }
 
-        throw _errorHelper.ShowErrorMessageAtNode("Not all function paths return a value", declarationStatement);
+        return false;
     }
 
     private void CheckScopeTypes(ScopeNode scopeNode)

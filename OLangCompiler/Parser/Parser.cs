@@ -78,8 +78,14 @@ public class Parser
         {
             var condition = ParseExpression();
             var scope = ParseScope();
+            ElseNode? elseNode = null;
+            if (Peek() != null && TryConsume<ElseToken>() != null)
+            {
+                var elseScope = ParseScope();
+                elseNode = new ElseNode(elseScope);
+            }
 
-            return new IfStatement(condition, scope);
+            return new IfStatement(condition, scope, elseNode);
         }
 
         if (TryConsume<WhileToken>() != null)

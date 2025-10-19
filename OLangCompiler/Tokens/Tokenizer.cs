@@ -212,6 +212,7 @@ public class Tokenizer
         { "true", () => new BoolLiteralToken(true) },
         { "false", () => new BoolLiteralToken(false) },
         { "if", () => new IfToken() },
+        { "else", () => new ElseToken() },
         { "while", () => new WhileToken() },
         { "for", () => new ForToken() },
         { "in", () => new InToken() },
