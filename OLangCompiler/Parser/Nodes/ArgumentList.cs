@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class ArgumentList(List<IExpressionNode> expressions) : INode
+public class ArgumentList(List<BaseExpressionNode> expressions) : INode
 {
-    public List<IExpressionNode> Expressions = expressions;
+    public List<BaseExpressionNode> Expressions = expressions;
 }

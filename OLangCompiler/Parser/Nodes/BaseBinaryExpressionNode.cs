@@ -1,7 +1,7 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public abstract class BaseBinaryExpressionNode(IExpressionNode lhs, IExpressionNode rhs) : IExpressionNode
+public abstract class BaseBinaryExpressionNode(BaseExpressionNode lhs, BaseExpressionNode rhs) : BaseExpressionNode
 {
-    public IExpressionNode Lhs = lhs;
-    public IExpressionNode Rhs = rhs;
+    public BaseExpressionNode Lhs = lhs;
+    public BaseExpressionNode Rhs = rhs;
 }

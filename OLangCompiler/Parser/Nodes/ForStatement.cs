@@ -2,10 +2,10 @@
 
 namespace OLangCompiler.Parser.Nodes;
 
-public class ForStatement(IdentifierToken identifier, IExpressionNode start, IExpressionNode end, ScopeNode scope) : IStatementNode
+public class ForStatement(IdentifierToken identifier, BaseExpressionNode start, BaseExpressionNode end, ScopeNode scope) : IStatementNode
 {
     public IdentifierToken Identifier = identifier;
-    public IExpressionNode Start = start;
-    public IExpressionNode End = end;
+    public BaseExpressionNode Start = start;
+    public BaseExpressionNode End = end;
     public ScopeNode Scope = scope;
 }

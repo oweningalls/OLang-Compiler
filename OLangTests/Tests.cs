@@ -741,6 +741,55 @@ public class Tests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, int)> FloatPrograms =
+    [
+        ("""
+         let a = 1.3;
+         exit (int)(a * 10);
+         """, 13),
+        ("""
+         let a = 1.3;
+         exit (int)(a * 3 + 0.1);
+         """, 4),
+        ("""
+         let a = 1.3;
+         exit (int)a;
+         """, 10),
+        ("""
+         let a = 1.9;
+         exit (int)a;
+         """, 13),
+        ("""
+         float a = 3;
+         int b = 4;
+         let c = a / b;
+         exit (int)(c * 100);
+         """, 74),
+        ("""
+         float a = 0.5;
+         exit (int)(a * 2)
+         """, 1),
+        ("""
+         float a = .5;
+         exit (int)(a * 2)
+         """, 1),
+        ("""
+         float a = -0.5;
+         exit (int)(a * -2)
+         """, 1),
+        ("""
+         let a = -0.5;
+         let b = a - 5;
+         exit (int)(b * -2)
+         """, 11),
+    ];
+    
+    // [TestCaseSource(nameof(FloatPrograms))] // TODO: uncomment once floats are implemented
+    public void FloatTests((string, int) values)
+    {
+        TestProgramExitCode(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
@@ -785,11 +834,12 @@ public class Tests
                              exit variable;
                          }
                      }
-                     """)]
-    [TestCase("""
-              int a() { return true; }
-              """)]
-    [TestCase("let a = 1 / true;")]
+                     """)] // modifying variable from outside loop
+    [TestCase("int a() { return true; }")] // wrong return type
+    [TestCase("let a = 1 / true;")] // can't divide by bool
+    // TODO: uncomment once floats are implemented
+    // [TestCase("int a = 1.1;")] // can't implicitly convert float to int
+    // [TestCase("float a = 1.01.312;")] // float can only have one decimal point
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);

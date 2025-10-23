@@ -138,12 +138,24 @@ public class Tokenizer
         {
             var buffer = "";
             buffer += Consume();
+            var sawDecimalPoint = false;
             while (Peek() is { } c && char.IsDigit(c))
             {
                 buffer += Consume();
+                // TODO: uncomment once floats are implemented
+                // if (Peek() == '.')
+                // {
+                //     if (sawDecimalPoint)
+                //     {
+                //         return MakeNumLiteralToken(buffer, sawDecimalPoint);
+                //     }
+                //
+                //     Consume();
+                //     sawDecimalPoint = true;
+                // }
             }
 
-            return new IntLiteralToken(int.Parse(buffer));
+            return MakeNumLiteralToken(buffer, sawDecimalPoint);
         }
 
         if (TryParseEqualsToken() is { } token)
@@ -157,6 +169,16 @@ public class Tokenizer
         }
 
         throw new Exception($"Unexpected character: `{Peek()}`");
+    }
+
+    private BaseToken MakeNumLiteralToken(string buffer, bool sawDecimalPoint)
+    {
+        if (sawDecimalPoint)
+        {
+            return new FloatLiteralToken(float.Parse(buffer));
+        }
+
+        return new IntLiteralToken(int.Parse(buffer));
     }
 
     private BaseToken? TryParseEqualsToken()
@@ -208,6 +230,7 @@ public class Tokenizer
         { "exit", () => new ExitToken() },
         { "let", () => new LetToken() },
         { "int", () => new IntTypeToken() },
+        { "float", () => new FloatTypeToken() },
         { "bool", () => new BoolTypeToken() },
         { "true", () => new BoolLiteralToken(true) },
         { "false", () => new BoolLiteralToken(false) },

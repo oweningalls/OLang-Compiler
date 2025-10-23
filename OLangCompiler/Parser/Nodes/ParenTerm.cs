@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class ParenTerm(IExpressionNode expression) : ITermNode
+public class ParenTerm(BaseExpressionNode expression) : BaseTermNode
 {
-    public IExpressionNode Expression = expression;
+    public BaseExpressionNode Expression = expression;
 }

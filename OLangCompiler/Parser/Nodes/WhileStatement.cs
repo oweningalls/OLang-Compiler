@@ -1,7 +1,7 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class WhileStatement(IExpressionNode condition, ScopeNode scope) : IStatementNode
+public class WhileStatement(BaseExpressionNode condition, ScopeNode scope) : IStatementNode
 {
-    public IExpressionNode Condition = condition;
+    public BaseExpressionNode Condition = condition;
     public ScopeNode Scope = scope;
 }

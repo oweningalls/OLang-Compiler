@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class LessExpression(IExpressionNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);
+public class LessExpression(BaseExpressionNode lhs, BaseExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);

@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class IdentifierTerm(string identifier) : ITermNode
+public class IdentifierTerm(string identifier) : BaseTermNode
 {
     public string Identifier = identifier;
 }

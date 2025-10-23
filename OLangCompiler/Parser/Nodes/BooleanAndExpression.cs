@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class BooleanAndExpression(IExpressionNode lhs, IExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);
+public class BooleanAndExpression(BaseExpressionNode lhs, BaseExpressionNode rhs) : BaseComparisonExpressionNode(lhs, rhs);

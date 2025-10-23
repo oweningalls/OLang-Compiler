@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public abstract class BaseComparisonExpressionNode(IExpressionNode lhs, IExpressionNode rhs) : BaseBinaryExpressionNode(lhs, rhs);
+public abstract class BaseComparisonExpressionNode(BaseExpressionNode lhs, BaseExpressionNode rhs) : BaseBinaryExpressionNode(lhs, rhs);

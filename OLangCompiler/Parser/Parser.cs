@@ -200,7 +200,7 @@ public class Parser
 
     private ArgumentList ParseArgumentList()
     {
-        var expressions = new List<IExpressionNode>();
+        var expressions = new List<BaseExpressionNode>();
         while (Peek() is not RightParenToken)
         {
             expressions.Add(ParseExpression());
@@ -237,7 +237,7 @@ public class Parser
         return new ScopeNode(statements);
     }
 
-    private IExpressionNode ParseExpression(int minPrecedence = 0)
+    private BaseExpressionNode ParseExpression(int minPrecedence = 0)
     {
         if (TryConsume<NotToken>() != null)
         {
@@ -246,7 +246,7 @@ public class Parser
             return new NotExpression(innerExpression);
         }
 
-        IExpressionNode expression = new TermExpression(ParseTerm());
+        BaseExpressionNode expression = new TermExpression(ParseTerm());
 
         while (Peek() is BaseBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
         {
@@ -276,7 +276,7 @@ public class Parser
         return expression;
     }
 
-    private ITermNode ParseTerm()
+    private BaseTermNode ParseTerm()
     {
         var invocation = TryParseInvocation();
         if (invocation != null)
@@ -287,6 +287,11 @@ public class Parser
         if (TryConsume<IntLiteralToken>() is { } ilt)
         {
             return new IntLiteralTerm(ilt.Value);
+        }
+        
+        if (TryConsume<FloatLiteralToken>() is { } flt)
+        {
+            return new FloatLiteralTerm(flt.Value);
         }
 
         if (TryConsume<BoolLiteralToken>() is { } blt)
@@ -308,11 +313,18 @@ public class Parser
 
         if (TryConsume<MinusToken>() != null)
         {
-            CheckEndOfInput();
+            var intLiteral = TryConsume<IntLiteralToken>();
+            if (intLiteral != null)
+            {
+                return new IntLiteralTerm(-intLiteral.Value);
+            }
 
-            var intLiteral = TryConsume<IntLiteralToken>() ?? throw _errorHelper.ExpectedValue("int literal", Peek()!);
-
-            return new IntLiteralTerm(-intLiteral.Value);
+            var floatLiteral = TryConsume<FloatLiteralToken>();
+            if (floatLiteral != null)
+            {
+                return new FloatLiteralTerm(-floatLiteral.Value);
+            }
+            throw _errorHelper.ExpectedValue("number literal", Peek()!);
         }
 
         throw _errorHelper.ExpectedValue("term", Peek()!);

@@ -26,16 +26,18 @@ public class TypeChecker
         switch (statementNode)
         {
             case DeclarationStatement declarationStatement:
-                var type = GetTypeFromExpression(declarationStatement.Expression);
+                MarkAndCheckExpression(declarationStatement.Expression);
+                var type = declarationStatement.Expression.ValueType;
                 if (declarationStatement.ExpressionType != null && type != declarationStatement.ExpressionType)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {declarationStatement.ExpressionType}", declarationStatement.Expression);
                 }
 
-                RecordExpressionType(declarationStatement.Identifier, type);
+                RecordExpressionType(declarationStatement.Identifier, type!.Value);
                 break;
             case ExitStatement exitStatement:
-                var exitType = GetTypeFromExpression(exitStatement.ExpressionNode);
+                MarkAndCheckExpression(exitStatement.ExpressionNode);
+                var exitType = exitStatement.ExpressionNode.ValueType;
                 if (exitType != ExpressionType.Int)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.ExpressionNode);
@@ -43,7 +45,8 @@ public class TypeChecker
 
                 break;
             case AssignmentStatement assignmentStatement:
-                var expressionType = GetTypeFromExpression(assignmentStatement.Expression);
+                MarkAndCheckExpression(assignmentStatement.Expression);
+                var expressionType = assignmentStatement.Expression.ValueType;
                 var variableType = GetVariableType(assignmentStatement.Identifier);
                 if (variableType != expressionType)
                 {
@@ -55,7 +58,8 @@ public class TypeChecker
                 CheckScopeTypes(scopeStatement.Scope);
                 break;
             case IfStatement ifStatement:
-                var conditionType = GetTypeFromExpression(ifStatement.Condition);
+                MarkAndCheckExpression(ifStatement.Condition);
+                var conditionType = ifStatement.Condition.ValueType;
                 if (conditionType != ExpressionType.Bool)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", ifStatement.Condition);
@@ -64,7 +68,8 @@ public class TypeChecker
                 CheckScopeTypes(ifStatement.Scope);
                 break;
             case WhileStatement whileStatement:
-                var whileConditionType = GetTypeFromExpression(whileStatement.Condition);
+                MarkAndCheckExpression(whileStatement.Condition);
+                var whileConditionType = whileStatement.Condition.ValueType;
                 if (whileConditionType != ExpressionType.Bool)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("If predicate must be a boolean", whileStatement.Condition);
@@ -74,13 +79,15 @@ public class TypeChecker
                 break;
             case ForStatement forStatement:
                 BeginScope();
-                var startType = GetTypeFromExpression(forStatement.Start);
+                MarkAndCheckExpression(forStatement.Start);
+                var startType = forStatement.Start.ValueType;
                 if (startType != ExpressionType.Int)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.Start);
                 }
 
-                var endType = GetTypeFromExpression(forStatement.End);
+                MarkAndCheckExpression(forStatement.End);
+                var endType = forStatement.End.ValueType;
                 if (endType != ExpressionType.Int)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Bounds of range must be integers", forStatement.End);
@@ -93,7 +100,7 @@ public class TypeChecker
             case FunctionDeclarationStatement functionDeclaration:
                 CheckFunctionDeclarationTypes(functionDeclaration);
                 break;
-            case InvocationStatement invocationStatement:
+            case InvocationStatement:
                 break;
             case ReturnStatement returnStatement:
                 if (!_isInFunction)
@@ -108,7 +115,8 @@ public class TypeChecker
                     throw _errorHelper.ShowErrorMessageAtNode("Cannot return outside of a function", returnValueStatement);
                 }
 
-                expressionType = GetTypeFromExpression(returnValueStatement.Expression);
+                MarkAndCheckExpression(returnValueStatement.Expression);
+                expressionType = returnValueStatement.Expression.ValueType;
                 if (expressionType != _currentFunctionType)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode($"Function of type {_currentFunctionType.ToString()} cannot return expression of type {expressionType.ToString()}", returnValueStatement.Expression);
@@ -194,24 +202,30 @@ public class TypeChecker
         EndScope();
     }
 
-    private ExpressionType GetTypeFromExpression(IExpressionNode expression)
+    private void MarkAndCheckExpression(BaseExpressionNode expression)
     {
         switch (expression)
         {
             case TermExpression term:
-                return GetTypeFromTerm(term.Term);
+                MarkAndCheckTerm(term.Term);
+                term.ValueType = term.Term.ValueType;
+                break;
             case NotExpression notExpression:
-                var notTermType = GetTypeFromExpression(notExpression.Expression);
+                MarkAndCheckExpression(notExpression.Expression);
+                var notTermType = notExpression.Expression.ValueType;
                 if (notTermType != ExpressionType.Bool)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode($"Cannot negate a non-boolean value of type {notTermType}", notExpression.Expression);
                 }
 
-                return ExpressionType.Bool;
+                expression.ValueType = ExpressionType.Bool;
+                break;
             case BaseBinaryExpressionNode binaryExpression:
             {
-                var lhsType = GetTypeFromExpression(binaryExpression.Lhs);
-                var rhsType = GetTypeFromExpression(binaryExpression.Rhs);
+                MarkAndCheckExpression(binaryExpression.Lhs);
+                var lhsType = binaryExpression.Lhs.ValueType;
+                MarkAndCheckExpression(binaryExpression.Rhs);
+                var rhsType = binaryExpression.Rhs.ValueType;
 
                 if (binaryExpression is BooleanAndExpression)
                 {
@@ -220,7 +234,8 @@ public class TypeChecker
                         throw _errorHelper.ShowErrorMessageAtNode($"Cannot && expressions of type {lhsType} and {rhsType}", binaryExpression);
                     }
 
-                    return ExpressionType.Bool;
+                    expression.ValueType = ExpressionType.Bool;
+                    break;
                 }
                 
                 if (binaryExpression is BooleanOrExpression)
@@ -230,26 +245,29 @@ public class TypeChecker
                         throw _errorHelper.ShowErrorMessageAtNode($"Cannot || expressions of type {lhsType} and {rhsType}", binaryExpression);
                     }
 
-                    return ExpressionType.Bool;
+                    expression.ValueType = ExpressionType.Bool;
+                    break;
                 }
 
                 if (binaryExpression is BaseComparisonExpressionNode)
                 {
-                    if (GetTypeOfBinaryExpression(lhsType, rhsType) == null)
+                    if (GetTypeOfBinaryExpression(lhsType!.Value, rhsType!.Value) == null)
                     {
                         throw _errorHelper.ShowErrorMessageAtNode($"Cannot compare expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                     }
 
-                    return ExpressionType.Bool;
+                    expression.ValueType = ExpressionType.Bool;
+                    break;
                 }
 
-                var type = GetTypeOfBinaryExpression(lhsType, rhsType);
+                var type = GetTypeOfBinaryExpression(lhsType!.Value, rhsType!.Value);
                 if (type == null)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode($"Cannot {GetNameOfOperator(binaryExpression)} expressions of types {lhsType} and {rhsType}", binaryExpression.Lhs);
                 }
 
-                return type.Value;
+                expression.ValueType = type.Value;
+                break;
             }
             default:
                 throw _errorHelper.UnknownVariant("binary expression", expression.GetType());
@@ -270,28 +288,43 @@ public class TypeChecker
         };
     }
 
-    private ExpressionType GetTypeFromTerm(ITermNode term)
+    private void MarkAndCheckTerm(BaseTermNode term)
     {
-        return term switch
+        switch (term)
         {
-            IdentifierTerm identifierTerm => GetVariableType(identifierTerm),
-            ParenTerm parenTerm => GetTypeFromExpression(parenTerm.Expression),
-            BoolLiteralTerm => ExpressionType.Bool,
-            IntLiteralTerm => ExpressionType.Int,
-            InvocationTerm invocation => GetTypeFromInvocation(invocation.InvocationNode) ??
-                                         throw _errorHelper.ShowErrorMessageAtNode("Cannot get value from void function", invocation.InvocationNode),
-            _ => throw _errorHelper.UnknownVariant("term", term.GetType())
-        };
+            case IdentifierTerm identifierTerm:
+                term.ValueType = GetVariableType(identifierTerm);
+                break;
+            case ParenTerm parenTerm:
+                MarkAndCheckExpression(parenTerm.Expression);
+                term.ValueType = parenTerm.Expression.ValueType;
+                break;
+            case BoolLiteralTerm:
+                term.ValueType = ExpressionType.Bool;
+                break;
+            case IntLiteralTerm:
+                term.ValueType = ExpressionType.Int;
+                break;
+            case FloatLiteralTerm:
+                term.ValueType = ExpressionType.Float;
+                break;
+            case InvocationTerm invocation:
+                MarkAndCheckInvocation(invocation.InvocationNode);
+                term.ValueType = invocation.InvocationNode.ValueType ?? throw _errorHelper.ShowErrorMessageAtNode("Cannot get value from void function", invocation.InvocationNode);
+                break;
+            default:
+                throw _errorHelper.UnknownVariant("term", term.GetType());
+        }
     }
 
-    private ExpressionType? GetTypeFromInvocation(InvocationNode invocation)
+    private void MarkAndCheckInvocation(InvocationNode invocation)
     {
         if (!_functionTypeStack.ContainsKey(invocation.Identifier.Identifier))
         {
             throw _errorHelper.ShowErrorMessageAtNode($"Unknown function: {invocation.Identifier}", invocation);
         }
 
-        return _functionTypeStack.GetValue(invocation.Identifier.Identifier);
+        invocation.ValueType = _functionTypeStack.GetValue(invocation.Identifier.Identifier);
     }
 
     private ExpressionType? GetTypeOfBinaryExpression(ExpressionType type1, ExpressionType type2)
@@ -318,8 +351,8 @@ public class TypeChecker
 
     private ScopeTracker<string, ExpressionType> _variableTypeStack = null!;
     private ScopeTracker<string, ExpressionType?> _functionTypeStack = null!;
-    private ExpressionType? _currentFunctionType = null;
-    private bool _isInFunction = false;
+    private ExpressionType? _currentFunctionType;
+    private bool _isInFunction;
 
     private void RecordExpressionType(IdentifierToken identifierToken, ExpressionType expressionType)
     {

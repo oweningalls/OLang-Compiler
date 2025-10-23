@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class NotExpression(IExpressionNode expression) : IExpressionNode
+public class NotExpression(BaseExpressionNode expression) : BaseExpressionNode
 {
-    public IExpressionNode Expression = expression;
+    public BaseExpressionNode Expression = expression;
 }

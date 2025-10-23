@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class ReturnValueStatement(IExpressionNode expression) : IStatementNode
+public class ReturnValueStatement(BaseExpressionNode expression) : IStatementNode
 {
-    public IExpressionNode Expression = expression;
+    public BaseExpressionNode Expression = expression;
 }

@@ -1,6 +1,12 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class BoolLiteralTerm(bool value) : ITermNode
+public class BoolLiteralTerm : BaseTermNode
 {
-    public bool Value = value;
+    public BoolLiteralTerm(bool value)
+    {
+        Value = value;
+        ValueType = TypeChecking.Types.ExpressionType.Bool;
+    }
+    
+    public readonly bool Value;
 }

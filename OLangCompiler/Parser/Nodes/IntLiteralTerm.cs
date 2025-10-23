@@ -1,6 +1,12 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class IntLiteralTerm(int value) : ITermNode
+public class IntLiteralTerm : BaseTermNode
 {
-    public int Value = value;
+    public IntLiteralTerm(int value)
+    {
+        Value = value;
+        ValueType = TypeChecking.Types.ExpressionType.Int;
+    }
+    
+    public readonly int Value;
 }

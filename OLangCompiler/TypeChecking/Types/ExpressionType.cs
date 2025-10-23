@@ -3,5 +3,6 @@
 public enum ExpressionType
 {
     Int,
+    Float,
     Bool
 }
