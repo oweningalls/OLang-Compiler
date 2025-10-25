@@ -1,8 +1,8 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class IfStatement(BaseExpressionNode condition, ScopeNode scope, ElseNode? elseBlock) : IStatementNode
+public class IfStatement(BaseExpressionNode condition, ScopeNode scope, IElseNode elseBlock) : IStatementNode
 {
     public BaseExpressionNode Condition = condition;
     public ScopeNode Scope = scope;
-    public ElseNode? ElseBlock = elseBlock;
+    public IElseNode ElseBlock = elseBlock;
 }

@@ -142,9 +142,19 @@ public class TypeChecker
         }
     }
 
+    private ExpressionType? GetTypeFromFunctionType(IFunctionType type)
+    {
+        if (type is not PrimitiveFunctionType primitiveType)
+        {
+            return null;
+        }
+
+        return primitiveType.Type.ExpType;
+    }
+
     private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)
     {
-        _functionTypeStack.SetValue(functionDeclaration.Identifier.Identifier, functionDeclaration.Type);
+        _functionTypeStack.SetValue(functionDeclaration.Identifier.Identifier, GetTypeFromFunctionType(functionDeclaration.Type));
 
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
@@ -171,10 +181,10 @@ public class TypeChecker
         var wasInFunction = _isInFunction;
         _isInFunction = true;
         var previousFunctionType = _currentFunctionType;
-        _currentFunctionType = functionDeclaration.Type;
+        _currentFunctionType = GetTypeFromFunctionType(functionDeclaration.Type);
 
         CheckScopeTypes(functionDeclaration.Scope);
-        if (functionDeclaration.Type != null)
+        if (functionDeclaration.Type is not VoidFunctionType)
         {
             CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
         }
@@ -206,12 +216,12 @@ public class TypeChecker
             }
 
             if (statement is not IfStatement ifStatement) continue;
-            if (ifStatement.ElseBlock == null)
+            if (ifStatement.ElseBlock is not ElseNode elseNode)
             {
                 continue;
             }
 
-            if (DoesScopeAlwaysReturn(ifStatement.Scope) && DoesScopeAlwaysReturn(ifStatement.ElseBlock.Scope))
+            if (DoesScopeAlwaysReturn(ifStatement.Scope) && DoesScopeAlwaysReturn(elseNode.Scope))
             {
                 return true;
             }

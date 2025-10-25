@@ -155,7 +155,7 @@ public class Parser : IParser
                 ConsumeType<SemicolonToken>();
                 return new DeclarationStatement(new LetVariableType(), identifier, expression);
             case VoidToken:
-                return ParseFunctionDeclarationAfterTypeAndIdentifier(null, identifier);
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(new VoidFunctionType(), identifier);
             case BaseTypeToken typeToken:
                 if (TryConsume<EqualsToken>() != null)
                 {
@@ -164,13 +164,13 @@ public class Parser : IParser
                     return new DeclarationStatement(new PrimitiveVariableType(typeToken), identifier, expression);
                 }
 
-                return ParseFunctionDeclarationAfterTypeAndIdentifier(typeToken.ExpType, identifier);
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(new PrimitiveFunctionType(typeToken), identifier);
             default:
                 throw new Exception($"You shouldn't be able to get here. token type: {token.GetType()}");
         }
     }
 
-    private FunctionDeclarationStatement ParseFunctionDeclarationAfterTypeAndIdentifier(ExpressionType? type, IdentifierToken identifier)
+    private FunctionDeclarationStatement ParseFunctionDeclarationAfterTypeAndIdentifier(IFunctionType type, IdentifierToken identifier)
     {
         ConsumeType<LeftParenToken>();
         var parameters = ParseParameterList();

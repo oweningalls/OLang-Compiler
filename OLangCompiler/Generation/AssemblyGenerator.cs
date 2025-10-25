@@ -151,13 +151,13 @@ public class AssemblyGenerator
 
                          """);
         GenerateScope(ifStatement.Scope);
-        if (ifStatement.ElseBlock != null)
+        if (ifStatement.ElseBlock is ElseNode elseNode)
         {
             var elseEndLabel = GetLabel("elseEnd");
             _output.Append($"    jmp {elseEndLabel}\n");
 
             _output.Append($"{label}:\n");
-            GenerateScope(ifStatement.ElseBlock.Scope);
+            GenerateScope(elseNode.Scope);
 
             _output.Append($"{elseEndLabel}:\n");
         }
