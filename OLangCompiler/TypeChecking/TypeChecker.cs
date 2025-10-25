@@ -195,8 +195,11 @@ public class TypeChecker
 
     private bool DoesScopeAlwaysReturn(ScopeNode scope)
     {
-        foreach (var statement in scope.Statements)
+        var statementList = scope.StmtList;
+        while (statementList is StmtListWithStatement stmtList)
         {
+            var statement = stmtList.Statement;
+            statementList = stmtList.StmtList;
             if (statement is ReturnValueStatement or ExitStatement)
             {
                 return true;
@@ -220,9 +223,12 @@ public class TypeChecker
     private void CheckScopeTypes(ScopeNode scopeNode)
     {
         BeginScope();
-        foreach (var statement in scopeNode.Statements)
+        var statementList = scopeNode.StmtList;
+        while (statementList is StmtListWithStatement stmtList)
         {
+            var statement = stmtList.Statement;
             CheckStatementType(statement);
+            statementList = stmtList.StmtList;
         }
 
         EndScope();

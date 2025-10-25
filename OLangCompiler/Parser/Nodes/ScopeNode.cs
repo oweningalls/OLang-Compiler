@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.Nodes;
 
-public class ScopeNode(List<IStatementNode> statements) : INode
+public class ScopeNode(IStmtListNode statementList) : INode
 {
-    public List<IStatementNode> Statements = statements;
+    public IStmtListNode StmtList = statementList;
 }

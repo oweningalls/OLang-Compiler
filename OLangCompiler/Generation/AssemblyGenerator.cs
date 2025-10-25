@@ -199,7 +199,21 @@ public class AssemblyGenerator
         var scope = forStatement.Scope;
         var identifierExpression = new TermExpression(new IdentifierTerm(forStatement.Identifier.Identifier));
         var addExpression = new AddExpression(identifierExpression, new TermExpression(new IntLiteralTerm(1)));
-        scope.Statements.Add(new AssignmentStatement(forStatement.Identifier, addExpression));
+        var assignment = new AssignmentStatement(forStatement.Identifier, addExpression);
+        var finalStmt = new StmtListWithStatement(assignment, new EmptyStmtList());
+        if (scope.StmtList is EmptyStmtList)
+        {
+            scope.StmtList = finalStmt;
+        }
+        else if (scope.StmtList is StmtListWithStatement stmtList)
+        {
+            while (stmtList.StmtList is StmtListWithStatement innerStmtList)
+            {
+                stmtList = innerStmtList;
+            }
+
+            stmtList.StmtList = finalStmt;
+        }
 
         var condition = new LessExpression(identifierExpression, forStatement.End);
         var whileStatement = new WhileStatement(condition, scope);
@@ -316,10 +330,7 @@ public class AssemblyGenerator
     private void GenerateScope(ScopeNode scopeNode)
     {
         BeginScope();
-        foreach (var statement in scopeNode.Statements)
-        {
-            GenerateStatement(statement);
-        }
+        GenerateStmtList(scopeNode.StmtList);
 
         var toPop = EndScope();
         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
@@ -356,10 +367,7 @@ public class AssemblyGenerator
             i += 1;
         }
 
-        foreach (var statement in functionScope.Statements)
-        {
-            GenerateStatement(statement);
-        }
+        GenerateStmtList(functionScope.StmtList);
 
         var toPop = EndScope();
         _stackOffset -= toPop.Count;

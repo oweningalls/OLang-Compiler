@@ -25,13 +25,17 @@ public class Parser : IParser
             return new EmptyStmtList();
         }
 
-        var statement = ParseStatement();
+        var statement = TryParseStatement();
+        if (statement == null)
+        {
+            return new EmptyStmtList();
+        }
         var stmtList = ParseStmtList();
 
         return new StmtListWithStatement(statement, stmtList);
     }
 
-    private IStatementNode ParseStatement()
+    private IStatementNode? TryParseStatement()
     {
         if (TryConsume<ExitToken>() != null)
         {
@@ -129,7 +133,7 @@ public class Parser : IParser
             return new ReturnValueStatement(expression);
         }
 
-        throw _errorHelper.ExpectedValue("statement", Peek()!);
+        return null;
     }
 
     private IStatementNode? TryParseDeclaration()
@@ -236,12 +240,9 @@ public class Parser : IParser
 
     private ScopeNode ParseScope()
     {
-        var statements = new List<IStatementNode>();
         ConsumeType<LeftCurlyToken>();
-        while (Peek() != null && Peek() is not RightCurlyToken)
-        {
-            statements.Add(ParseStatement());
-        }
+
+        var statements = ParseStmtList();
 
         ConsumeType<RightCurlyToken>();
 
