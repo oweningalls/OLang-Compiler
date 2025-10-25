@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.Nodes;
 
-public class PrimitiveVariableType(BaseTypeToken type) : IVariableType
+public class PrimitiveVariableType(ITypeNode type) : IVariableType
 {
-    public BaseTypeToken Type = type;
+    public ITypeNode Type = type;
 }

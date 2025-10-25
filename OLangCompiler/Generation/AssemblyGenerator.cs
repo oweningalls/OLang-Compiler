@@ -197,7 +197,7 @@ public class AssemblyGenerator
     {
         BeginScope();
 
-        var declaration = new DeclarationStatement(new PrimitiveVariableType(new IntTypeToken()), forStatement.Identifier, forStatement.Start);
+        var declaration = new DeclarationStatement(new PrimitiveVariableType(new IntTypeNode()), forStatement.Identifier, forStatement.Start);
         GenerateVarDeclarationStatement(declaration);
 
         var scope = forStatement.Scope;

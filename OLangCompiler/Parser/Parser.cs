@@ -161,7 +161,7 @@ public class Parser : IParser
                 {
                     expression = ParseExpression();
                     ConsumeType<SemicolonToken>();
-                    return new DeclarationStatement(new PrimitiveVariableType(typeToken), identifier, expression);
+                    return new DeclarationStatement(new PrimitiveVariableType(GetType(typeToken)), identifier, expression);
                 }
 
                 return ParseFunctionDeclarationAfterTypeAndIdentifier(new PrimitiveFunctionType(GetType(typeToken)), identifier);

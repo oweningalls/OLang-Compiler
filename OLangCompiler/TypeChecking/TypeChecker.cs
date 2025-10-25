@@ -42,9 +42,9 @@ public class TypeChecker
             case DeclarationStatement declarationStatement:
                 MarkAndCheckExpression(declarationStatement.Expression);
                 var type = declarationStatement.Expression.ValueType;
-                if (declarationStatement.Type is PrimitiveVariableType varType && type != varType.Type.ExpType)
+                if (declarationStatement.Type is PrimitiveVariableType varType && type != varType.Type.Type)
                 {
-                    throw _errorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {varType.Type.ExpType}", declarationStatement.Expression);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Expression type {type} does not match variable type {varType.Type.Type}", declarationStatement.Expression);
                 }
 
                 RecordExpressionType(declarationStatement.Identifier, type!.Value);
