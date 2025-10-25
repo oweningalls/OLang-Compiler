@@ -149,7 +149,7 @@ public class Parser : IParser
                 ConsumeType<EqualsToken>();
                 var expression = ParseExpression();
                 ConsumeType<SemicolonToken>();
-                return new DeclarationStatement(identifier, expression);
+                return new DeclarationStatement(new LetVariableType(), identifier, expression);
             case VoidToken:
                 return ParseFunctionDeclarationAfterTypeAndIdentifier(null, identifier);
             case BaseTypeToken typeToken:
@@ -157,7 +157,7 @@ public class Parser : IParser
                 {
                     expression = ParseExpression();
                     ConsumeType<SemicolonToken>();
-                    return new DeclarationStatement(identifier, expression, (typeToken).ExpType);
+                    return new DeclarationStatement(new PrimitiveVariableType(typeToken), identifier, expression);
                 }
 
                 return ParseFunctionDeclarationAfterTypeAndIdentifier(typeToken.ExpType, identifier);

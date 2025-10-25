@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
 
@@ -192,7 +193,7 @@ public class AssemblyGenerator
     {
         BeginScope();
 
-        var declaration = new DeclarationStatement(forStatement.Identifier, forStatement.Start, ExpressionType.Int);
+        var declaration = new DeclarationStatement(new PrimitiveVariableType(new IntTypeToken()), forStatement.Identifier, forStatement.Start);
         GenerateVarDeclarationStatement(declaration);
 
         var scope = forStatement.Scope;
