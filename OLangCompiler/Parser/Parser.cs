@@ -59,13 +59,13 @@ public class Parser : IParser
         {
             CheckEndOfInput();
             var assignmentOperatorToken = ConsumeType<BaseAssignmentOperatorToken>();
-
+            
             var expression = ParseExpression();
             ConsumeType<SemicolonToken>();
 
-            if (assignmentOperatorToken is EqualsToken)
+            if (assignmentOperatorToken is EqualsToken eq)
             {
-                return new AssignmentStatement(ident, expression);
+                return new AssignmentStatement(ident, eq, expression);
             }
 
             var lhs = new TermExpression(new IdentifierTerm(ident.Identifier));
@@ -79,7 +79,7 @@ public class Parser : IParser
                 _ => throw _errorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
             };
 
-            return new AssignmentStatement(ident, reformedExpression);
+            return new AssignmentStatement(ident, new EqualsToken(), reformedExpression);
         }
 
         if (Peek() is LeftCurlyToken)

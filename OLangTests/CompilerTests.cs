@@ -2,7 +2,7 @@
 
 namespace OLangTests;
 
-public class Tests
+public class CompilerTests
 {
     [OneTimeSetUp]
     public void OneTimeSetUp()
