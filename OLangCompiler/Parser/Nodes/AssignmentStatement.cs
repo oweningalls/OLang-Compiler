@@ -2,9 +2,9 @@
 
 namespace OLangCompiler.Parser.Nodes;
 
-public class AssignmentStatement(IdentifierToken identifier, BaseAssignmentOperatorToken operatorToken, BaseExpressionNode expression) : IStatementNode
+public class AssignmentStatement(IdentifierToken identifier, IAssignmentOperatorNode operatorNode, BaseExpressionNode expression) : IStatementNode
 {
     public IdentifierToken Identifier = identifier;
-    public BaseAssignmentOperatorToken OperatorToken = operatorToken;
+    public IAssignmentOperatorNode Operator = operatorNode;
     public BaseExpressionNode Expression = expression;
 }

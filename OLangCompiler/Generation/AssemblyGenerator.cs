@@ -127,6 +127,10 @@ public class AssemblyGenerator
 
     private void GenerateAssignmentStatement(AssignmentStatement assignmentStatement)
     {
+        if (assignmentStatement.Operator is not EqualsNode)
+        {
+            _errorHelper.UnknownVariant("operator", assignmentStatement.Operator.GetType());
+        }
         GenerateExpression(assignmentStatement.Expression);
         _output!.Append($"""
                              {GetPopStatement("rax")}
@@ -199,7 +203,7 @@ public class AssemblyGenerator
         var scope = forStatement.Scope;
         var identifierExpression = new TermExpression(new IdentifierTerm(forStatement.Identifier.Identifier));
         var addExpression = new AddExpression(identifierExpression, new TermExpression(new IntLiteralTerm(1)));
-        var assignment = new AssignmentStatement(forStatement.Identifier, new EqualsToken(), addExpression);
+        var assignment = new AssignmentStatement(forStatement.Identifier, new EqualsNode(), addExpression);
         var finalStmt = new StmtListWithStatement(assignment, new EmptyStmtList());
         if (scope.StmtList is EmptyStmtList)
         {
