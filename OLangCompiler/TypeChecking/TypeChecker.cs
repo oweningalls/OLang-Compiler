@@ -149,7 +149,7 @@ public class TypeChecker
             return null;
         }
 
-        return primitiveType.Type.ExpType;
+        return primitiveType.Type.Type;
     }
 
     private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)

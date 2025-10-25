@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.Nodes;
 
-public class PrimitiveFunctionType(BaseTypeToken type) : IFunctionType
+public class PrimitiveFunctionType(ITypeNode type) : IFunctionType
 {
-    public BaseTypeToken Type = type;
+    public ITypeNode Type = type;
 }

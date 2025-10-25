@@ -164,9 +164,24 @@ public class Parser : IParser
                     return new DeclarationStatement(new PrimitiveVariableType(typeToken), identifier, expression);
                 }
 
-                return ParseFunctionDeclarationAfterTypeAndIdentifier(new PrimitiveFunctionType(typeToken), identifier);
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(new PrimitiveFunctionType(GetType(typeToken)), identifier);
             default:
                 throw new Exception($"You shouldn't be able to get here. token type: {token.GetType()}");
+        }
+    }
+
+    private ITypeNode GetType(BaseTypeToken typeToken)
+    {
+        switch (typeToken)
+        {
+            case IntTypeToken:
+                return new IntTypeNode();
+            case BoolTypeToken:
+                return new BoolTypeNode();
+            case FloatTypeToken:
+                return new FloatTypeNode();
+            default:
+                throw _errorHelper.UnknownVariant("type", typeToken.GetType());
         }
     }
 
