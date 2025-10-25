@@ -15,9 +15,23 @@ public class TypeChecker
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
         _functionTypeStack = new ScopeTracker<string, ExpressionType?>();
 
-        foreach (var statement in program.Statements)
+        CheckStmtListType(program.StmtList);
+    }
+
+    private void CheckStmtListType(IStmtListNode stmtList)
+    {
+        switch (stmtList)
         {
-            CheckStatementType(statement);
+            case EmptyStmtList:
+                break;
+            case StmtListWithStatement stmtListWithStatement:
+                CheckStatementType(stmtListWithStatement.Statement);
+                CheckStmtListType(stmtListWithStatement.StmtList);
+                break;
+            default:
+            {
+                throw _errorHelper.UnknownVariant("statment list", stmtList.GetType());
+            }
         }
     }
 
@@ -135,11 +149,23 @@ public class TypeChecker
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, ExpressionType>();
 
-        foreach ((ExpressionType, IdentifierToken) val in functionDeclaration.Parameters.Parameters)
+        var i = 0;
+        var parameterList = functionDeclaration.Parameters;
+        while (parameterList is Parameter param)
         {
-            var (type, ident) = val;
+            var type = param.Type;
+            var ident = param.Identifier;
             
             _variableTypeStack.SetValue(ident.Identifier, type);
+            if (param is ContinuedParameterList continued)
+            {
+                parameterList = continued.ParameterList;
+            }
+            else
+            {
+                break;
+            }
+            i += 1;
         }
 
         var wasInFunction = _isInFunction;

@@ -4,7 +4,7 @@ using OLangCompiler.TypeChecking.Types;
 
 namespace OLangCompiler.Parser;
 
-public class Parser
+public class Parser : IParser
 {
     private ErrorHelper _errorHelper;
 
@@ -13,13 +13,22 @@ public class Parser
         _errorHelper = errorHelper;
         _tokens = tokens;
         _currentIndex = 0;
-        var statements = new List<IStatementNode>();
-        while (Peek() != null)
+        var stmtList = ParseStmtList();
+
+        return new ProgramNode(stmtList);
+    }
+
+    private IStmtListNode ParseStmtList()
+    {
+        if (Peek() == null)
         {
-            statements.Add(ParseStatement());
+            return new EmptyStmtList();
         }
 
-        return new ProgramNode(statements);
+        var statement = ParseStatement();
+        var stmtList = ParseStmtList();
+
+        return new StmtListWithStatement(statement, stmtList);
     }
 
     private IStatementNode ParseStatement()
@@ -167,20 +176,22 @@ public class Parser
         return new FunctionDeclarationStatement(type, identifier, parameters, scope);
     }
 
-    private ParameterListNode ParseParameterList()
+    private IParameterListNode ParseParameterList()
     {
-        var parameters = new List<(ExpressionType, IdentifierToken)>();
-        while (TryConsume<BaseTypeToken>() is { } type)
+        if (TryConsume<BaseTypeToken>() is not { } type)
         {
-            var identifierToken = ConsumeType<IdentifierToken>();
-            parameters.Add((type.ExpType!.Value, identifierToken));
-            if (TryConsume<CommaToken>() is null)
-            {
-                break;
-            }
+            return new EmptyParameterList();
         }
+        
+        var identifierToken = ConsumeType<IdentifierToken>();
+        if (TryConsume<CommaToken>() == null)
+        {
+            return new Parameter(type.ExpType!.Value, identifierToken);
+        }
+        
+        var paramList = ParseParameterList();
+        return new ContinuedParameterList(type.ExpType!.Value, identifierToken, paramList);
 
-        return new ParameterListNode(parameters);
     }
 
     private InvocationNode? TryParseInvocation()

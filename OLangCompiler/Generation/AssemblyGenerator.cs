@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using OLangCompiler.Parser.Nodes;
-using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
 
@@ -28,17 +27,14 @@ public class AssemblyGenerator
 
                        """);
 
-        foreach (var statement in program.Statements)
-        {
-            GenerateStatement(statement);
-        }
+        GenerateStmtList(program.StmtList);
 
         _output!.Append("""
                             mov rdi, 0
                             mov rax, 60
                             syscall
 
-                        
+
                         """);
         foreach (var function in _functions)
         {
@@ -47,6 +43,23 @@ public class AssemblyGenerator
         }
 
         return _output.ToString();
+    }
+
+    private void GenerateStmtList(IStmtListNode stmtList)
+    {
+        switch (stmtList)
+        {
+            case EmptyStmtList:
+                break;
+            case StmtListWithStatement stmtListWithStatement:
+                GenerateStatement(stmtListWithStatement.Statement);
+                GenerateStmtList(stmtListWithStatement.StmtList);
+                break;
+            default:
+            {
+                throw _errorHelper.UnknownVariant("statment list", stmtList.GetType());
+            }
+        }
     }
 
     private void GenerateStatement(IStatementNode statement)
@@ -141,10 +154,10 @@ public class AssemblyGenerator
         {
             var elseEndLabel = GetLabel("elseEnd");
             _output.Append($"    jmp {elseEndLabel}\n");
-            
+
             _output.Append($"{label}:\n");
             GenerateScope(ifStatement.ElseBlock.Scope);
-            
+
             _output.Append($"{elseEndLabel}:\n");
         }
         else
@@ -206,7 +219,7 @@ public class AssemblyGenerator
 
         var currentReturnLabel = _currentFunctionReturnLabel;
         _currentFunctionReturnLabel = returnLabel;
-        
+
         _functionTracker.SetValue(functionDeclaration.Identifier.Identifier, label);
         var functionOutput = new StringBuilder();
         var currentOutput = _output;
@@ -247,7 +260,7 @@ public class AssemblyGenerator
 
         // Not preserving rax since that's where the return value goes
         _output!.Append(MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"));
-        
+
         var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
         var args = invocationNode.Arguments.Expressions;
         for (var i = 0; i < args.Count; i++)
@@ -256,18 +269,19 @@ public class AssemblyGenerator
             {
                 throw new Exception("Too many parameters");
             }
-            
+
             GenerateExpression(args[i]);
-            
+
             _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
         }
-        
+
         var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
         var returnPushes = "";
         if (hasReturnValue)
         {
             returnPushes = $"\n    {GetPushStatement("rax")}\n";
         }
+
         var label = _functionTracker.GetValue(funcName);
         _output.Append($"""
                             call {label}
@@ -287,7 +301,8 @@ public class AssemblyGenerator
         return pushes.ToString();
     }
 
-    private string MakeReversePops(params string[] registers){
+    private string MakeReversePops(params string[] registers)
+    {
         var pops = new StringBuilder();
         foreach (var reg in registers.Reverse())
         {
@@ -309,25 +324,37 @@ public class AssemblyGenerator
         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
         _stackOffset -= toPop.Count;
     }
-    
+
     // returns statement to remove local vars from the stack
-    private string GenerateFunctionScope(ScopeNode functionScope, ParameterListNode parameterList)
+    private string GenerateFunctionScope(ScopeNode functionScope, IParameterListNode parameterList)
     {
         BeginScope();
         // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
         var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-        
-        for(var i = 0; i < parameterList.Parameters.Count; i++)
+
+        var i = 0;
+        while (parameterList is Parameter param)
         {
-            var identifier = parameterList.Parameters[i].Item2;
             if (i >= argRegisters.Count)
             {
                 throw new Exception("Too many parameters");
             }
+            
+            var identifier = param.Identifier;
             _output!.Append($"    {GetPushStatement(argRegisters[i])}\n");
             SaveVariableLocation(identifier.Identifier);
+
+            if (parameterList is ContinuedParameterList continued)
+            {
+                parameterList = continued.ParameterList;
+            }
+            else
+            {
+                break;
+            }
+            i += 1;
         }
-        
+
         foreach (var statement in functionScope.Statements)
         {
             GenerateStatement(statement);
@@ -343,10 +370,10 @@ public class AssemblyGenerator
         _output!.Append($"""
                          
                              jmp {_currentFunctionReturnLabel}
-                         
+
                          """);
     }
-    
+
     private void GenerateReturnValueFunctionStatement(ReturnValueStatement returnValue)
     {
         GenerateExpression(returnValue.Expression);
@@ -354,7 +381,7 @@ public class AssemblyGenerator
         _output!.Append($"""
                              {GetPopStatement("rax")}
                              jmp {_currentFunctionReturnLabel}
-                         
+
                          """);
     }
 

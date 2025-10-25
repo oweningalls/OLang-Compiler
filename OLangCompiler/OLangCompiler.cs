@@ -1,4 +1,5 @@
 ﻿using OLangCompiler.Generation;
+using OLangCompiler.Parser;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking;
 
@@ -32,7 +33,7 @@ public static class OLangCompiler
         var tokenizer = new Tokenizer();
         var tokens = tokenizer.Tokenize(program, errorHelper);
 
-        var parser = new Parser.Parser();
+        IParser parser = new Parser.Parser();
         var programNode = parser.ParseProgram(tokens, errorHelper);
 
         var typeChecker = new TypeChecker();
