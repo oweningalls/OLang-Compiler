@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.ParseTree.Expression;
 
-public class NotExpression(BaseExpressionNode expression) : BaseExpressionNode
+public class NotExpression(BaseExpression expression) : BaseExpression
 {
-    public BaseExpressionNode Expression = expression;
+    public BaseExpression Expression = expression;
 }

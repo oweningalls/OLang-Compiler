@@ -28,14 +28,14 @@ public class GrammarTests
     [Test]
     public void ReduceDeclarationStatement()
     {
-        var rule = new Grammar().GetRules().First(x => x.GetLhsType() == typeof(DeclarationStatement));
-        var varType = new PrimitiveVariableType(new BoolTypeNode());
+        var rule = new Grammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
+        var varType = new PrimitiveVariableType(new BoolType());
         var identifier = new IdentifierToken("test");
         var expression = new TermExpression(new IdentifierTerm("otherTest"));
         
         var decl = rule.ReduceRule([varType, identifier, new EqualsToken(), expression, new SemicolonToken()]);
 
-        var declaration = decl as DeclarationStatement;
+        var declaration = decl as Declaration;
         Assert.That(declaration, Is.Not.Null);
         Assert.That(declaration.Type, Is.EqualTo(varType));
         Assert.That(declaration.Identifier, Is.EqualTo(identifier));

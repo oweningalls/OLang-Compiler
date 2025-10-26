@@ -14,6 +14,7 @@ using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
+using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.Parser;
 
@@ -48,13 +49,13 @@ public class Parser : IParser
         return new StmtListWithStatement(statement, stmtList);
     }
 
-    private IStatementNode? TryParseStatement()
+    private IStatement? TryParseStatement()
     {
         if (TryConsume<ExitToken>() != null)
         {
             var expression = ParseExpression();
             ConsumeType<SemicolonToken>();
-            return new ExitStatement(expression);
+            return new Exit(expression);
         }
 
         if (TryParseDeclaration() is { } declaration)
@@ -65,7 +66,7 @@ public class Parser : IParser
         if (TryParseInvocation() is { } invocation)
         {
             ConsumeType<SemicolonToken>();
-            return new InvocationStatement(invocation);
+            return new Invocation(invocation);
         }
 
         if (TryConsume<IdentifierToken>() is { } ident)
@@ -78,21 +79,21 @@ public class Parser : IParser
 
             if (assignmentOperatorToken is EqualsToken)
             {
-                return new AssignmentStatement(ident, new EqualsNode(), expression);
+                return new Assignment(ident, new Equals(), expression);
             }
 
             var lhs = new TermExpression(new IdentifierTerm(ident.Identifier));
 
-            BaseBinaryExpressionNode reformedExpression = assignmentOperatorToken switch
+            BaseBinaryExpression reformedExpression = assignmentOperatorToken switch
             {
-                PlusEqualsToken => new AddExpression(lhs, expression),
-                MinusEqualsToken => new SubtractExpression(lhs, expression),
-                TimesEqualsToken => new TimesExpression(lhs, expression),
-                DivideEqualsToken => new DivideExpression(lhs, expression),
+                PlusEqualsToken => new Add(lhs, expression),
+                MinusEqualsToken => new Subtract(lhs, expression),
+                TimesEqualsToken => new Times(lhs, expression),
+                DivideEqualsToken => new Divide(lhs, expression),
                 _ => throw _errorHelper.UnknownVariant("assignment operator", assignmentOperatorToken.GetType())
             };
 
-            return new AssignmentStatement(ident, new EqualsNode(), reformedExpression);
+            return new Assignment(ident, new Equals(), reformedExpression);
         }
 
         if (Peek() is LeftCurlyToken)
@@ -104,14 +105,14 @@ public class Parser : IParser
         {
             var condition = ParseExpression();
             var scope = ParseScope();
-            ElseNode? elseNode = null;
+            Else? elseNode = null;
             if (Peek() != null && TryConsume<ElseToken>() != null)
             {
                 var elseScope = ParseScope();
-                elseNode = new ElseNode(elseScope);
+                elseNode = new Else(elseScope);
             }
 
-            return new IfStatement(condition, scope, elseNode);
+            return new If(condition, scope, elseNode);
         }
 
         if (TryConsume<WhileToken>() != null)
@@ -119,7 +120,7 @@ public class Parser : IParser
             var condition = ParseExpression();
             var scope = ParseScope();
 
-            return new WhileStatement(condition, scope);
+            return new While(condition, scope);
         }
 
         if (TryConsume<ForToken>() != null)
@@ -131,25 +132,25 @@ public class Parser : IParser
             var end = ParseExpression();
             var scope = ParseScope();
 
-            return new ForStatement(identifier, start, end, scope);
+            return new For(identifier, start, end, scope);
         }
         
         if (TryConsume<ReturnToken>() != null)
         {
             if (TryConsume<SemicolonToken>() != null)
             {
-                return new ReturnStatement();
+                return new Return();
             }
 
             var expression = ParseExpression();
             TryConsume<SemicolonToken>();
-            return new ReturnValueStatement(expression);
+            return new ReturnValue(expression);
         }
 
         return null;
     }
 
-    private IStatementNode? TryParseDeclaration()
+    private IStatement? TryParseDeclaration()
     {
         if (Peek() is not (BaseTypeToken or LetToken or VoidToken)) return null;
 
@@ -166,15 +167,15 @@ public class Parser : IParser
                 ConsumeType<EqualsToken>();
                 var expression = ParseExpression();
                 ConsumeType<SemicolonToken>();
-                return new DeclarationStatement(new LetVariableType(), identifier, expression);
+                return new Declaration(new Let(), identifier, expression);
             case VoidToken:
-                return ParseFunctionDeclarationAfterTypeAndIdentifier(new VoidFunctionType(), identifier);
+                return ParseFunctionDeclarationAfterTypeAndIdentifier(new Void(), identifier);
             case BaseTypeToken typeToken:
                 if (TryConsume<EqualsToken>() != null)
                 {
                     expression = ParseExpression();
                     ConsumeType<SemicolonToken>();
-                    return new DeclarationStatement(new PrimitiveVariableType(GetType(typeToken)), identifier, expression);
+                    return new Declaration(new PrimitiveVariableType(GetType(typeToken)), identifier, expression);
                 }
 
                 return ParseFunctionDeclarationAfterTypeAndIdentifier(new PrimitiveFunctionType(GetType(typeToken)), identifier);
@@ -183,29 +184,29 @@ public class Parser : IParser
         }
     }
 
-    private ITypeNode GetType(BaseTypeToken typeToken)
+    private IType GetType(BaseTypeToken typeToken)
     {
         switch (typeToken)
         {
             case IntTypeToken:
-                return new IntTypeNode();
+                return new IntType();
             case BoolTypeToken:
-                return new BoolTypeNode();
+                return new BoolType();
             case FloatTypeToken:
-                return new FloatTypeNode();
+                return new FloatType();
             default:
                 throw _errorHelper.UnknownVariant("type", typeToken.GetType());
         }
     }
 
-    private FunctionDeclarationStatement ParseFunctionDeclarationAfterTypeAndIdentifier(IFunctionType type, IdentifierToken identifier)
+    private FunctionDeclaration ParseFunctionDeclarationAfterTypeAndIdentifier(IFunctionType type, IdentifierToken identifier)
     {
         ConsumeType<LeftParenToken>();
         var parameters = ParseParameterList();
         ConsumeType<RightParenToken>();
         var scope = ParseScope();
 
-        return new FunctionDeclarationStatement(type, identifier, parameters, scope);
+        return new FunctionDeclaration(type, identifier, parameters, scope);
     }
 
     private IParameterListNode ParseParameterList()
@@ -241,7 +242,7 @@ public class Parser : IParser
         return new InvocationNode(identifier, arguments);
     }
 
-    private IArgumentListNode ParseArgumentList()
+    private IArgumentList ParseArgumentList()
     {
         if (Peek() is RightParenToken)
         {
@@ -278,7 +279,7 @@ public class Parser : IParser
         return new ScopeNode(statements);
     }
 
-    private BaseExpressionNode ParseExpression(int minPrecedence = 0)
+    private BaseExpression ParseExpression(int minPrecedence = 0)
     {
         if (TryConsume<NotToken>() != null)
         {
@@ -287,7 +288,7 @@ public class Parser : IParser
             return new NotExpression(innerExpression);
         }
 
-        BaseExpressionNode expression = new TermExpression(ParseTerm());
+        BaseExpression expression = new TermExpression(ParseTerm());
 
         while (Peek() is BaseBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
         {
@@ -298,18 +299,18 @@ public class Parser : IParser
 
             expression = binaryOperatorToken switch
             {
-                DoubleEqualsToken => new DoubleEqualsExpression(expression, rhs),
-                PlusToken => new AddExpression(expression, rhs),
-                MinusToken => new SubtractExpression(expression, rhs),
-                TimesToken => new TimesExpression(expression, rhs),
-                DivideToken => new DivideExpression(expression, rhs),
-                NotEqualToken => new NotEqualExpression(expression, rhs),
-                GreaterToken => new GreaterExpression(expression, rhs),
-                GreaterOrEqualToken => new GreaterOrEqualExpression(expression, rhs),
-                LessToken => new LessExpression(expression, rhs),
-                LessOrEqualToken => new LessOrEqualExpression(expression, rhs),
-                BooleanAndToken => new BooleanAndExpression(expression, rhs),
-                BooleanOrToken => new BooleanOrExpression(expression, rhs),
+                DoubleEqualsToken => new DoubleEquals(expression, rhs),
+                PlusToken => new Add(expression, rhs),
+                MinusToken => new Subtract(expression, rhs),
+                TimesToken => new Times(expression, rhs),
+                DivideToken => new Divide(expression, rhs),
+                NotEqualToken => new NotEqual(expression, rhs),
+                GreaterToken => new Greater(expression, rhs),
+                GreaterOrEqualToken => new GreaterOrEqual(expression, rhs),
+                LessToken => new Less(expression, rhs),
+                LessOrEqualToken => new LessOrEqual(expression, rhs),
+                BooleanAndToken => new BooleanAnd(expression, rhs),
+                BooleanOrToken => new BooleanOr(expression, rhs),
                 _ => throw _errorHelper.UnknownVariant("binary operator", binaryOperatorToken.GetType())
             };
         }
@@ -322,22 +323,22 @@ public class Parser : IParser
         var invocation = TryParseInvocation();
         if (invocation != null)
         {
-            return new InvocationTerm(invocation);
+            return new FunctionInvocation(invocation);
         }
 
         if (TryConsume<IntLiteralToken>() is { } ilt)
         {
-            return new IntLiteralTerm(ilt.Value);
+            return new IntLiteral(ilt.Value);
         }
         
         if (TryConsume<FloatLiteralToken>() is { } flt)
         {
-            return new FloatLiteralTerm(flt.Value);
+            return new FloatLiteral(flt.Value);
         }
 
         if (TryConsume<BoolLiteralToken>() is { } blt)
         {
-            return new BoolLiteralTerm(blt.Value);
+            return new BoolLiteral(blt.Value);
         }
 
         if (TryConsume<IdentifierToken>() is { } identifier)
@@ -349,7 +350,7 @@ public class Parser : IParser
         {
             var expression = ParseExpression();
             ConsumeType<RightParenToken>();
-            return new ParenTerm(expression);
+            return new Paren(expression);
         }
 
         if (TryConsume<MinusToken>() != null)
@@ -357,13 +358,13 @@ public class Parser : IParser
             var intLiteral = TryConsume<IntLiteralToken>();
             if (intLiteral != null)
             {
-                return new IntLiteralTerm(-intLiteral.Value);
+                return new IntLiteral(-intLiteral.Value);
             }
 
             var floatLiteral = TryConsume<FloatLiteralToken>();
             if (floatLiteral != null)
             {
-                return new FloatLiteralTerm(-floatLiteral.Value);
+                return new FloatLiteral(-floatLiteral.Value);
             }
             throw _errorHelper.ExpectedValue("number literal", Peek()!);
         }

@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.FunctionType;
 
-public class PrimitiveFunctionType(ITypeNode type) : IFunctionType
+public class PrimitiveFunctionType(IType type) : IFunctionType
 {
-    public ITypeNode Type = type;
+    public IType Type = type;
 }

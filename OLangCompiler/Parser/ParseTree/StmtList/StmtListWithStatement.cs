@@ -2,8 +2,8 @@
 
 namespace OLangCompiler.Parser.ParseTree.StmtList;
 
-public class StmtListWithStatement(IStatementNode statement, IStmtListNode stmtList) : IStmtListNode
+public class StmtListWithStatement(IStatement statement, IStmtListNode stmtList) : IStmtListNode
 {
-    public IStatementNode Statement = statement;
+    public IStatement Statement = statement;
     public IStmtListNode StmtList = stmtList;
 }

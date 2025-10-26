@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.VariableType;
 
-public class PrimitiveVariableType(ITypeNode type) : IVariableType
+public class PrimitiveVariableType(IType type) : IVariableType
 {
-    public ITypeNode Type = type;
+    public IType Type = type;
 }

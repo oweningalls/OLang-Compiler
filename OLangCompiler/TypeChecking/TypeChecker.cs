@@ -12,6 +12,7 @@ using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
+using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.TypeChecking;
 
@@ -45,11 +46,11 @@ public class TypeChecker
         }
     }
 
-    private void CheckStatementType(IStatementNode statementNode)
+    private void CheckStatementType(IStatement statement)
     {
-        switch (statementNode)
+        switch (statement)
         {
-            case DeclarationStatement declarationStatement:
+            case Declaration declarationStatement:
                 MarkAndCheckExpression(declarationStatement.Expression);
                 var type = declarationStatement.Expression.ValueType;
                 if (declarationStatement.Type is PrimitiveVariableType varType && type != varType.Type.Type)
@@ -59,16 +60,16 @@ public class TypeChecker
 
                 RecordExpressionType(declarationStatement.Identifier, type!.Value);
                 break;
-            case ExitStatement exitStatement:
-                MarkAndCheckExpression(exitStatement.ExpressionNode);
-                var exitType = exitStatement.ExpressionNode.ValueType;
+            case Exit exitStatement:
+                MarkAndCheckExpression(exitStatement.Expression);
+                var exitType = exitStatement.Expression.ValueType;
                 if (exitType != ExpressionType.Int)
                 {
-                    throw _errorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.ExpressionNode);
+                    throw _errorHelper.ShowErrorMessageAtNode($"Exit code has to be an integer", exitStatement.Expression);
                 }
 
                 break;
-            case AssignmentStatement assignmentStatement:
+            case Assignment assignmentStatement:
                 MarkAndCheckExpression(assignmentStatement.Expression);
                 var expressionType = assignmentStatement.Expression.ValueType;
                 var variableType = GetVariableType(assignmentStatement.Identifier);
@@ -81,7 +82,7 @@ public class TypeChecker
             case ScopeStatement scopeStatement:
                 CheckScopeTypes(scopeStatement.Scope);
                 break;
-            case IfStatement ifStatement:
+            case If ifStatement:
                 MarkAndCheckExpression(ifStatement.Condition);
                 var conditionType = ifStatement.Condition.ValueType;
                 if (conditionType != ExpressionType.Bool)
@@ -91,7 +92,7 @@ public class TypeChecker
 
                 CheckScopeTypes(ifStatement.Scope);
                 break;
-            case WhileStatement whileStatement:
+            case While whileStatement:
                 MarkAndCheckExpression(whileStatement.Condition);
                 var whileConditionType = whileStatement.Condition.ValueType;
                 if (whileConditionType != ExpressionType.Bool)
@@ -101,7 +102,7 @@ public class TypeChecker
 
                 CheckScopeTypes(whileStatement.Scope);
                 break;
-            case ForStatement forStatement:
+            case For forStatement:
                 BeginScope();
                 MarkAndCheckExpression(forStatement.Start);
                 var startType = forStatement.Start.ValueType;
@@ -121,19 +122,19 @@ public class TypeChecker
                 CheckScopeTypes(forStatement.Scope);
                 EndScope();
                 break;
-            case FunctionDeclarationStatement functionDeclaration:
+            case FunctionDeclaration functionDeclaration:
                 CheckFunctionDeclarationTypes(functionDeclaration);
                 break;
-            case InvocationStatement:
+            case Invocation:
                 break;
-            case ReturnStatement returnStatement:
+            case Return returnStatement:
                 if (!_isInFunction)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Cannot return outside of a function", returnStatement);
                 }
 
                 break;
-            case ReturnValueStatement returnValueStatement:
+            case ReturnValue returnValueStatement:
                 if (!_isInFunction)
                 {
                     throw _errorHelper.ShowErrorMessageAtNode("Cannot return outside of a function", returnValueStatement);
@@ -148,7 +149,7 @@ public class TypeChecker
 
                 break;
             default:
-                throw _errorHelper.UnknownVariant("statement", statementNode.GetType());
+                throw _errorHelper.UnknownVariant("statement", statement.GetType());
         }
     }
 
@@ -162,7 +163,7 @@ public class TypeChecker
         return primitiveType.Type.Type;
     }
 
-    private void CheckFunctionDeclarationTypes(FunctionDeclarationStatement functionDeclaration)
+    private void CheckFunctionDeclarationTypes(FunctionDeclaration functionDeclaration)
     {
         _functionTypeStack.SetValue(functionDeclaration.Identifier.Identifier, GetTypeFromFunctionType(functionDeclaration.Type));
 
@@ -194,7 +195,7 @@ public class TypeChecker
         _currentFunctionType = GetTypeFromFunctionType(functionDeclaration.Type);
 
         CheckScopeTypes(functionDeclaration.Scope);
-        if (functionDeclaration.Type is not VoidFunctionType)
+        if (functionDeclaration.Type is not Void)
         {
             CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
         }
@@ -205,11 +206,11 @@ public class TypeChecker
         _isInFunction = wasInFunction;
     }
 
-    private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclarationStatement declarationStatement)
+    private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclaration declaration)
     {
-        if (!DoesScopeAlwaysReturn(declarationStatement.Scope))
+        if (!DoesScopeAlwaysReturn(declaration.Scope))
         {
-            throw _errorHelper.ShowErrorMessageAtNode("Not all function paths return a value", declarationStatement);
+            throw _errorHelper.ShowErrorMessageAtNode("Not all function paths return a value", declaration);
         }
     }
 
@@ -220,13 +221,13 @@ public class TypeChecker
         {
             var statement = stmtList.Statement;
             statementList = stmtList.StmtList;
-            if (statement is ReturnValueStatement or ExitStatement)
+            if (statement is ReturnValue or Exit)
             {
                 return true;
             }
 
-            if (statement is not IfStatement ifStatement) continue;
-            if (ifStatement.ElseBlock is not ElseNode elseNode)
+            if (statement is not If ifStatement) continue;
+            if (ifStatement.ElseBlock is not Else elseNode)
             {
                 continue;
             }
@@ -254,7 +255,7 @@ public class TypeChecker
         EndScope();
     }
 
-    private void MarkAndCheckExpression(BaseExpressionNode expression)
+    private void MarkAndCheckExpression(BaseExpression expression)
     {
         switch (expression)
         {
@@ -272,14 +273,14 @@ public class TypeChecker
 
                 expression.ValueType = ExpressionType.Bool;
                 break;
-            case BaseBinaryExpressionNode binaryExpression:
+            case BaseBinaryExpression binaryExpression:
             {
                 MarkAndCheckExpression(binaryExpression.Lhs);
                 var lhsType = binaryExpression.Lhs.ValueType;
                 MarkAndCheckExpression(binaryExpression.Rhs);
                 var rhsType = binaryExpression.Rhs.ValueType;
 
-                if (binaryExpression is BooleanAndExpression)
+                if (binaryExpression is BooleanAnd)
                 {
                     if (lhsType != ExpressionType.Bool || rhsType != ExpressionType.Bool)
                     {
@@ -290,7 +291,7 @@ public class TypeChecker
                     break;
                 }
                 
-                if (binaryExpression is BooleanOrExpression)
+                if (binaryExpression is BooleanOr)
                 {
                     if (lhsType != ExpressionType.Bool || rhsType != ExpressionType.Bool)
                     {
@@ -301,7 +302,7 @@ public class TypeChecker
                     break;
                 }
 
-                if (binaryExpression is BaseComparisonExpressionNode)
+                if (binaryExpression is BaseComparisonExpression)
                 {
                     if (GetTypeOfBinaryExpression(lhsType!.Value, rhsType!.Value) == null)
                     {
@@ -326,17 +327,17 @@ public class TypeChecker
         }
     }
 
-    private string GetNameOfOperator(BaseBinaryExpressionNode binaryExpressionNode)
+    private string GetNameOfOperator(BaseBinaryExpression binaryExpressionExpression)
     {
-        return binaryExpressionNode switch
+        return binaryExpressionExpression switch
         {
-            AddExpression => "add",
-            SubtractExpression => "subtract",
-            TimesExpression => "multiply",
-            DivideExpression => "divide",
-            BooleanAndExpression => "logically and",
-            BaseComparisonExpressionNode => "compare",
-            _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionNode.GetType())
+            Add => "add",
+            Subtract => "subtract",
+            Times => "multiply",
+            Divide => "divide",
+            BooleanAnd => "logically and",
+            BaseComparisonExpression => "compare",
+            _ => throw _errorHelper.UnknownVariant("binary expression", binaryExpressionExpression.GetType())
         };
     }
 
@@ -347,20 +348,20 @@ public class TypeChecker
             case IdentifierTerm identifierTerm:
                 term.ValueType = GetVariableType(identifierTerm);
                 break;
-            case ParenTerm parenTerm:
+            case Paren parenTerm:
                 MarkAndCheckExpression(parenTerm.Expression);
                 term.ValueType = parenTerm.Expression.ValueType;
                 break;
-            case BoolLiteralTerm:
+            case BoolLiteral:
                 term.ValueType = ExpressionType.Bool;
                 break;
-            case IntLiteralTerm:
+            case IntLiteral:
                 term.ValueType = ExpressionType.Int;
                 break;
-            case FloatLiteralTerm:
+            case FloatLiteral:
                 term.ValueType = ExpressionType.Float;
                 break;
-            case InvocationTerm invocation:
+            case FunctionInvocation invocation:
                 MarkAndCheckInvocation(invocation.InvocationNode);
                 term.ValueType = invocation.InvocationNode.ValueType ?? throw _errorHelper.ShowErrorMessageAtNode("Cannot get value from void function", invocation.InvocationNode);
                 break;

@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.ParseTree.ElseBlock;
 
-public class EmptyElse : IElse;
+public interface IElse : INode;

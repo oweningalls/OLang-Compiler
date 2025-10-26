@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.ArgumentList;
 
-public class ContinuedArgumentList(BaseExpressionNode expressionNode, IArgumentListNode argumentList) : ExpressionArgumentList(expressionNode)
+public class ContinuedArgumentList(BaseExpression expression, IArgumentList argumentList) : ExpressionArgumentList(expression)
 {
-    public IArgumentListNode ArgumentList = argumentList;
+    public IArgumentList ArgumentList = argumentList;
 }

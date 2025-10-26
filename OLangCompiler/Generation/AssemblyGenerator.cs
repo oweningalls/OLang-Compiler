@@ -75,41 +75,41 @@ public class AssemblyGenerator
         }
     }
 
-    private void GenerateStatement(IStatementNode statement)
+    private void GenerateStatement(IStatement statement)
     {
         switch (statement)
         {
-            case ExitStatement exitStatement:
+            case Exit exitStatement:
                 GenerateExitStatement(exitStatement);
                 break;
-            case DeclarationStatement declarationStatement:
+            case Declaration declarationStatement:
                 GenerateVarDeclarationStatement(declarationStatement);
                 break;
-            case AssignmentStatement assignmentStatement:
+            case Assignment assignmentStatement:
                 GenerateAssignmentStatement(assignmentStatement);
                 break;
             case ScopeStatement scopeStatement:
                 GenerateScopeStatement(scopeStatement);
                 break;
-            case IfStatement ifStatement:
+            case If ifStatement:
                 GenerateIfStatement(ifStatement);
                 break;
-            case WhileStatement whileStatement:
+            case While whileStatement:
                 GenerateWhileStatement(whileStatement);
                 break;
-            case ForStatement forStatement:
+            case For forStatement:
                 GenerateForStatement(forStatement);
                 break;
-            case FunctionDeclarationStatement functionDeclarationStatement:
+            case FunctionDeclaration functionDeclarationStatement:
                 StoreFunctionDeclaration(functionDeclarationStatement);
                 break;
-            case InvocationStatement invocationStatement:
+            case Invocation invocationStatement:
                 GenerateInvocation(invocationStatement.InvocationNode, false);
                 break;
-            case ReturnValueStatement returnValueStatement:
+            case ReturnValue returnValueStatement:
                 GenerateReturnValueFunctionStatement(returnValueStatement);
                 break;
-            case ReturnStatement returnStatement:
+            case Return returnStatement:
                 GenerateReturnFunctionStatement();
                 break;
             default:
@@ -119,9 +119,9 @@ public class AssemblyGenerator
         }
     }
 
-    private void GenerateExitStatement(ExitStatement exitStatement)
+    private void GenerateExitStatement(Exit exit)
     {
-        GenerateExpression(exitStatement.ExpressionNode);
+        GenerateExpression(exit.Expression);
         _output!.Append($"""
                              {GetPopStatement("rdi")}
                              mov rax, 60
@@ -130,23 +130,23 @@ public class AssemblyGenerator
                          """);
     }
 
-    private void GenerateVarDeclarationStatement(DeclarationStatement declarationStatement)
+    private void GenerateVarDeclarationStatement(Declaration declaration)
     {
-        var identifier = declarationStatement.Identifier;
-        GenerateExpression(declarationStatement.Expression);
+        var identifier = declaration.Identifier;
+        GenerateExpression(declaration.Expression);
         SaveVariableLocation(identifier.Identifier);
     }
 
-    private void GenerateAssignmentStatement(AssignmentStatement assignmentStatement)
+    private void GenerateAssignmentStatement(Assignment assignment)
     {
-        if (assignmentStatement.Operator is not EqualsNode)
+        if (assignment.Operator is not Parser.ParseTree.AssignmentOperator.Equals)
         {
-            _errorHelper.UnknownVariant("operator", assignmentStatement.Operator.GetType());
+            _errorHelper.UnknownVariant("operator", assignment.Operator.GetType());
         }
-        GenerateExpression(assignmentStatement.Expression);
+        GenerateExpression(assignment.Expression);
         _output!.Append($"""
                              {GetPopStatement("rax")}
-                             mov {GetVariableLocation(assignmentStatement.Identifier.Identifier)}, rax
+                             mov {GetVariableLocation(assignment.Identifier.Identifier)}, rax
 
                          """);
     }
@@ -156,9 +156,9 @@ public class AssemblyGenerator
         GenerateScope(scopeStatement.Scope);
     }
 
-    private void GenerateIfStatement(IfStatement ifStatement)
+    private void GenerateIfStatement(If @if)
     {
-        GenerateExpression(ifStatement.Condition);
+        GenerateExpression(@if.Condition);
         var label = GetLabel("ifEnd");
         _output!.Append($"""
                              {GetPopStatement("rax")}
@@ -166,8 +166,8 @@ public class AssemblyGenerator
                              je {label}
 
                          """);
-        GenerateScope(ifStatement.Scope);
-        if (ifStatement.ElseBlock is ElseNode elseNode)
+        GenerateScope(@if.Scope);
+        if (@if.ElseBlock is Else elseNode)
         {
             var elseEndLabel = GetLabel("elseEnd");
             _output.Append($"    jmp {elseEndLabel}\n");
@@ -183,21 +183,21 @@ public class AssemblyGenerator
         }
     }
 
-    private void GenerateWhileStatement(WhileStatement whileStatement)
+    private void GenerateWhileStatement(While @while)
     {
         var whileBegin = GetLabel("whileBegin");
         var whileEnd = GetLabel("whileEnd");
 
         _output!.Append($"{whileBegin}:\n");
 
-        GenerateExpression(whileStatement.Condition);
+        GenerateExpression(@while.Condition);
         _output.Append($"""
                             {GetPopStatement("rax")}
                             cmp rax, 0
                             je {whileEnd}
 
                         """);
-        GenerateScope(whileStatement.Scope);
+        GenerateScope(@while.Scope);
         _output.Append($"""
                             jmp {whileBegin}
                         {whileEnd}:
@@ -205,17 +205,17 @@ public class AssemblyGenerator
                         """);
     }
 
-    private void GenerateForStatement(ForStatement forStatement)
+    private void GenerateForStatement(For @for)
     {
         BeginScope();
 
-        var declaration = new DeclarationStatement(new PrimitiveVariableType(new IntTypeNode()), forStatement.Identifier, forStatement.Start);
+        var declaration = new Declaration(new PrimitiveVariableType(new IntType()), @for.Identifier, @for.Start);
         GenerateVarDeclarationStatement(declaration);
 
-        var scope = forStatement.Scope;
-        var identifierExpression = new TermExpression(new IdentifierTerm(forStatement.Identifier.Identifier));
-        var addExpression = new AddExpression(identifierExpression, new TermExpression(new IntLiteralTerm(1)));
-        var assignment = new AssignmentStatement(forStatement.Identifier, new EqualsNode(), addExpression);
+        var scope = @for.Scope;
+        var identifierExpression = new TermExpression(new IdentifierTerm(@for.Identifier.Identifier));
+        var addExpression = new Add(identifierExpression, new TermExpression(new IntLiteral(1)));
+        var assignment = new Assignment(@for.Identifier, new Equals(), addExpression);
         var finalStmt = new StmtListWithStatement(assignment, new EmptyStmtList());
         if (scope.StmtList is EmptyStmtList)
         {
@@ -231,8 +231,8 @@ public class AssemblyGenerator
             stmtList.StmtList = finalStmt;
         }
 
-        var condition = new LessExpression(identifierExpression, forStatement.End);
-        var whileStatement = new WhileStatement(condition, scope);
+        var condition = new Less(identifierExpression, @for.End);
+        var whileStatement = new While(condition, scope);
 
         GenerateWhileStatement(whileStatement);
         var toPop = EndScope();
@@ -243,7 +243,7 @@ public class AssemblyGenerator
     // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
     // return values in rax and rdx (if needed)
     // preserve rbx, rbp, r12, r13, r14, and r15
-    private void StoreFunctionDeclaration(FunctionDeclarationStatement functionDeclaration)
+    private void StoreFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
         var label = GetLabel($"{functionDeclaration.Identifier.Identifier}Start");
         var returnLabel = GetLabel($"{functionDeclaration.Identifier.Identifier}Return");
@@ -410,7 +410,7 @@ public class AssemblyGenerator
                          """);
     }
 
-    private void GenerateReturnValueFunctionStatement(ReturnValueStatement returnValue)
+    private void GenerateReturnValueFunctionStatement(ReturnValue returnValue)
     {
         GenerateExpression(returnValue.Expression);
 
@@ -421,7 +421,7 @@ public class AssemblyGenerator
                          """);
     }
 
-    private void GenerateExpression(BaseExpressionNode expression)
+    private void GenerateExpression(BaseExpression expression)
     {
         switch (expression)
         {
@@ -439,7 +439,7 @@ public class AssemblyGenerator
 
                                  """);
                 break;
-            case BaseBinaryExpressionNode binaryExpressionNode:
+            case BaseBinaryExpression binaryExpressionNode:
                 GenerateExpression(binaryExpressionNode.Lhs);
                 GenerateExpression(binaryExpressionNode.Rhs);
 
@@ -450,20 +450,20 @@ public class AssemblyGenerator
                                  """);
                 switch (binaryExpressionNode)
                 {
-                    case AddExpression:
+                    case Add:
                         _output!.Append("    add rax, rdi\n");
                         break;
-                    case SubtractExpression:
+                    case Subtract:
                         _output!.Append("    sub rax, rdi\n");
                         break;
-                    case TimesExpression:
+                    case Times:
                         _output!.Append("    mul rdi\n");
                         break;
-                    case DivideExpression:
+                    case Divide:
                         _output!.Append("    cqo\n"); // extends RAX into RDX
                         _output!.Append("    idiv rdi\n"); // does 128 signed division of RDX:RAX / RDI
                         break;
-                    case DoubleEqualsExpression:
+                    case DoubleEquals:
                         _output.Append("""
                                            cmp rax, rdi
                                            sete al
@@ -471,7 +471,7 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case NotEqualExpression:
+                    case NotEqual:
                         _output.Append("""
                                            cmp rax, rdi
                                            setne al
@@ -479,7 +479,7 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case GreaterExpression:
+                    case Greater:
                         _output.Append("""
                                            cmp rax, rdi
                                            setg al
@@ -487,7 +487,7 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case GreaterOrEqualExpression:
+                    case GreaterOrEqual:
                         _output.Append("""
                                            cmp rax, rdi
                                            setge al
@@ -495,7 +495,7 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case LessExpression:
+                    case Less:
                         _output.Append("""
                                            cmp rax, rdi
                                            setl al
@@ -503,7 +503,7 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case LessOrEqualExpression:
+                    case LessOrEqual:
                         _output.Append("""
                                            cmp rax, rdi
                                            setle al
@@ -511,10 +511,10 @@ public class AssemblyGenerator
 
                                        """);
                         break;
-                    case BooleanAndExpression:
+                    case BooleanAnd:
                         _output!.Append("    and rax, rdi\n");
                         break;
-                    case BooleanOrExpression:
+                    case BooleanOr:
                         _output!.Append("    or rax, rdi\n");
                         break;
                     default:
@@ -533,13 +533,13 @@ public class AssemblyGenerator
     {
         switch (term)
         {
-            case IntLiteralTerm intLiteralTerm:
+            case IntLiteral intLiteralTerm:
                 _output!.Append($"""
                                      {GetPushStatement(intLiteralTerm.Value.ToString())}
 
                                  """);
                 break;
-            case BoolLiteralTerm boolLiteralTerm:
+            case BoolLiteral boolLiteralTerm:
                 _output!.Append($"""
                                      {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
 
@@ -551,10 +551,10 @@ public class AssemblyGenerator
 
                                  """);
                 break;
-            case ParenTerm parenTerm:
+            case Paren parenTerm:
                 GenerateExpression(parenTerm.Expression);
                 break;
-            case InvocationTerm invocationTerm:
+            case FunctionInvocation invocationTerm:
                 GenerateInvocation(invocationTerm.InvocationNode, true);
                 break;
             default:
