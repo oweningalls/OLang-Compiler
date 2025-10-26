@@ -61,547 +61,547 @@ public class AssemblyGenerator
 
     private void GenerateStmtList(IStmtListNode stmtList)
     {
-        switch (stmtList)
-        {
-            case EmptyStmtList:
-                break;
-            case StmtListWithStatement stmtListWithStatement:
-                GenerateStatement(stmtListWithStatement.Statement);
-                GenerateStmtList(stmtListWithStatement.StmtList);
-                break;
-            default:
-            {
-                throw _errorHelper.UnknownVariant("statment list", stmtList.GetType());
-            }
-        }
+        // switch (stmtList)
+        // {
+        //     case EmptyStmtList:
+        //         break;
+        //     case StmtListWithStatement stmtListWithStatement:
+        //         GenerateStatement(stmtListWithStatement.Statement);
+        //         GenerateStmtList(stmtListWithStatement.StmtList);
+        //         break;
+        //     default:
+        //     {
+        //         throw _errorHelper.UnknownVariant("statment list", stmtList.GetType());
+        //     }
+        // }
     }
 
-    private void GenerateStatement(IStatement statement)
-    {
-        switch (statement)
-        {
-            case Exit exitStatement:
-                GenerateExitStatement(exitStatement);
-                break;
-            case Declaration declarationStatement:
-                GenerateVarDeclarationStatement(declarationStatement);
-                break;
-            case Assignment assignmentStatement:
-                GenerateAssignmentStatement(assignmentStatement);
-                break;
-            case ScopeStatement scopeStatement:
-                GenerateScopeStatement(scopeStatement);
-                break;
-            case If ifStatement:
-                GenerateIfStatement(ifStatement);
-                break;
-            case While whileStatement:
-                GenerateWhileStatement(whileStatement);
-                break;
-            case For forStatement:
-                GenerateForStatement(forStatement);
-                break;
-            case FunctionDeclaration functionDeclarationStatement:
-                StoreFunctionDeclaration(functionDeclarationStatement);
-                break;
-            case Invocation invocationStatement:
-                GenerateInvocation(invocationStatement.InvocationNode, false);
-                break;
-            case ReturnValue returnValueStatement:
-                GenerateReturnValueFunctionStatement(returnValueStatement);
-                break;
-            case Return returnStatement:
-                GenerateReturnFunctionStatement();
-                break;
-            default:
-            {
-                throw _errorHelper.UnknownVariant("statement", statement.GetType());
-            }
-        }
-    }
-
-    private void GenerateExitStatement(Exit exit)
-    {
-        GenerateExpression(exit.Expression);
-        _output!.Append($"""
-                             {GetPopStatement("rdi")}
-                             mov rax, 60
-                             syscall
-
-                         """);
-    }
-
-    private void GenerateVarDeclarationStatement(Declaration declaration)
-    {
-        var identifier = declaration.Identifier;
-        GenerateExpression(declaration.Expression);
-        SaveVariableLocation(identifier.Identifier);
-    }
-
-    private void GenerateAssignmentStatement(Assignment assignment)
-    {
-        if (assignment.Operator is not Parser.ParseTree.AssignmentOperator.Equals)
-        {
-            _errorHelper.UnknownVariant("operator", assignment.Operator.GetType());
-        }
-        GenerateExpression(assignment.Expression);
-        _output!.Append($"""
-                             {GetPopStatement("rax")}
-                             mov {GetVariableLocation(assignment.Identifier.Identifier)}, rax
-
-                         """);
-    }
-
-    private void GenerateScopeStatement(ScopeStatement scopeStatement)
-    {
-        GenerateScope(scopeStatement.Scope);
-    }
-
-    private void GenerateIfStatement(If @if)
-    {
-        GenerateExpression(@if.Condition);
-        var label = GetLabel("ifEnd");
-        _output!.Append($"""
-                             {GetPopStatement("rax")}
-                             cmp rax, 0
-                             je {label}
-
-                         """);
-        GenerateScope(@if.Scope);
-        if (@if.ElseBlock is Else elseNode)
-        {
-            var elseEndLabel = GetLabel("elseEnd");
-            _output.Append($"    jmp {elseEndLabel}\n");
-
-            _output.Append($"{label}:\n");
-            GenerateScope(elseNode.Scope);
-
-            _output.Append($"{elseEndLabel}:\n");
-        }
-        else
-        {
-            _output.Append($"{label}:\n");
-        }
-    }
-
-    private void GenerateWhileStatement(While @while)
-    {
-        var whileBegin = GetLabel("whileBegin");
-        var whileEnd = GetLabel("whileEnd");
-
-        _output!.Append($"{whileBegin}:\n");
-
-        GenerateExpression(@while.Condition);
-        _output.Append($"""
-                            {GetPopStatement("rax")}
-                            cmp rax, 0
-                            je {whileEnd}
-
-                        """);
-        GenerateScope(@while.Scope);
-        _output.Append($"""
-                            jmp {whileBegin}
-                        {whileEnd}:
-
-                        """);
-    }
-
-    private void GenerateForStatement(For @for)
-    {
-        BeginScope();
-
-        var declaration = new Declaration(new PrimitiveVariableType(new IntType()), @for.Identifier, @for.Start);
-        GenerateVarDeclarationStatement(declaration);
-
-        var scope = @for.Scope;
-        var identifierExpression = new TermExpression(new IdentifierTerm(@for.Identifier.Identifier));
-        var addExpression = new Add(identifierExpression, new TermExpression(new IntLiteral(1)));
-        var assignment = new Assignment(@for.Identifier, new Equals(), addExpression);
-        var finalStmt = new StmtListWithStatement(assignment, new EmptyStmtList());
-        if (scope.StmtList is EmptyStmtList)
-        {
-            scope.StmtList = finalStmt;
-        }
-        else if (scope.StmtList is StmtListWithStatement stmtList)
-        {
-            while (stmtList.StmtList is StmtListWithStatement innerStmtList)
-            {
-                stmtList = innerStmtList;
-            }
-
-            stmtList.StmtList = finalStmt;
-        }
-
-        var condition = new Less(identifierExpression, @for.End);
-        var whileStatement = new While(condition, scope);
-
-        GenerateWhileStatement(whileStatement);
-        var toPop = EndScope();
-        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
-        _stackOffset -= toPop.Count;
-    }
-
-    // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
-    // return values in rax and rdx (if needed)
-    // preserve rbx, rbp, r12, r13, r14, and r15
-    private void StoreFunctionDeclaration(FunctionDeclaration functionDeclaration)
-    {
-        var label = GetLabel($"{functionDeclaration.Identifier.Identifier}Start");
-        var returnLabel = GetLabel($"{functionDeclaration.Identifier.Identifier}Return");
-
-        var currentReturnLabel = _currentFunctionReturnLabel;
-        _currentFunctionReturnLabel = returnLabel;
-
-        _functionTracker.SetValue(functionDeclaration.Identifier.Identifier, label);
-        var functionOutput = new StringBuilder();
-        var currentOutput = _output;
-        _output = functionOutput;
-        _functions.Add(functionOutput);
-
-        _output.Append($"{label}:\n");
-
-        // save callee-saved registers
-        var registersToSave = new[] { "rbx", "rbp", "r12", "r13", "r14", "r15" };
-        var pushes = MakePushes(registersToSave);
-        _output.Append($"{pushes}");
-
-        var removeLocalVars = GenerateFunctionScope(functionDeclaration.Scope, functionDeclaration.Parameters);
-
-        // restore callee-saved registers
-        _output.Append($"""
-                        {returnLabel}:
-                            {removeLocalVars}
-                        {MakeReversePops(registersToSave)}    ret
-                        """);
-
-        _output = currentOutput;
-        _currentFunctionReturnLabel = currentReturnLabel;
-    }
-
-    // rsp must be 16-byte aligned before a call
-    // call pushes an 8-byte return address, so increment stack tracker based on that and then make sure the stack is aligned
-    // only rbx, rbp, r12, r13, r14, and r15 are preserved
-    // return values in rax and rdx (if needed)
-    private void GenerateInvocation(FunctionInvocation invocationNode, bool hasReturnValue)
-    {
-        var funcName = invocationNode.Identifier.Identifier;
-        if (!_functionTracker.ContainsKey(funcName))
-        {
-            throw _errorHelper.ShowErrorMessageAtNode($"Unknown function name: {funcName}", invocationNode);
-        }
-
-        // Not preserving rax since that's where the return value goes
-        _output!.Append(MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"));
-
-        var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-        var i = 0;
-        var argumentList = invocationNode.Arguments;
-        while (argumentList is ExpressionArgumentList expArgList)
-        {
-            if (i >= argRegisters.Count)
-            {
-                throw new Exception("Too many parameters");
-            }
-
-            GenerateExpression(expArgList.Expression);
-
-            _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
-
-            if (expArgList is ContinuedArgumentList continued)
-            {
-                argumentList = continued.ArgumentList;
-            }
-            else
-            {
-                break;
-            }
-            i += 1;
-        }
-
-        var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
-        var returnPushes = "";
-        if (hasReturnValue)
-        {
-            returnPushes = $"\n    {GetPushStatement("rax")}\n";
-        }
-
-        var label = _functionTracker.GetValue(funcName);
-        _output.Append($"""
-                            call {label}
-                        {pops}
-                        """);
-        _output.Append(returnPushes);
-    }
-
-    private string MakePushes(params string[] registers)
-    {
-        var pushes = new StringBuilder();
-        foreach (var reg in registers)
-        {
-            pushes.Append($"    {GetPushStatement(reg)}\n");
-        }
-
-        return pushes.ToString();
-    }
-
-    private string MakeReversePops(params string[] registers)
-    {
-        var pops = new StringBuilder();
-        foreach (var reg in registers.Reverse())
-        {
-            pops.Append($"    {GetPopStatement(reg)}\n");
-        }
-
-        return pops.ToString();
-    }
-
-    private void GenerateScope(ScopeNode scopeNode)
-    {
-        BeginScope();
-        GenerateStmtList(scopeNode.StmtList);
-
-        var toPop = EndScope();
-        _output!.Append($"    add rsp, {toPop.Count * 8}\n");
-        _stackOffset -= toPop.Count;
-    }
-
-    // returns statement to remove local vars from the stack
-    private string GenerateFunctionScope(ScopeNode functionScope, IParameterListNode parameterList)
-    {
-        BeginScope();
-        // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
-        var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-
-        var i = 0;
-        while (parameterList is Parameter param)
-        {
-            if (i >= argRegisters.Count)
-            {
-                throw new Exception("Too many parameters");
-            }
-            
-            var identifier = param.Identifier;
-            _output!.Append($"    {GetPushStatement(argRegisters[i])}\n");
-            SaveVariableLocation(identifier.Identifier);
-
-            if (parameterList is ContinuedParameterList continued)
-            {
-                parameterList = continued.ParameterList;
-            }
-            else
-            {
-                break;
-            }
-            i += 1;
-        }
-
-        GenerateStmtList(functionScope.StmtList);
-
-        var toPop = EndScope();
-        _stackOffset -= toPop.Count;
-        return $"add rsp, {toPop.Count * 8}";
-    }
-
-    private void GenerateReturnFunctionStatement()
-    {
-        _output!.Append($"""
-                         
-                             jmp {_currentFunctionReturnLabel}
-
-                         """);
-    }
-
-    private void GenerateReturnValueFunctionStatement(ReturnValue returnValue)
-    {
-        GenerateExpression(returnValue.Expression);
-
-        _output!.Append($"""
-                             {GetPopStatement("rax")}
-                             jmp {_currentFunctionReturnLabel}
-
-                         """);
-    }
-
-    private void GenerateExpression(IExpression expression)
-    {
-        switch (expression)
-        {
-            case TermExpression term:
-                GenerateTerm(term.Term);
-                break;
-            case NotExpression notExpression:
-                GenerateExpression(notExpression.Expression);
-                _output!.Append($"""
-                                     {GetPopStatement("rdi")}
-                                     cmp rdi, 1
-                                     setne al
-                                     movzx rax, al
-                                     {GetPushStatement("rax")}
-
-                                 """);
-                break;
-            case BaseBinaryExpression binaryExpressionNode:
-                GenerateExpression(binaryExpressionNode.Lhs);
-                GenerateExpression(binaryExpressionNode.Rhs);
-
-                _output!.Append($"""
-                                     {GetPopStatement("rdi")}
-                                     {GetPopStatement("rax")}
-
-                                 """);
-                switch (binaryExpressionNode)
-                {
-                    case Add:
-                        _output!.Append("    add rax, rdi\n");
-                        break;
-                    case Subtract:
-                        _output!.Append("    sub rax, rdi\n");
-                        break;
-                    case Times:
-                        _output!.Append("    mul rdi\n");
-                        break;
-                    case Divide:
-                        _output!.Append("    cqo\n"); // extends RAX into RDX
-                        _output!.Append("    idiv rdi\n"); // does 128 signed division of RDX:RAX / RDI
-                        break;
-                    case DoubleEquals:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           sete al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case NotEqual:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           setne al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case Greater:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           setg al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case GreaterOrEqual:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           setge al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case Less:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           setl al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case LessOrEqual:
-                        _output.Append("""
-                                           cmp rax, rdi
-                                           setle al
-                                           movzx rax, al
-
-                                       """);
-                        break;
-                    case BooleanAnd:
-                        _output!.Append("    and rax, rdi\n");
-                        break;
-                    case BooleanOr:
-                        _output!.Append("    or rax, rdi\n");
-                        break;
-                    default:
-                        throw _errorHelper.UnknownVariant("expression", expression.GetType());
-                }
-
-                _output.Append($"    {GetPushStatement("rax")}\n");
-
-                break;
-            default:
-                throw _errorHelper.UnknownVariant("expression", expression.GetType());
-        }
-    }
-
-    private void GenerateTerm(ITerm term)
-    {
-        switch (term)
-        {
-            case IntLiteral intLiteralTerm:
-                _output!.Append($"""
-                                     {GetPushStatement(intLiteralTerm.Value.ToString())}
-
-                                 """);
-                break;
-            case BoolLiteral boolLiteralTerm:
-                _output!.Append($"""
-                                     {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
-
-                                 """);
-                break;
-            case IdentifierTerm identifierTerm:
-                _output!.Append($"""
-                                     {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
-
-                                 """);
-                break;
-            case Paren parenTerm:
-                GenerateExpression(parenTerm.Expression);
-                break;
-            case Parser.ParseTree.Term.FunctionInvocation invocationTerm:
-                GenerateInvocation(invocationTerm.InvocationNode, true);
-                break;
-            default:
-                throw _errorHelper.UnknownVariant("term", term.GetType());
-        }
-    }
-
-    private string GetPushStatement(string value)
-    {
-        _stackOffset++;
-        return $"push {value}";
-    }
-
-    private string GetPopStatement(string register)
-    {
-        _stackOffset--;
-        return $"pop {register}";
-    }
-
-    private void SaveVariableLocation(string variableName)
-    {
-        _variableStackOffsets.SetValue(variableName, _stackOffset);
-    }
-
-    private string GetVariableLocation(string variableName)
-    {
-        var relativeStackOffset = (_stackOffset - _variableStackOffsets.GetValue(variableName)) * 8;
-        return $"[rsp + {relativeStackOffset}]";
-    }
-
-    private string GetLabel(string type)
-    {
-        return $"{type}{_labelCount++}";
-    }
-
-    private void BeginScope()
-    {
-        _variableStackOffsets.BeginScope();
-        _functionTracker.BeginScope();
-    }
-
-    private Dictionary<string, int> EndScope()
-    {
-        _functionTracker.EndScope();
-        return _variableStackOffsets.EndScope();
-    }
+//     private void GenerateStatement(IStatement statement)
+//     {
+//         switch (statement)
+//         {
+//             case Exit exitStatement:
+//                 GenerateExitStatement(exitStatement);
+//                 break;
+//             case Declaration declarationStatement:
+//                 GenerateVarDeclarationStatement(declarationStatement);
+//                 break;
+//             case Assignment assignmentStatement:
+//                 GenerateAssignmentStatement(assignmentStatement);
+//                 break;
+//             case ScopeStatement scopeStatement:
+//                 GenerateScopeStatement(scopeStatement);
+//                 break;
+//             case If ifStatement:
+//                 GenerateIfStatement(ifStatement);
+//                 break;
+//             case While whileStatement:
+//                 GenerateWhileStatement(whileStatement);
+//                 break;
+//             case For forStatement:
+//                 GenerateForStatement(forStatement);
+//                 break;
+//             case FunctionDeclaration functionDeclarationStatement:
+//                 StoreFunctionDeclaration(functionDeclarationStatement);
+//                 break;
+//             case Invocation invocationStatement:
+//                 GenerateInvocation(invocationStatement.InvocationNode, false);
+//                 break;
+//             case ReturnValue returnValueStatement:
+//                 GenerateReturnValueFunctionStatement(returnValueStatement);
+//                 break;
+//             case Return returnStatement:
+//                 GenerateReturnFunctionStatement();
+//                 break;
+//             default:
+//             {
+//                 throw _errorHelper.UnknownVariant("statement", statement.GetType());
+//             }
+//         }
+//     }
+//
+//     private void GenerateExitStatement(Exit exit)
+//     {
+//         GenerateExpression(exit.Expression);
+//         _output!.Append($"""
+//                              {GetPopStatement("rdi")}
+//                              mov rax, 60
+//                              syscall
+//
+//                          """);
+//     }
+//
+//     private void GenerateVarDeclarationStatement(Declaration declaration)
+//     {
+//         var identifier = declaration.Identifier;
+//         GenerateExpression(declaration.Expression);
+//         SaveVariableLocation(identifier.Identifier);
+//     }
+//
+//     private void GenerateAssignmentStatement(Assignment assignment)
+//     {
+//         if (assignment.Operator is not Parser.ParseTree.AssignmentOperator.Equals)
+//         {
+//             _errorHelper.UnknownVariant("operator", assignment.Operator.GetType());
+//         }
+//         GenerateExpression(assignment.Expression);
+//         _output!.Append($"""
+//                              {GetPopStatement("rax")}
+//                              mov {GetVariableLocation(assignment.Identifier.Identifier)}, rax
+//
+//                          """);
+//     }
+//
+//     private void GenerateScopeStatement(ScopeStatement scopeStatement)
+//     {
+//         GenerateScope(scopeStatement.Scope);
+//     }
+//
+//     private void GenerateIfStatement(If @if)
+//     {
+//         GenerateExpression(@if.Condition);
+//         var label = GetLabel("ifEnd");
+//         _output!.Append($"""
+//                              {GetPopStatement("rax")}
+//                              cmp rax, 0
+//                              je {label}
+//
+//                          """);
+//         GenerateScope(@if.Scope);
+//         if (@if.ElseBlock is Else elseNode)
+//         {
+//             var elseEndLabel = GetLabel("elseEnd");
+//             _output.Append($"    jmp {elseEndLabel}\n");
+//
+//             _output.Append($"{label}:\n");
+//             GenerateScope(elseNode.Scope);
+//
+//             _output.Append($"{elseEndLabel}:\n");
+//         }
+//         else
+//         {
+//             _output.Append($"{label}:\n");
+//         }
+//     }
+//
+//     private void GenerateWhileStatement(While @while)
+//     {
+//         var whileBegin = GetLabel("whileBegin");
+//         var whileEnd = GetLabel("whileEnd");
+//
+//         _output!.Append($"{whileBegin}:\n");
+//
+//         GenerateExpression(@while.Condition);
+//         _output.Append($"""
+//                             {GetPopStatement("rax")}
+//                             cmp rax, 0
+//                             je {whileEnd}
+//
+//                         """);
+//         GenerateScope(@while.Scope);
+//         _output.Append($"""
+//                             jmp {whileBegin}
+//                         {whileEnd}:
+//
+//                         """);
+//     }
+//
+//     private void GenerateForStatement(For @for)
+//     {
+//         BeginScope();
+//
+//         var declaration = new Declaration(new PrimitiveVariableType(new IntType()), @for.Identifier, @for.Start);
+//         GenerateVarDeclarationStatement(declaration);
+//
+//         var scope = @for.Scope;
+//         var identifierExpression = new TermExpression(new IdentifierTerm(@for.Identifier.Identifier));
+//         var addExpression = new Add(identifierExpression, new TermExpression(new IntLiteral(1)));
+//         var assignment = new Assignment(@for.Identifier, new Equals(), addExpression);
+//         var finalStmt = new StmtListWithStatement(assignment, new EmptyStmtList());
+//         if (scope.StmtList is EmptyStmtList)
+//         {
+//             scope.StmtList = finalStmt;
+//         }
+//         else if (scope.StmtList is StmtListWithStatement stmtList)
+//         {
+//             while (stmtList.StmtList is StmtListWithStatement innerStmtList)
+//             {
+//                 stmtList = innerStmtList;
+//             }
+//
+//             stmtList.StmtList = finalStmt;
+//         }
+//
+//         var condition = new Less(identifierExpression, @for.End);
+//         var whileStatement = new While(condition, scope);
+//
+//         GenerateWhileStatement(whileStatement);
+//         var toPop = EndScope();
+//         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+//         _stackOffset -= toPop.Count;
+//     }
+//
+//     // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
+//     // return values in rax and rdx (if needed)
+//     // preserve rbx, rbp, r12, r13, r14, and r15
+//     private void StoreFunctionDeclaration(FunctionDeclaration functionDeclaration)
+//     {
+//         var label = GetLabel($"{functionDeclaration.Identifier.Identifier}Start");
+//         var returnLabel = GetLabel($"{functionDeclaration.Identifier.Identifier}Return");
+//
+//         var currentReturnLabel = _currentFunctionReturnLabel;
+//         _currentFunctionReturnLabel = returnLabel;
+//
+//         _functionTracker.SetValue(functionDeclaration.Identifier.Identifier, label);
+//         var functionOutput = new StringBuilder();
+//         var currentOutput = _output;
+//         _output = functionOutput;
+//         _functions.Add(functionOutput);
+//
+//         _output.Append($"{label}:\n");
+//
+//         // save callee-saved registers
+//         var registersToSave = new[] { "rbx", "rbp", "r12", "r13", "r14", "r15" };
+//         var pushes = MakePushes(registersToSave);
+//         _output.Append($"{pushes}");
+//
+//         var removeLocalVars = GenerateFunctionScope(functionDeclaration.Scope, functionDeclaration.Parameters);
+//
+//         // restore callee-saved registers
+//         _output.Append($"""
+//                         {returnLabel}:
+//                             {removeLocalVars}
+//                         {MakeReversePops(registersToSave)}    ret
+//                         """);
+//
+//         _output = currentOutput;
+//         _currentFunctionReturnLabel = currentReturnLabel;
+//     }
+//
+//     // rsp must be 16-byte aligned before a call
+//     // call pushes an 8-byte return address, so increment stack tracker based on that and then make sure the stack is aligned
+//     // only rbx, rbp, r12, r13, r14, and r15 are preserved
+//     // return values in rax and rdx (if needed)
+//     private void GenerateInvocation(FunctionInvocation invocationNode, bool hasReturnValue)
+//     {
+//         var funcName = invocationNode.Identifier.Identifier;
+//         if (!_functionTracker.ContainsKey(funcName))
+//         {
+//             throw _errorHelper.ShowErrorMessageAtNode($"Unknown function name: {funcName}", invocationNode);
+//         }
+//
+//         // Not preserving rax since that's where the return value goes
+//         _output!.Append(MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"));
+//
+//         var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+//         var i = 0;
+//         var argumentList = invocationNode.Arguments;
+//         while (argumentList is ExpressionArgumentList expArgList)
+//         {
+//             if (i >= argRegisters.Count)
+//             {
+//                 throw new Exception("Too many parameters");
+//             }
+//
+//             GenerateExpression(expArgList.Expression);
+//
+//             _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
+//
+//             if (expArgList is ContinuedArgumentList continued)
+//             {
+//                 argumentList = continued.ArgumentList;
+//             }
+//             else
+//             {
+//                 break;
+//             }
+//             i += 1;
+//         }
+//
+//         var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
+//         var returnPushes = "";
+//         if (hasReturnValue)
+//         {
+//             returnPushes = $"\n    {GetPushStatement("rax")}\n";
+//         }
+//
+//         var label = _functionTracker.GetValue(funcName);
+//         _output.Append($"""
+//                             call {label}
+//                         {pops}
+//                         """);
+//         _output.Append(returnPushes);
+//     }
+//
+//     private string MakePushes(params string[] registers)
+//     {
+//         var pushes = new StringBuilder();
+//         foreach (var reg in registers)
+//         {
+//             pushes.Append($"    {GetPushStatement(reg)}\n");
+//         }
+//
+//         return pushes.ToString();
+//     }
+//
+//     private string MakeReversePops(params string[] registers)
+//     {
+//         var pops = new StringBuilder();
+//         foreach (var reg in registers.Reverse())
+//         {
+//             pops.Append($"    {GetPopStatement(reg)}\n");
+//         }
+//
+//         return pops.ToString();
+//     }
+//
+//     private void GenerateScope(ScopeNode scopeNode)
+//     {
+//         BeginScope();
+//         GenerateStmtList(scopeNode.StmtList);
+//
+//         var toPop = EndScope();
+//         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+//         _stackOffset -= toPop.Count;
+//     }
+//
+//     // returns statement to remove local vars from the stack
+//     private string GenerateFunctionScope(ScopeNode functionScope, IParameterListNode parameterList)
+//     {
+//         BeginScope();
+//         // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
+//         var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+//
+//         var i = 0;
+//         while (parameterList is Parameter param)
+//         {
+//             if (i >= argRegisters.Count)
+//             {
+//                 throw new Exception("Too many parameters");
+//             }
+//             
+//             var identifier = param.Identifier;
+//             _output!.Append($"    {GetPushStatement(argRegisters[i])}\n");
+//             SaveVariableLocation(identifier.Identifier);
+//
+//             if (parameterList is ContinuedParameterList continued)
+//             {
+//                 parameterList = continued.ParameterList;
+//             }
+//             else
+//             {
+//                 break;
+//             }
+//             i += 1;
+//         }
+//
+//         GenerateStmtList(functionScope.StmtList);
+//
+//         var toPop = EndScope();
+//         _stackOffset -= toPop.Count;
+//         return $"add rsp, {toPop.Count * 8}";
+//     }
+//
+//     private void GenerateReturnFunctionStatement()
+//     {
+//         _output!.Append($"""
+//                          
+//                              jmp {_currentFunctionReturnLabel}
+//
+//                          """);
+//     }
+//
+//     private void GenerateReturnValueFunctionStatement(ReturnValue returnValue)
+//     {
+//         GenerateExpression(returnValue.Expression);
+//
+//         _output!.Append($"""
+//                              {GetPopStatement("rax")}
+//                              jmp {_currentFunctionReturnLabel}
+//
+//                          """);
+//     }
+//
+//     private void GenerateExpression(IExpression expression)
+//     {
+//         switch (expression)
+//         {
+//             case TermExpression term:
+//                 GenerateTerm(term.Term);
+//                 break;
+//             case NotExpression notExpression:
+//                 GenerateExpression(notExpression.Expression);
+//                 _output!.Append($"""
+//                                      {GetPopStatement("rdi")}
+//                                      cmp rdi, 1
+//                                      setne al
+//                                      movzx rax, al
+//                                      {GetPushStatement("rax")}
+//
+//                                  """);
+//                 break;
+//             case BaseBinaryExpression binaryExpressionNode:
+//                 GenerateExpression(binaryExpressionNode.Lhs);
+//                 GenerateExpression(binaryExpressionNode.Rhs);
+//
+//                 _output!.Append($"""
+//                                      {GetPopStatement("rdi")}
+//                                      {GetPopStatement("rax")}
+//
+//                                  """);
+//                 switch (binaryExpressionNode)
+//                 {
+//                     case Add:
+//                         _output!.Append("    add rax, rdi\n");
+//                         break;
+//                     case Subtract:
+//                         _output!.Append("    sub rax, rdi\n");
+//                         break;
+//                     case Times:
+//                         _output!.Append("    mul rdi\n");
+//                         break;
+//                     case Divide:
+//                         _output!.Append("    cqo\n"); // extends RAX into RDX
+//                         _output!.Append("    idiv rdi\n"); // does 128 signed division of RDX:RAX / RDI
+//                         break;
+//                     case DoubleEquals:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            sete al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case NotEqual:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            setne al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case Greater:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            setg al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case GreaterOrEqual:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            setge al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case Less:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            setl al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case LessOrEqual:
+//                         _output.Append("""
+//                                            cmp rax, rdi
+//                                            setle al
+//                                            movzx rax, al
+//
+//                                        """);
+//                         break;
+//                     case BooleanAnd:
+//                         _output!.Append("    and rax, rdi\n");
+//                         break;
+//                     case BooleanOr:
+//                         _output!.Append("    or rax, rdi\n");
+//                         break;
+//                     default:
+//                         throw _errorHelper.UnknownVariant("expression", expression.GetType());
+//                 }
+//
+//                 _output.Append($"    {GetPushStatement("rax")}\n");
+//
+//                 break;
+//             default:
+//                 throw _errorHelper.UnknownVariant("expression", expression.GetType());
+//         }
+//     }
+//
+//     private void GenerateTerm(ITerm term)
+//     {
+//         switch (term)
+//         {
+//             case IntLiteral intLiteralTerm:
+//                 _output!.Append($"""
+//                                      {GetPushStatement(intLiteralTerm.Value.ToString())}
+//
+//                                  """);
+//                 break;
+//             case BoolLiteral boolLiteralTerm:
+//                 _output!.Append($"""
+//                                      {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
+//
+//                                  """);
+//                 break;
+//             case IdentifierTerm identifierTerm:
+//                 _output!.Append($"""
+//                                      {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
+//
+//                                  """);
+//                 break;
+//             case Paren parenTerm:
+//                 GenerateExpression(parenTerm.Expression);
+//                 break;
+//             case Parser.ParseTree.Term.FunctionInvocation invocationTerm:
+//                 GenerateInvocation(invocationTerm.InvocationNode, true);
+//                 break;
+//             default:
+//                 throw _errorHelper.UnknownVariant("term", term.GetType());
+//         }
+//     }
+//
+//     private string GetPushStatement(string value)
+//     {
+//         _stackOffset++;
+//         return $"push {value}";
+//     }
+//
+//     private string GetPopStatement(string register)
+//     {
+//         _stackOffset--;
+//         return $"pop {register}";
+//     }
+//
+//     private void SaveVariableLocation(string variableName)
+//     {
+//         _variableStackOffsets.SetValue(variableName, _stackOffset);
+//     }
+//
+//     private string GetVariableLocation(string variableName)
+//     {
+//         var relativeStackOffset = (_stackOffset - _variableStackOffsets.GetValue(variableName)) * 8;
+//         return $"[rsp + {relativeStackOffset}]";
+//     }
+//
+//     private string GetLabel(string type)
+//     {
+//         return $"{type}{_labelCount++}";
+//     }
+//
+//     private void BeginScope()
+//     {
+//         _variableStackOffsets.BeginScope();
+//         _functionTracker.BeginScope();
+//     }
+//
+//     private Dictionary<string, int> EndScope()
+//     {
+//         _functionTracker.EndScope();
+//         return _variableStackOffsets.EndScope();
+//     }
 
     private ScopeTracker<string, int> _variableStackOffsets = null!;
     private ScopeTracker<string, string> _functionTracker;

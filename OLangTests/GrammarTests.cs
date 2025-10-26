@@ -1,10 +1,16 @@
 ﻿using OLangCompiler.Parser.BottomUpParser;
+using OLangCompiler.Parser.ParseTree.AddExpression;
+using OLangCompiler.Parser.ParseTree.AndExpression;
+using OLangCompiler.Parser.ParseTree.EqualityExpression;
 using OLangCompiler.Parser.ParseTree.Expression;
+using OLangCompiler.Parser.ParseTree.GreaterExpression;
+using OLangCompiler.Parser.ParseTree.MultExpression;
 using OLangCompiler.Parser.ParseTree.Prog;
 using OLangCompiler.Parser.ParseTree.Stmt;
 using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
+using OLangCompiler.Parser.ParseTree.UnaryExpression;
 using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 
@@ -31,7 +37,7 @@ public class GrammarTests
         var rule = new Grammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
         var varType = new PrimitiveVariableType(new BoolType());
         var identifier = new IdentifierToken("test");
-        var expression = new TermExpression(new IdentifierTerm("otherTest"));
+        var expression = new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("ident2")))))))));
         
         var decl = rule.ReduceRule([varType, identifier, new EqualsToken(), expression, new SemicolonToken()]);
 
