@@ -1,6 +1,8 @@
-﻿namespace OLangCompiler.Tokens;
+﻿using OLangCompiler.Parser;
 
-public abstract class BaseToken
+namespace OLangCompiler.Tokens;
+
+public abstract class BaseToken : IGrammarElement
 {
     public int LineNumber;
     public int RelativeStartCharNumber;
