@@ -1,0 +1,3 @@
+﻿namespace OLangCompiler.Parser.ParseTree.EqualityBinaryExpression;
+
+public interface IEqualityExpression;

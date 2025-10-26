@@ -1,8 +1,3 @@
-﻿using OLangCompiler.TypeChecking.Types;
+﻿namespace OLangCompiler.Parser.ParseTree.Type;
 
-namespace OLangCompiler.Parser.ParseTree.Type;
-
-public class IntType : IType
-{
-    public ExpressionType Type => ExpressionType.Int;
-}
+public class IntType : IType;

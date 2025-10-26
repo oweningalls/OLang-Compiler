@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.ArgumentList;
 
-public class ExpressionArgumentList(BaseExpression expression) : IArgumentList
+public class ExpressionArgumentList(IExpression expression) : IArgumentList
 {
-    public BaseExpression Expression = expression;
+    public IExpression Expression = expression;
 }

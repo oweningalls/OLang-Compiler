@@ -1,8 +1,3 @@
-﻿using OLangCompiler.TypeChecking.Types;
+﻿namespace OLangCompiler.Tokens;
 
-namespace OLangCompiler.Tokens;
-
-public class FloatTypeToken : BaseTypeToken
-{
-    public override ExpressionType? ExpType => ExpressionType.Float;
-}
+public class FloatTypeToken : BaseToken;

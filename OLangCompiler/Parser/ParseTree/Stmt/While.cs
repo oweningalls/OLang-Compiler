@@ -3,8 +3,8 @@ using OLangCompiler.Parser.ParseTree.Scope;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class While(BaseExpression condition, ScopeNode scope) : IStatement
+public class While(IExpression condition, ScopeNode scope) : IStatement
 {
-    public BaseExpression Condition = condition;
+    public IExpression Condition = condition;
     public ScopeNode Scope = scope;
 }

@@ -421,7 +421,7 @@ public class AssemblyGenerator
                          """);
     }
 
-    private void GenerateExpression(BaseExpression expression)
+    private void GenerateExpression(IExpression expression)
     {
         switch (expression)
         {
@@ -529,7 +529,7 @@ public class AssemblyGenerator
         }
     }
 
-    private void GenerateTerm(BaseTermNode term)
+    private void GenerateTerm(ITerm term)
     {
         switch (term)
         {

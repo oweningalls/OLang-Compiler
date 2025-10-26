@@ -84,7 +84,7 @@ public class ErrorHelper(string input)
         if (typeof(T) == typeof(SemicolonToken)) return "';'";
         if (typeof(T) == typeof(LeftCurlyToken)) return "'{'";
         if (typeof(T) == typeof(RightCurlyToken)) return "'}'";
-        if (typeof(T) == typeof(BaseAssignmentOperatorToken)) return "set operator";
+        if (typeof(T) == typeof(BaseToken)) return "set operator";
 
         throw UnknownVariant("token", typeof(T));
     }

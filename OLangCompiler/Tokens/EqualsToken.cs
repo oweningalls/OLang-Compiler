@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class EqualsToken : BaseAssignmentOperatorToken;
+public class EqualsToken : BaseToken;

@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class Exit(BaseExpression expression) : IStatement
+public class Exit(IExpression expression) : IStatement
 {
-    public BaseExpression Expression = expression;
+    public IExpression Expression = expression;
 }

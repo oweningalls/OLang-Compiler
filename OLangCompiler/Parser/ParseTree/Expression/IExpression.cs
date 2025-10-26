@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Parser.ParseTree.Expression;
 
-public abstract class BaseExpression : BaseValueNode;
+public interface IExpression : INode;

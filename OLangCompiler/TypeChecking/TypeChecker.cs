@@ -255,7 +255,7 @@ public class TypeChecker
         EndScope();
     }
 
-    private void MarkAndCheckExpression(BaseExpression expression)
+    private void MarkAndCheckExpression(IExpression expression)
     {
         switch (expression)
         {
@@ -341,7 +341,7 @@ public class TypeChecker
         };
     }
 
-    private void MarkAndCheckTerm(BaseTermNode term)
+    private void MarkAndCheckTerm(ITerm term)
     {
         switch (term)
         {

@@ -4,9 +4,9 @@ using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class Declaration(IVariableType type, IdentifierToken identifier, BaseExpression expression) : IStatement
+public class Declaration(IVariableType type, IdentifierToken identifier, IExpression expression) : IStatement
 {
     public IVariableType Type = type;
     public IdentifierToken Identifier = identifier;
-    public BaseExpression Expression = expression;
+    public IExpression Expression = expression;
 }

@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class ReturnValue(BaseExpression expression) : IStatement
+public class ReturnValue(IExpression expression) : IStatement
 {
-    public BaseExpression Expression = expression;
+    public IExpression Expression = expression;
 }

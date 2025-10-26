@@ -1,6 +1,3 @@
 ﻿namespace OLangCompiler.Parser.ParseTree.ParameterList;
 
-public interface IParameterListNode : INode
-{
-    
-}
+public interface IParameterListNode : INode;

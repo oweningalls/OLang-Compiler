@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.Term;
 
-public class Paren(BaseExpression expression) : BaseTermNode
+public class Paren(IExpression expression) : ITerm
 {
-    public BaseExpression Expression = expression;
+    public IExpression Expression = expression;
 }

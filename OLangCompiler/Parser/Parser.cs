@@ -72,7 +72,7 @@ public class Parser : IParser
         if (TryConsume<IdentifierToken>() is { } ident)
         {
             CheckEndOfInput();
-            var assignmentOperatorToken = ConsumeType<BaseAssignmentOperatorToken>();
+            var assignmentOperatorToken = ConsumeType<BaseToken>();
             
             var expression = ParseExpression();
             ConsumeType<SemicolonToken>();
@@ -152,7 +152,7 @@ public class Parser : IParser
 
     private IStatement? TryParseDeclaration()
     {
-        if (Peek() is not (BaseTypeToken or LetToken or VoidToken)) return null;
+        if (Peek() is not (BaseToken or LetToken or VoidToken)) return null;
 
         var token = Consume();
         if (!IsVariableType(token) && !IsFunctionType(token))
@@ -170,7 +170,7 @@ public class Parser : IParser
                 return new Declaration(new Let(), identifier, expression);
             case VoidToken:
                 return ParseFunctionDeclarationAfterTypeAndIdentifier(new Void(), identifier);
-            case BaseTypeToken typeToken:
+            case BaseToken typeToken:
                 if (TryConsume<EqualsToken>() != null)
                 {
                     expression = ParseExpression();
@@ -184,7 +184,7 @@ public class Parser : IParser
         }
     }
 
-    private IType GetType(BaseTypeToken typeToken)
+    private IType GetType(BaseToken typeToken)
     {
         switch (typeToken)
         {
@@ -211,7 +211,7 @@ public class Parser : IParser
 
     private IParameterListNode ParseParameterList()
     {
-        if (TryConsume<BaseTypeToken>() is not { } type)
+        if (TryConsume<BaseToken>() is not { } type)
         {
             return new EmptyParameterList();
         }
@@ -260,12 +260,12 @@ public class Parser : IParser
 
     private bool IsVariableType(BaseToken token)
     {
-        return token is BaseTypeToken or LetToken;
+        return token is BaseToken or LetToken;
     }
 
     private bool IsFunctionType(BaseToken token)
     {
-        return token is BaseTypeToken or VoidToken;
+        return token is BaseToken or VoidToken;
     }
 
     private ScopeNode ParseScope()
@@ -279,7 +279,7 @@ public class Parser : IParser
         return new ScopeNode(statements);
     }
 
-    private BaseExpression ParseExpression(int minPrecedence = 0)
+    private IExpression ParseExpression(int minPrecedence = 0)
     {
         if (TryConsume<NotToken>() != null)
         {
@@ -288,9 +288,9 @@ public class Parser : IParser
             return new NotExpression(innerExpression);
         }
 
-        BaseExpression expression = new TermExpression(ParseTerm());
+        IExpression expression = new TermExpression(ParseTerm());
 
-        while (Peek() is BaseBinaryOperatorToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
+        while (Peek() is BaseToken binaryOperatorToken && binaryOperatorToken.Precedence >= minPrecedence)
         {
             Consume();
             // add one for left associative operators, don't for right associative
@@ -318,7 +318,7 @@ public class Parser : IParser
         return expression;
     }
 
-    private BaseTermNode ParseTerm()
+    private ITerm ParseTerm()
     {
         var invocation = TryParseInvocation();
         if (invocation != null)

@@ -1,12 +1,8 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Term;
+﻿using OLangCompiler.Tokens;
 
-public class BoolLiteral : BaseTermNode
+namespace OLangCompiler.Parser.ParseTree.Term;
+
+public class BoolLiteral(BoolLiteralToken value) : ITerm
 {
-    public BoolLiteral(bool value)
-    {
-        Value = value;
-        ValueType = TypeChecking.Types.ExpressionType.Bool;
-    }
-    
-    public readonly bool Value;
+    public BoolLiteralToken Value = value;
 }

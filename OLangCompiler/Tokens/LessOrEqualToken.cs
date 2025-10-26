@@ -1,6 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class LessOrEqualToken: BaseBinaryOperatorToken
-{
-    public override int Precedence => 3;
-}
+public class LessOrEqualToken: BaseToken;

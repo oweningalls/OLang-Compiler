@@ -1,3 +1,3 @@
 ﻿namespace OLangCompiler.Tokens;
 
-public class DivideEqualsToken : BaseAssignmentOperatorToken;
+public class DivideEqualsToken : BaseToken;

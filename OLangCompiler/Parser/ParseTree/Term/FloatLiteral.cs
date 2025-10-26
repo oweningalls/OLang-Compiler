@@ -1,12 +1,8 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Term;
+﻿using OLangCompiler.Tokens;
 
-public class FloatLiteral : BaseTermNode
+namespace OLangCompiler.Parser.ParseTree.Term;
+
+public class FloatLiteral(FloatLiteralToken value) : ITerm
 {
-    public FloatLiteral(float value)
-    {
-        Value = value;
-        ValueType = TypeChecking.Types.ExpressionType.Float;
-    }
-    
-    public readonly float Value;
+    public FloatLiteralToken Value = value;
 }

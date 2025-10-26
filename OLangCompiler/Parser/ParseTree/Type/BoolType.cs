@@ -1,8 +1,3 @@
-﻿using OLangCompiler.TypeChecking.Types;
+﻿namespace OLangCompiler.Parser.ParseTree.Type;
 
-namespace OLangCompiler.Parser.ParseTree.Type;
-
-public class BoolType : IType
-{
-    public ExpressionType Type => ExpressionType.Bool;
-}
+public class BoolType : IType;

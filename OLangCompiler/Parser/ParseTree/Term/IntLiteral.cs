@@ -1,12 +1,8 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Term;
+﻿using OLangCompiler.Tokens;
 
-public class IntLiteral : BaseTermNode
+namespace OLangCompiler.Parser.ParseTree.Term;
+
+public class IntLiteral(IntLiteralToken value) : ITerm
 {
-    public IntLiteral(int value)
-    {
-        Value = value;
-        ValueType = TypeChecking.Types.ExpressionType.Int;
-    }
-    
-    public readonly int Value;
+    public IntLiteralToken Value = value;
 }

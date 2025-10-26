@@ -27,17 +27,17 @@ public class Grammar : IGrammar
         GrammarRule.Create((IStatement statement, IStmtListNode statementList) => new StmtListWithStatement(statement, statementList)),
         
         // Stmt
-        GrammarRule.Create((ExitToken _, BaseExpression expression) => new Exit(expression)),
-        GrammarRule.Create((IVariableType variableType, IdentifierToken identifier, EqualsToken _, BaseExpression expression, SemicolonToken _) => new Declaration(variableType, identifier, expression)),
-        GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, BaseExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
+        GrammarRule.Create((ExitToken _, IExpression expression) => new Exit(expression)),
+        GrammarRule.Create((IVariableType variableType, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(variableType, identifier, expression)),
+        GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
         GrammarRule.Create((ScopeNode scope) => new ScopeStatement(scope)),
-        GrammarRule.Create((IfToken _, BaseExpression expression, ScopeNode scope, IElse elseNode) => new If(expression, scope, elseNode)),
-        GrammarRule.Create((WhileToken _, BaseExpression expression, ScopeNode scope) => new While(expression, scope)),
-        GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, BaseExpression startExpression, RangeToken _, BaseExpression endExpression, ScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
+        GrammarRule.Create((IfToken _, IExpression expression, ScopeNode scope, IElse elseNode) => new If(expression, scope, elseNode)),
+        GrammarRule.Create((WhileToken _, IExpression expression, ScopeNode scope) => new While(expression, scope)),
+        GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, IExpression startExpression, RangeToken _, IExpression endExpression, ScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
         GrammarRule.Create((IFunctionType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, ScopeNode scope) => new FunctionDeclaration(type, identifier, parameterList, scope)),
         GrammarRule.Create((InvocationNode invocation) => new Invocation(invocation)),
         GrammarRule.Create((ReturnToken _, SemicolonToken _) => new Return()),
-        GrammarRule.Create((ReturnToken _, BaseExpression expression, SemicolonToken _) => new ReturnValue(expression)),
+        GrammarRule.Create((ReturnToken _, IExpression expression, SemicolonToken _) => new ReturnValue(expression)),
         
         // ElseBlock
         GrammarRule.Create(() => new EmptyElse()),
@@ -45,13 +45,13 @@ public class Grammar : IGrammar
         
         // ParameterList
         GrammarRule.Create(() => new EmptyParameterList()),
-        GrammarRule.Create((BaseTypeToken type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(type.ExpType!.Value, identifier, parameterList)),
-        GrammarRule.Create((BaseTypeToken type, IdentifierToken identifier) => new Parameter(type.ExpType!.Value, identifier)),
+        GrammarRule.Create((BaseToken type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(type.ExpType!.Value, identifier, parameterList)),
+        GrammarRule.Create((BaseToken type, IdentifierToken identifier) => new Parameter(type.ExpType!.Value, identifier)),
         
         // ArgumentList
         GrammarRule.Create(() => new EmptyArgumentList()),
-        GrammarRule.Create((BaseExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),
-        GrammarRule.Create((BaseExpression expression) => new ExpressionArgumentList(expression)),
+        GrammarRule.Create((IExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),
+        GrammarRule.Create((IExpression expression) => new ExpressionArgumentList(expression)),
         
         // SetOperator
         GrammarRule.Create((EqualsToken _) => new Equals()),
@@ -79,7 +79,7 @@ public class Grammar : IGrammar
         // Expression
         // TODO: need to refactor to encode operator precedence into grammar
         // TODO: also make BinaryExpressionNode a thing
-        // GrammarRule.Create((BaseExpressionNode lhs) => new ),
+        // GrammarRule.Create((IExpressionNode lhs) => new ),
         
         // BinaryOperator
         
