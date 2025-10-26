@@ -1,4 +1,17 @@
-﻿using OLangCompiler.Parser.Nodes;
+﻿using OLangCompiler.Parser.ParseTree;
+using OLangCompiler.Parser.ParseTree.ArgumentList;
+using OLangCompiler.Parser.ParseTree.AssignmentOperator;
+using OLangCompiler.Parser.ParseTree.ElseBlock;
+using OLangCompiler.Parser.ParseTree.Expression;
+using OLangCompiler.Parser.ParseTree.FunctionType;
+using OLangCompiler.Parser.ParseTree.ParameterList;
+using OLangCompiler.Parser.ParseTree.Prog;
+using OLangCompiler.Parser.ParseTree.Scope;
+using OLangCompiler.Parser.ParseTree.Stmt;
+using OLangCompiler.Parser.ParseTree.StmtList;
+using OLangCompiler.Parser.ParseTree.Term;
+using OLangCompiler.Parser.ParseTree.Type;
+using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 
@@ -228,19 +241,20 @@ public class Parser : IParser
         return new InvocationNode(identifier, arguments);
     }
 
-    private ArgumentList ParseArgumentList()
+    private IArgumentListNode ParseArgumentList()
     {
-        var expressions = new List<BaseExpressionNode>();
-        while (Peek() is not RightParenToken)
+        if (Peek() is RightParenToken)
         {
-            expressions.Add(ParseExpression());
-            if (TryConsume<CommaToken>() is null)
-            {
-                break;
-            }
+            return new EmptyArgumentList();
         }
 
-        return new ArgumentList(expressions);
+        var expression = ParseExpression();
+        if (TryConsume<CommaToken>() == null)
+        {
+            return new ExpressionArgumentList(expression);
+        }
+
+        return new ContinuedArgumentList(expression, ParseArgumentList());
     }
 
     private bool IsVariableType(BaseToken token)

@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Parser.Nodes;
+﻿using OLangCompiler.Parser.ParseTree;
 using OLangCompiler.Tokens;
 
 namespace OLangCompiler;

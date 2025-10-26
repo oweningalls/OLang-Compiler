@@ -1,5 +1,17 @@
 ﻿using System.Text;
-using OLangCompiler.Parser.Nodes;
+using OLangCompiler.Parser.ParseTree;
+using OLangCompiler.Parser.ParseTree.ArgumentList;
+using OLangCompiler.Parser.ParseTree.AssignmentOperator;
+using OLangCompiler.Parser.ParseTree.ElseBlock;
+using OLangCompiler.Parser.ParseTree.Expression;
+using OLangCompiler.Parser.ParseTree.ParameterList;
+using OLangCompiler.Parser.ParseTree.Prog;
+using OLangCompiler.Parser.ParseTree.Scope;
+using OLangCompiler.Parser.ParseTree.Stmt;
+using OLangCompiler.Parser.ParseTree.StmtList;
+using OLangCompiler.Parser.ParseTree.Term;
+using OLangCompiler.Parser.ParseTree.Type;
+using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
@@ -281,17 +293,28 @@ public class AssemblyGenerator
         _output!.Append(MakePushes("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"));
 
         var argRegisters = new List<string> { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-        var args = invocationNode.Arguments.Expressions;
-        for (var i = 0; i < args.Count; i++)
+        var i = 0;
+        var argumentList = invocationNode.Arguments;
+        while (argumentList is ExpressionArgumentList expArgList)
         {
             if (i >= argRegisters.Count)
             {
                 throw new Exception("Too many parameters");
             }
 
-            GenerateExpression(args[i]);
+            GenerateExpression(expArgList.Expression);
 
             _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
+
+            if (expArgList is ContinuedArgumentList continued)
+            {
+                argumentList = continued.ArgumentList;
+            }
+            else
+            {
+                break;
+            }
+            i += 1;
         }
 
         var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
