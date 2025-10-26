@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.ParseTree.GreaterBinaryExpression;
+﻿using OLangCompiler.Parser.ParseTree.GreaterExpression;
 
-namespace OLangCompiler.Parser.ParseTree.EqualityBinaryExpression;
+namespace OLangCompiler.Parser.ParseTree.EqualityExpression;
 
 public class NotEqual(IEqualityExpression lhs, IGreaterExpression rhs) : IEqualityExpression
 {

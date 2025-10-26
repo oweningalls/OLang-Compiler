@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.ParseTree.MultBinaryExpression;
+﻿using OLangCompiler.Parser.ParseTree.MultExpression;
 
-namespace OLangCompiler.Parser.ParseTree.AddBinaryExpression;
+namespace OLangCompiler.Parser.ParseTree.AddExpression;
 
 public class NonAddExpression(IMultExpression expression) : IAddExpression
 {

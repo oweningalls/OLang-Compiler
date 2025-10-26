@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.ParseTree.AddBinaryExpression;
+﻿using OLangCompiler.Parser.ParseTree.AddExpression;
 
-namespace OLangCompiler.Parser.ParseTree.GreaterBinaryExpression;
+namespace OLangCompiler.Parser.ParseTree.GreaterExpression;
 
 public class Greater(IGreaterExpression lhs, IAddExpression rhs) : IGreaterExpression
 {

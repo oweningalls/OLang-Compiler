@@ -1,10 +1,10 @@
-﻿using OLangCompiler.Tokens;
-using OLangCompiler.TypeChecking.Types;
+﻿using OLangCompiler.Parser.ParseTree.Type;
+using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.ParameterList;
 
-public class Parameter(ExpressionType type, IdentifierToken identifier) : IParameterListNode
+public class Parameter(IType type, IdentifierToken identifier) : IParameterListNode
 {
-    public ExpressionType Type = type;
+    public IType Type = type;
     public IdentifierToken Identifier = identifier;
 }

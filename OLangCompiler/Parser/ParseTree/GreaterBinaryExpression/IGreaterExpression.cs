@@ -1,3 +1,0 @@
-﻿namespace OLangCompiler.Parser.ParseTree.GreaterBinaryExpression;
-
-public interface IGreaterExpression;

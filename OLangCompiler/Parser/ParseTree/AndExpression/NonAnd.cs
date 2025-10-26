@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.ParseTree.EqualityBinaryExpression;
+﻿using OLangCompiler.Parser.ParseTree.EqualityExpression;
 
-namespace OLangCompiler.Parser.ParseTree.AndBinaryExpression;
+namespace OLangCompiler.Parser.ParseTree.AndExpression;
 
 public class NonAnd(IEqualityExpression expression) : IAndExpression
 {

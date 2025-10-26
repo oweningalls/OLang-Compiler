@@ -14,6 +14,7 @@ using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
+using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
 using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.Parser;
@@ -227,7 +228,7 @@ public class Parser : IParser
 
     }
 
-    private InvocationNode? TryParseInvocation()
+    private FunctionInvocation? TryParseInvocation()
     {
         if (Peek() is not IdentifierToken || Peek(1) is not LeftParenToken)
         {
@@ -239,7 +240,7 @@ public class Parser : IParser
         var arguments = ParseArgumentList();
         ConsumeType<RightParenToken>();
 
-        return new InvocationNode(identifier, arguments);
+        return new FunctionInvocation(identifier, arguments);
     }
 
     private IArgumentList ParseArgumentList()
@@ -323,7 +324,7 @@ public class Parser : IParser
         var invocation = TryParseInvocation();
         if (invocation != null)
         {
-            return new FunctionInvocation(invocation);
+            return new ParseTree.Term.FunctionInvocation(invocation);
         }
 
         if (TryConsume<IntLiteralToken>() is { } ilt)

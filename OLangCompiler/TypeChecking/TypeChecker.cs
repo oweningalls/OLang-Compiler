@@ -12,6 +12,7 @@ using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
+using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
 using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.TypeChecking;
@@ -361,7 +362,7 @@ public class TypeChecker
             case FloatLiteral:
                 term.ValueType = ExpressionType.Float;
                 break;
-            case FunctionInvocation invocation:
+            case Parser.ParseTree.Term.FunctionInvocation invocation:
                 MarkAndCheckInvocation(invocation.InvocationNode);
                 term.ValueType = invocation.InvocationNode.ValueType ?? throw _errorHelper.ShowErrorMessageAtNode("Cannot get value from void function", invocation.InvocationNode);
                 break;
@@ -370,7 +371,7 @@ public class TypeChecker
         }
     }
 
-    private void MarkAndCheckInvocation(InvocationNode invocation)
+    private void MarkAndCheckInvocation(FunctionInvocation invocation)
     {
         if (!_functionTypeStack.ContainsKey(invocation.Identifier.Identifier))
         {

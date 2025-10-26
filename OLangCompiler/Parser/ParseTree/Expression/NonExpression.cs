@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Parser.ParseTree.AndBinaryExpression;
+﻿using OLangCompiler.Parser.ParseTree.AndExpression;
 
 namespace OLangCompiler.Parser.ParseTree.Expression;
 

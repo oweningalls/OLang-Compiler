@@ -1,6 +1,8 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Term;
+﻿using OLangCompiler.Tokens;
 
-public class IdentifierTerm(string identifier) : ITerm
+namespace OLangCompiler.Parser.ParseTree.Term;
+
+public class IdentifierTerm(IdentifierToken identifier) : ITerm
 {
-    public string Identifier = identifier;
+    public IdentifierToken Identifier = identifier;
 }

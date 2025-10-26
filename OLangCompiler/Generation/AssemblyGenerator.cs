@@ -15,6 +15,7 @@ using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking.Types;
 using OLangCompiler.Utility;
+using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
 
 namespace OLangCompiler.Generation;
 
@@ -281,7 +282,7 @@ public class AssemblyGenerator
     // call pushes an 8-byte return address, so increment stack tracker based on that and then make sure the stack is aligned
     // only rbx, rbp, r12, r13, r14, and r15 are preserved
     // return values in rax and rdx (if needed)
-    private void GenerateInvocation(InvocationNode invocationNode, bool hasReturnValue)
+    private void GenerateInvocation(FunctionInvocation invocationNode, bool hasReturnValue)
     {
         var funcName = invocationNode.Identifier.Identifier;
         if (!_functionTracker.ContainsKey(funcName))
@@ -554,7 +555,7 @@ public class AssemblyGenerator
             case Paren parenTerm:
                 GenerateExpression(parenTerm.Expression);
                 break;
-            case FunctionInvocation invocationTerm:
+            case Parser.ParseTree.Term.FunctionInvocation invocationTerm:
                 GenerateInvocation(invocationTerm.InvocationNode, true);
                 break;
             default:

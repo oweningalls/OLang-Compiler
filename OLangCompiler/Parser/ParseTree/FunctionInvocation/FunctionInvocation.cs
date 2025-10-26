@@ -2,9 +2,9 @@
 using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Tokens;
 
-namespace OLangCompiler.Parser.ParseTree;
+namespace OLangCompiler.Parser.ParseTree.FunctionInvocation;
 
-public class InvocationNode(IdentifierToken identifier, IArgumentList argumentList) : ITerm
+public class FunctionInvocation(IdentifierToken identifier, IArgumentList argumentList) : ITerm
 {
     public IdentifierToken Identifier = identifier;
     public IArgumentList Arguments = argumentList;
