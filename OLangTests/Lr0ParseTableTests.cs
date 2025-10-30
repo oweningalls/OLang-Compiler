@@ -43,6 +43,13 @@ public class Lr0ParseTableTests
         Lr0ParseTable? table = null;
         Assert.DoesNotThrow(() => table = new Lr0ParseTable(new Lr0Grammar()));
     }
+
+    [Test]
+    public void TestOLangGrammar()
+    {
+        // TODO: figure out why this has so few states
+        var table = new Lr0ParseTable(new OLangGrammar());
+    }
     
     private class ANode : INode;
     private class BNode : INode;

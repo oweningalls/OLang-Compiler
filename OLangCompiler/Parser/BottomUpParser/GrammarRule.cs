@@ -1,4 +1,5 @@
-﻿using OLangCompiler.Parser.ParseTree;
+﻿using System.Reflection;
+using OLangCompiler.Parser.ParseTree;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
@@ -14,14 +15,14 @@ public class GrammarRule : BaseGrammarRule
     public static GrammarRule Create<TNode>(Func<TNode> reduce)
         where TNode : INode
     {
-        return new GrammarRule(_ => reduce(), typeof(TNode));
+        return new GrammarRule(_ => reduce(), GetInterface(typeof(TNode)));
     }
 
     public static GrammarRule Create<TNode, T1>(Func<T1, TNode> reduce)
         where T1 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0]), typeof(TNode), typeof(T1));
+        return new GrammarRule(x => reduce((T1)x[0]), GetInterface(typeof(TNode)), typeof(T1));
     }
 
     public static GrammarRule Create<TNode, T1, T2>(Func<T1, T2, TNode> reduce)
@@ -29,7 +30,7 @@ public class GrammarRule : BaseGrammarRule
         where T2 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1]), typeof(TNode), typeof(T1), typeof(T2));
+        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1]), GetInterface(typeof(TNode)), typeof(T1), typeof(T2));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3>(Func<T1, T2, T3, TNode> reduce)
@@ -39,7 +40,7 @@ public class GrammarRule : BaseGrammarRule
         where TNode : INode
     {
         return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2]),
-            typeof(TNode), typeof(T1), typeof(T2), typeof(T3));
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3, T4>(Func<T1, T2, T3, T4, TNode> reduce)
@@ -50,7 +51,7 @@ public class GrammarRule : BaseGrammarRule
         where TNode : INode
     {
         return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3]),
-            typeof(TNode), typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3, T4, T5>(Func<T1, T2, T3, T4, T5, TNode> reduce)
@@ -62,7 +63,7 @@ public class GrammarRule : BaseGrammarRule
         where TNode : INode
     {
         return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4]),
-            typeof(TNode), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3, T4, T5, T6>(Func<T1, T2, T3, T4, T5, T6, TNode> reduce)
@@ -75,7 +76,7 @@ public class GrammarRule : BaseGrammarRule
         where TNode : INode
     {
         return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5]),
-            typeof(TNode), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6));
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3, T4, T5, T6, T7>(Func<T1, T2, T3, T4, T5, T6, T7, TNode> reduce)
@@ -90,8 +91,15 @@ public class GrammarRule : BaseGrammarRule
     {
         return new GrammarRule(
             x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6]),
-            typeof(TNode), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7)
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7)
         );
+    }
+
+    private static Type GetInterface(Type type)
+    {
+        var interfaceType = type.GetInterfaces()
+            .Except(type.GetInterfaces().SelectMany(i => i.GetInterfaces())).Single();
+        return interfaceType;
     }
 
     private readonly Func<List<IGrammarElement>, INode> _reduce;
@@ -114,7 +122,7 @@ public class GrammarRule : BaseGrammarRule
         {
             throw new Exception($"Incorrect number of grammar elements to reduce. Expected {_rhsTypes.Count} but was {rhs.Count}");
         }
-        
+
         var theseRhsTypes = rhs.Select(x => x.GetType()).ToList();
         for (var i = 0; i < _rhsTypes.Count; i++)
         {
@@ -126,7 +134,7 @@ public class GrammarRule : BaseGrammarRule
                 throw new Exception($"Incorrect rhs type at index {i}. Expected {expected.Name} but was {actual.Name}");
             }
         }
-        
+
         return _reduce.Invoke(rhs);
     }
 }

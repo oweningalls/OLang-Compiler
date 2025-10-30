@@ -4,14 +4,17 @@ namespace OLangCompiler.Parser.BottomUpParser;
 
 public class GrammarHelper(IGrammar grammar)
 {
-    private readonly IGrammar _grammar = grammar;
-
     public List<BaseGrammarRule> GetProductionsFor(Type type)
     {
-        if (type.IsAssignableFrom(typeof(INode)))
+        if (!typeof(INode).IsAssignableFrom(type))
         {
-            throw new Exception($"Nonterminal to get productions for must extend INode, was {type}");
+            return [];
         }
-        return _grammar.GetRules().Where(x => x.GetLhsType() == type).ToList();
+        var interfaceType = type.GetInterfaces().Except(type.GetInterfaces().SelectMany(i => i.GetInterfaces())).Single();
+        if (type == typeof(INode))
+        {
+            throw new Exception($"Nonterminal to get productions for must directly implement an interface other than INode, was {type}");
+        }
+        return grammar.GetRules().Where(x => x.GetLhsType() == interfaceType).ToList();
     }
 }
