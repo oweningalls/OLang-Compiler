@@ -2,5 +2,6 @@
 
 public interface IGrammar
 {
-    public List<IGrammarRule> GetRules();
+    public Type GetStartSymbol();
+    public List<BaseGrammarRule> GetRules();
 }

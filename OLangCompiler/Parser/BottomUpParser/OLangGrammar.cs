@@ -23,12 +23,12 @@ using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
-public class Grammar : IGrammar
+public class OLangGrammar : IGrammar
 {
-    private List<IGrammarRule> _rules =
+    private List<BaseGrammarRule> _rules =
     [
         // Prog
-        GrammarRule.Create((IStmtListNode stmtList, EndOfInputToken _) => new ProgramNode(stmtList)),
+        GrammarRule.Create((IStmtListNode stmtList) => new ProgramNode(stmtList)),
 
         // StmtList
         GrammarRule.Create(() => new EmptyStmtList()),
@@ -130,7 +130,12 @@ public class Grammar : IGrammar
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocation(ident, argumentList)),
     ];
 
-    public List<IGrammarRule> GetRules()
+    public Type GetStartSymbol()
+    {
+        return typeof(ProgramNode);
+    }
+
+    public List<BaseGrammarRule> GetRules()
     {
         return _rules;
     }

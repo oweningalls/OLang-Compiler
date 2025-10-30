@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
-public class GrammarRule : IGrammarRule
+public class GrammarRule : BaseGrammarRule
 {
     private GrammarRule(Func<List<IGrammarElement>, INode> reduce, Type lhsType, params Type[] types)
     {
@@ -95,20 +95,20 @@ public class GrammarRule : IGrammarRule
     }
 
     private readonly Func<List<IGrammarElement>, INode> _reduce;
-    private readonly List<Type> _rhsTypes;
+    private readonly IReadOnlyList<Type> _rhsTypes;
     private readonly Type _lhsType;
 
-    public Type GetLhsType()
+    public override Type GetLhsType()
     {
         return _lhsType;
     }
 
-    public List<Type> GetRhsTypes()
+    public override IReadOnlyList<Type> GetRhsTypes()
     {
         return _rhsTypes;
     }
 
-    public INode ReduceRule(List<IGrammarElement> rhs)
+    public override INode ReduceRule(List<IGrammarElement> rhs)
     {
         if (rhs.Count != _rhsTypes.Count)
         {

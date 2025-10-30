@@ -16,15 +16,14 @@ using OLangCompiler.Tokens;
 
 namespace OLangTests;
 
-public class GrammarTests
+public class OLangGrammarTests
 {
     [Test]
     public void ReduceProgramNode()
     {
-        var rule = new Grammar().GetRules().First(x => x.GetLhsType() == typeof(ProgramNode));
+        var rule = new OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(ProgramNode));
         var stmtList = new EmptyStmtList();
-        var eoi = new EndOfInputToken();
-        var program = rule.ReduceRule([stmtList, eoi]);
+        var program = rule.ReduceRule([stmtList]);
 
         var programNode = program as ProgramNode;
         Assert.That(programNode, Is.Not.Null);
@@ -34,7 +33,7 @@ public class GrammarTests
     [Test]
     public void ReduceDeclarationStatement()
     {
-        var rule = new Grammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
+        var rule = new OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
         var varType = new PrimitiveVariableType(new BoolType());
         var identifier = new IdentifierToken("test");
         var expression = new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("ident2")))))))));
