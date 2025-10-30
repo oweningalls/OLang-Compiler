@@ -21,6 +21,21 @@ public class Lr0ParseTableTests
             // ignored
         }
     }
+    
+    [Test]
+    public void TestAmbiguousFails()
+    {
+        Lr0ParseTable? table = null;
+        try
+        {
+            table = new Lr0ParseTable(new AmbiguousGrammar());
+            Assert.Fail("Parse table should throw exception for ambiguous grammar");
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+    }
 
     [Test]
     public void TestLr0GrammarWorks()
@@ -57,6 +72,26 @@ public class Lr0ParseTableTests
             GrammarRule.Create((BoolLiteralToken _, IntLiteralToken _) => new ANode()),
             GrammarRule.Create((BoolLiteralToken _, FloatLiteralToken _) => new ANode()),
         ];
+        public Type GetStartSymbol()
+        {
+            return typeof(ANode);
+        }
+
+        public List<BaseGrammarRule> GetRules()
+        {
+            return _rules;
+        }
+    }
+
+    private class AmbiguousGrammar : IGrammar
+    {
+        private List<BaseGrammarRule> _rules =
+        [
+            GrammarRule.Create((BNode _) => new ANode()),
+            GrammarRule.Create((ANode _) => new BNode()),
+            GrammarRule.Create((IntLiteralToken _) => new ANode()),
+        ];
+
         public Type GetStartSymbol()
         {
             return typeof(ANode);

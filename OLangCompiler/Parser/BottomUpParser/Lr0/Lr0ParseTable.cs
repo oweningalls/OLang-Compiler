@@ -102,9 +102,10 @@ public class Lr0ParseTable : ILr0ParseTable
 
     private int CreateState(HashSet<Lr0Configuration> state)
     {
-        if (state.Any(x => x.IsReduce()) && state.Any(x => x.IsShift()))
+        if (state.Any(x => x.IsReduce()))
         {
-            throw new Exception($"Shift/reduce conflict");
+            if (state.Any(x => x.IsShift())) throw new Exception("Shift/reduce conflict");
+            if (state.Count != 1) throw new Exception("Reduce/reduce conflict");
         }
         
         _states.Add(state);
@@ -118,14 +119,15 @@ public class Lr0ParseTable : ILr0ParseTable
     {
         var closure = new HashSet<Lr0Configuration>();
         Lr0Configuration[] previouslyAdded = [configuration];
+        
         while (previouslyAdded.Length != 0)
         {
             closure.UnionWith(previouslyAdded);
 
             previouslyAdded = previouslyAdded
                 .Select(x => x.GetElementAfterBookmark()).OfType<Type>()
-                .SelectMany(x => _grammarHelper.GetProductionsFor(x)
-                    .Select(y => new Lr0Configuration(y))
+                .SelectMany(x => _grammarHelper.GetProductionsFor(x).Select(y => new Lr0Configuration(y)))
+                .Where(x => !closure.Contains(x)
                 ).ToArray();
         }
 
