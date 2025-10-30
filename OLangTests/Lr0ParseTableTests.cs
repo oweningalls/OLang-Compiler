@@ -51,6 +51,7 @@ public class Lr0ParseTableTests
         private List<BaseGrammarRule> _rules =
         [
             GrammarRule.Create((BNode _, IntLiteralToken _) => new ANode()),
+            GrammarRule.Create((ANode _, IntLiteralToken _) => new ANode()),
             GrammarRule.Create((BoolLiteralToken _, IntLiteralToken _) => new ANode()),
             GrammarRule.Create((BoolLiteralToken _) => new BNode()),
         ];
