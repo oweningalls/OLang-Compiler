@@ -5,10 +5,10 @@ using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class FunctionDeclaration(IFunctionType type, IdentifierToken identifier, IParameterListNode parameters, ScopeNode scope) : IStatement
+public class FunctionDeclaration(IFunctionType type, IdentifierToken identifier, IParameterListNode parameters, IScopeNode scope) : IStatement
 {
     public IFunctionType Type = type;
     public IdentifierToken Identifier = identifier;
     public IParameterListNode Parameters = parameters;
-    public ScopeNode Scope = scope;
+    public IScopeNode Scope = scope;
 }

@@ -10,6 +10,10 @@ public class GrammarRule : BaseGrammarRule
         _reduce = reduce;
         _rhsTypes = types.ToList();
         _lhsType = lhsType;
+        if (types.Any(x => typeof(INode).IsAssignableFrom(x) && !x.IsInterface))
+        {
+            throw new Exception($"RHS of grammar rules must all be tokens or interfaces: {this}");
+        }
     }
 
     public static GrammarRule Create<TNode>(Func<TNode> reduce)

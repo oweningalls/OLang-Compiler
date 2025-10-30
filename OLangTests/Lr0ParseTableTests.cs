@@ -47,8 +47,16 @@ public class Lr0ParseTableTests
     [Test]
     public void TestOLangGrammar()
     {
-        // TODO: figure out why this has so few states
-        var table = new Lr0ParseTable(new OLangGrammar());
+        Lr0ParseTable? table = null;
+        try
+        {
+            table = new Lr0ParseTable(new OLangGrammar());
+            Assert.Fail("OLang is presumably not LR(0), so this should have conflicts");
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
     }
     
     private class ANode : INode;

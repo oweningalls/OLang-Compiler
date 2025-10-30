@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.Scope;
 
-public class ScopeNode(IStmtListNode statementList) : INode
+public class ScopeNode(IStmtListNode statementList) : IScopeNode
 {
     public IStmtListNode StmtList = statementList;
 }

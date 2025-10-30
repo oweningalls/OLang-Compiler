@@ -4,9 +4,9 @@ using OLangCompiler.Parser.ParseTree.Scope;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class If(IExpression condition, ScopeNode scope, IElse elseBlock) : IStatement
+public class If(IExpression condition, IScopeNode scope, IElse elseBlock) : IStatement
 {
     public IExpression Condition = condition;
-    public ScopeNode Scope = scope;
+    public IScopeNode Scope = scope;
     public IElse ElseBlock = elseBlock;
 }

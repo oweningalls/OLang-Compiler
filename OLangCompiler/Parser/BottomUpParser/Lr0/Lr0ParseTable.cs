@@ -21,7 +21,7 @@ public class Lr0ParseTable : ILr0ParseTable
 
     private void InitializeTable()
     {
-        var augmentStart = new AugmentStartRule(_grammar.GetStartSymbol());
+        var augmentStart = new AugmentStartRule(GetInterface(_grammar.GetStartSymbol()));
         var startState = GetClosure(new Lr0Configuration(augmentStart));
         CreateState(startState);
         var newStates = MakeTransitionableStates(0);
@@ -126,12 +126,20 @@ public class Lr0ParseTable : ILr0ParseTable
 
             previouslyAdded = previouslyAdded
                 .Select(x => x.GetElementAfterBookmark()).OfType<Type>()
+                .Where(x => x.GetInterfaces().Contains(typeof(INode)))
                 .SelectMany(x => _grammarHelper.GetProductionsFor(x).Select(y => new Lr0Configuration(y)))
                 .Where(x => !closure.Contains(x)
                 ).ToArray();
         }
 
         return closure;
+    }
+    
+    private static Type GetInterface(Type type)
+    {
+        var interfaceType = type.GetInterfaces()
+            .Except(type.GetInterfaces().SelectMany(i => i.GetInterfaces())).Single();
+        return interfaceType;
     }
 
     public IParseAction GetActionAndTransition(IGrammarElement next)

@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class ScopeStatement(ScopeNode scope) : IStatement
+public class ScopeStatement(IScopeNode scope) : IStatement
 {
-    public ScopeNode Scope = scope;
+    public IScopeNode Scope = scope;
 }

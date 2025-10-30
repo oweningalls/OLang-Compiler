@@ -1,6 +1,8 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Stmt;
+﻿using OLangCompiler.Parser.ParseTree.FunctionInvocation;
 
-public class Invocation(FunctionInvocation.FunctionInvocation invocationNode) : IStatement
+namespace OLangCompiler.Parser.ParseTree.Stmt;
+
+public class Invocation(IFunctionInvocation invocationNode) : IStatement
 {
-    public FunctionInvocation.FunctionInvocation InvocationNode = invocationNode;
+    public IFunctionInvocation InvocationNode = invocationNode;
 }

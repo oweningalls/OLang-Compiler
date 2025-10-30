@@ -2,7 +2,7 @@
 
 namespace OLangCompiler.Parser.ParseTree.ElseBlock;
 
-public class Else(ScopeNode scope) : IElse
+public class Else(IScopeNode scope) : IElse
 {
-    public ScopeNode Scope = scope;
+    public IScopeNode Scope = scope;
 }

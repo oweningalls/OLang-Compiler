@@ -10,11 +10,11 @@ public class GrammarHelper(IGrammar grammar)
         {
             return [];
         }
-        var interfaceType = type.GetInterfaces().Except(type.GetInterfaces().SelectMany(i => i.GetInterfaces())).Single();
-        if (type == typeof(INode))
+
+        if (!type.IsInterface)
         {
-            throw new Exception($"Nonterminal to get productions for must directly implement an interface other than INode, was {type}");
+            throw new Exception($"Can't get productions for {type}, only for interfaces");
         }
-        return grammar.GetRules().Where(x => x.GetLhsType() == interfaceType).ToList();
+        return grammar.GetRules().Where(x => x.GetLhsType() == type).ToList();
     }
 }
