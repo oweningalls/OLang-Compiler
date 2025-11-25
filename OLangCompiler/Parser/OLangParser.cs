@@ -1,29 +1,14 @@
-﻿using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Parser.ParseTree.ArgumentList;
-using OLangCompiler.Parser.ParseTree.AssignmentOperator;
-using OLangCompiler.Parser.ParseTree.ElseBlock;
-using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.FunctionType;
-using OLangCompiler.Parser.ParseTree.ParameterList;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.Scope;
-using OLangCompiler.Parser.ParseTree.Stmt;
-using OLangCompiler.Parser.ParseTree.StmtList;
-using OLangCompiler.Parser.ParseTree.Term;
-using OLangCompiler.Parser.ParseTree.Type;
-using OLangCompiler.Parser.ParseTree.VariableType;
+﻿using OLangCompiler.Parser.BottomUpParser;
+using OLangCompiler.Parser.ParseTree;
 using OLangCompiler.Tokens;
-using OLangCompiler.TypeChecking.Types;
-using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
-using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.Parser;
 
-public class Parser : IParser
+public class OLangParser : IParser
 {
     private ErrorHelper _errorHelper;
 
-    public ProgramNode ParseProgram(List<BaseToken> tokens, ErrorHelper errorHelper)
+    public INode ParseProgram(IGrammar _, List<BaseToken> tokens, ErrorHelper errorHelper)
     {
         // _errorHelper = errorHelper;
         // _tokens = tokens;

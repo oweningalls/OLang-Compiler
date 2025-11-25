@@ -1,3 +1,8 @@
-﻿namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
+﻿using OLangCompiler.Parser.ParseTree;
 
-public class Accept : IParseAction;
+namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
+
+public class Accept(INode node) : IParseAction
+{
+    public INode Node = node;
+}

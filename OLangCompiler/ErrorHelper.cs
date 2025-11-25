@@ -5,7 +5,6 @@ namespace OLangCompiler;
 
 public class ErrorHelper(string input)
 {
-    private string _input = input;
     private string[] _inputLines = input.Split('\n').Select(x => x.TrimEnd()).ToArray();
     
     public Exception UnknownVariant(string name, Type type)
@@ -23,11 +22,6 @@ public class ErrorHelper(string input)
         return ShowErrorMessageAtToken($"Expected {expectedName}", token);
     }
 
-    public Exception UnexpectedEndOfInput(BaseToken token)
-    {
-        return ShowErrorMessageAtToken($"Unexpected end of input after `{GetContainedValue(token)}`", token);
-    }
-
     public Exception ShowErrorMessageAtToken(string message, BaseToken token)
     {
         var quotedCode = GetInputLine(token);
@@ -36,14 +30,19 @@ public class ErrorHelper(string input)
         return new Exception(errorMessage);
     }
 
-    private string GetContainedValue(BaseToken token)
-    {
-        return _input.Substring(token.AbsoluteStartCharNumber, token.AbsoluteEndCharNumber - token.AbsoluteStartCharNumber + 1);
-    }
-
     private string GetIndicator(int pointerStart, int pointerEnd)
     {
         return $"{new string(' ', pointerStart)}{new string('^', pointerEnd - pointerStart + 1)}";
+    }
+
+    public Exception ShowErrorMessageAtElement(string message, IGrammarElement element)
+    {
+        return element switch
+        {
+            INode node => ShowErrorMessageAtNode(message, node),
+            BaseToken token => ShowErrorMessageAtToken(message, token),
+            _ => throw UnknownVariant("grammar element", element.GetType())
+        };
     }
     
     public Exception ShowErrorMessageAtNode(string message, INode node)

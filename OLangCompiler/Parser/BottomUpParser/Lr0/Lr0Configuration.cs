@@ -35,6 +35,11 @@ public class Lr0Configuration
         return GetElementAfterBookmark() == null;
     }
 
+    public BaseGrammarRule GetRule()
+    {
+        return _rule;
+    }
+
     public override bool Equals(object? obj)
     {
         if (obj is not Lr0Configuration other) return false;

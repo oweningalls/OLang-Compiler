@@ -1,9 +1,10 @@
-﻿using OLangCompiler.Parser.ParseTree.Prog;
+﻿using OLangCompiler.Parser.BottomUpParser;
+using OLangCompiler.Parser.ParseTree;
 using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser;
 
 public interface IParser
 {
-    public ProgramNode ParseProgram(List<BaseToken> tokens, ErrorHelper errorHelper);
+    public INode ParseProgram(IGrammar grammar, List<BaseToken> tokens, ErrorHelper errorHelper);
 }

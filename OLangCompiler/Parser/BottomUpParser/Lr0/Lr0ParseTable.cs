@@ -7,21 +7,22 @@ public class Lr0ParseTable : ILr0ParseTable
 {
     private IGrammar _grammar;
     private GrammarHelper _grammarHelper;
-    private List<HashSet<Lr0Configuration>> _states;
-    private List<Dictionary<Type, int>> _transitions;
+    private List<HashSet<Lr0Configuration>> _states = [];
+    private List<Dictionary<Type, int>> _transitions = [];
+    private List<int> _acceptStates = [];
+    private ErrorHelper _errorHelper;
 
-    public Lr0ParseTable(IGrammar grammar)
+    public Lr0ParseTable(IGrammar grammar, ErrorHelper errorHelper)
     {
         _grammar = grammar;
+        _errorHelper = errorHelper;
         _grammarHelper = new GrammarHelper(grammar);
-        _transitions = new List<Dictionary<Type, int>>();
-        _states = [];
         InitializeTable();
     }
 
     private void InitializeTable()
     {
-        var augmentStart = new AugmentStartRule(GetInterface(_grammar.GetStartSymbol()));
+        var augmentStart = new AugmentStartRule(_grammar.GetStartSymbol());
         var startState = GetClosure(new Lr0Configuration(augmentStart));
         CreateState(startState);
         var newStates = MakeTransitionableStates(0);
@@ -102,15 +103,19 @@ public class Lr0ParseTable : ILr0ParseTable
 
     private int CreateState(HashSet<Lr0Configuration> state)
     {
+        var newState = _states.Count;
         if (state.Any(x => x.IsReduce()))
         {
             if (state.Any(x => x.IsShift())) throw new Exception("Shift/reduce conflict");
             if (state.Count != 1) throw new Exception("Reduce/reduce conflict");
+            if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
+            {
+                _acceptStates.Add(newState);
+            }
         }
         
         _states.Add(state);
         _transitions.Add(new Dictionary<Type, int>());
-        var newState = _states.Count - 1;
 
         return newState;
     }
@@ -142,9 +147,34 @@ public class Lr0ParseTable : ILr0ParseTable
         return interfaceType;
     }
 
-    public IParseAction GetActionAndTransition(IGrammarElement next)
+    public IParseAction GetActionAndState(IGrammarElement? next, int state)
     {
-        throw new NotImplementedException();
+        if (_states[state].Count == 1 && _states[state].Single() is {} reduce && reduce.IsReduce())
+        {
+            return new Reduce(reduce.GetRule());
+        }
+
+        if (next is null)
+        {
+            throw new Exception("Unexpected end of input");
+        }
+        
+        if (next is INode node && _grammar.GetStartSymbol().IsInstanceOfType(node))
+        {
+            return new Accept(node);
+        }
+        
+        if (_transitions[state].TryGetValue(next.GetType(), out var newState))
+        {
+            return new Shift(newState);
+        }
+        
+        if (_transitions[state].TryGetValue(GetInterface(next.GetType()), out var newState2))
+        {
+            return new Shift(newState2);
+        }
+
+        throw _errorHelper.ShowErrorMessageAtElement("Parsing error: unexpected token", next);
     }
 
     private class AugmentStartSymbol(INode program) : INode
@@ -159,7 +189,7 @@ public class Lr0ParseTable : ILr0ParseTable
 
         public AugmentStartRule(Type originalStartSymbol)
         {
-            _reduce = x => new AugmentStartSymbol((INode)Convert.ChangeType(x.Single(), originalStartSymbol));
+            _reduce = x => new AugmentStartSymbol((INode)x.Single());
             _rhsTypes = [originalStartSymbol];
         }
 
