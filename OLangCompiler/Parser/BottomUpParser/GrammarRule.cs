@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using OLangCompiler.Parser.ParseTree;
+using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
@@ -10,7 +11,7 @@ public class GrammarRule : BaseGrammarRule
         _reduce = reduce;
         _rhsTypes = types.ToList();
         _lhsType = lhsType;
-        if (types.Any(x => typeof(INode).IsAssignableFrom(x) && !x.IsInterface))
+        if (types.Any(x => !typeof(BaseToken).IsAssignableFrom(x) && !x.IsInterface))
         {
             throw new Exception($"RHS of grammar rules must all be tokens or interfaces: {this}");
         }

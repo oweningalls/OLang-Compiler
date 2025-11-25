@@ -11,31 +11,15 @@ public class Lr0ParserTests
     [Test]
     public void TestNonLr0Fails()
     {
-        Lr0ParseTable? table = null;
-        try
-        {
-            table = new Lr0ParseTable(new NonLr0Grammar(), new ErrorHelper(""));
-            Assert.Fail("Parse table should throw exception for non-LR(0) grammar");
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
+        var e = Assert.Throws<Exception>(() => _ = new Lr0ParseTable(new NonLr0Grammar(), new ErrorHelper("")));
+        Assert.That(e.Message.Contains("reduce/reduce conflict", StringComparison.CurrentCultureIgnoreCase) || e.Message.Contains("shift/reduce conflict", StringComparison.CurrentCultureIgnoreCase));
     }
     
     [Test]
     public void TestAmbiguousFails()
     {
-        Lr0ParseTable? table = null;
-        try
-        {
-            table = new Lr0ParseTable(new AmbiguousGrammar(), new ErrorHelper(""));
-            Assert.Fail("Parse table should throw exception for ambiguous grammar");
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
+        var e = Assert.Throws<Exception>(() => _ = new Lr0ParseTable(new AmbiguousGrammar(), new ErrorHelper("")));
+        Assert.That(e.Message.Contains("reduce/reduce conflict", StringComparison.CurrentCultureIgnoreCase));
     }
 
     [Test]
@@ -48,16 +32,8 @@ public class Lr0ParserTests
     [Test]
     public void TestOLangGrammar()
     {
-        Lr0ParseTable? table = null;
-        try
-        {
-            table = new Lr0ParseTable(new OLangGrammar(), new ErrorHelper(""));
-            Assert.Fail("OLang is presumably not LR(0), so this should have conflicts");
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
+        var e = Assert.Throws<Exception>(() => new Lr0ParseTable(new OLangGrammar(), new ErrorHelper("")));
+        Assert.That(e.Message.Contains("reduce/reduce conflict", StringComparison.CurrentCultureIgnoreCase) || e.Message.Contains("shift/reduce conflict", StringComparison.CurrentCultureIgnoreCase));
     }
 
     [Test]
@@ -76,24 +52,22 @@ public class Lr0ParserTests
         Assert.That(intNode.IntLiteralToken.Value, Is.EqualTo(1));
     }
 
-    private interface ITestNode : INode;
+    private class ANode : IANode;
 
-    public class ANode : ITestNode;
-
-    private class BNode : ITestNode;
+    private class BNode : IBNode;
 
     private class NonLr0Grammar : IGrammar
     {
         private List<BaseGrammarRule> _rules =
         [
-            GrammarRule.Create((BNode _, IntLiteralToken _) => new ANode()),
-            GrammarRule.Create((ANode _, IntLiteralToken _) => new ANode()),
+            GrammarRule.Create((IBNode _, IntLiteralToken _) => new ANode()),
+            GrammarRule.Create((IANode _, IntLiteralToken _) => new ANode()),
             GrammarRule.Create((BoolLiteralToken _, IntLiteralToken _) => new ANode()),
             GrammarRule.Create((BoolLiteralToken _) => new BNode()),
         ];
         public Type GetStartSymbol()
         {
-            return typeof(ANode);
+            return typeof(IANode);
         }
 
         public List<BaseGrammarRule> GetRules()
@@ -102,7 +76,8 @@ public class Lr0ParserTests
         }
     }
 
-    private interface IANode : ITestNode;
+    private interface IANode : INode;
+    private interface IBNode : INode;
     private class FloatANode(BoolLiteralToken boolLiteralToken, FloatLiteralToken floatLiteralToken) : IANode
     {
         public BoolLiteralToken BoolLiteralToken = boolLiteralToken;
@@ -137,14 +112,14 @@ public class Lr0ParserTests
     {
         private List<BaseGrammarRule> _rules =
         [
-            GrammarRule.Create((BNode _) => new ANode()),
-            GrammarRule.Create((ANode _) => new BNode()),
-            GrammarRule.Create((IntLiteralToken _) => new ANode()),
+            GrammarRule.Create((IBNode _) => new ANode()),
+            GrammarRule.Create((IANode _) => new BNode()),
+            GrammarRule.Create((IBNode _) => new BNode()),
         ];
 
         public Type GetStartSymbol()
         {
-            return typeof(ANode);
+            return typeof(IANode);
         }
 
         public List<BaseGrammarRule> GetRules()

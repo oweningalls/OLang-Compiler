@@ -133,7 +133,7 @@ public class OLangGrammar : IGrammar
 
     public Type GetStartSymbol()
     {
-        return typeof(ProgramNode);
+        return typeof(IProgramNode);
     }
 
     public List<BaseGrammarRule> GetRules()
