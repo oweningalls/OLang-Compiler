@@ -44,7 +44,7 @@ public class Lr0Configuration
     {
         if (obj is not Lr0Configuration other) return false;
         
-        return other._bookmark == _bookmark && other._rule == _rule;
+        return other._bookmark == _bookmark && other._rule.Equals(_rule);
     }
 
     public override int GetHashCode()
