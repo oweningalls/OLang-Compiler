@@ -1,0 +1,92 @@
+$$
+\begin{aligned} \\
+[\mathrm{Prog}]
+&\to [\mathrm{StmtList}] \\
+\\
+[\mathrm{StmtList}]
+&\to \epsilon \\
+&\mid [\mathrm{Stmt}] [\mathrm{StmtList}] \\
+[\mathrm{Stmt}]
+&\to \text{exit} [\mathrm{Expression}]; \\
+&\mid [\mathrm{VariableType}] \mathrm{ident} = [\mathrm{Expression}]; \\
+&\mid \mathrm{ident} [\mathrm{AssignmentOperator}] [\mathrm{Expression}]; \\
+&\mid [\mathrm{Scope}] \\
+&\mid \text{if}\ [\mathrm{Expression}]\ [\mathrm{Scope}]\ [\mathrm{ElseBlock}] \\
+&\mid \text{while}\ [\mathrm{Expression}]\ [\mathrm{Scope}] \\
+&\mid \text{for}\ \mathrm{ident}\ \text{in}\ [\mathrm{Expression}]..[\mathrm{Expression}]\ [\mathrm{Scope}] \\
+&\mid [\mathrm{FunctionType}]\ \mathrm{ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
+&\mid [\mathrm{FunctionInvocation}]; \\
+&\mid \text{return}; \\
+&\mid \text{return}\ [\mathrm{Expression}]; \\
+[\mathrm{ElseBlock}]
+&\to \epsilon \\
+&\mid \text{else}\ [\mathrm{Scope}] \\
+[\mathrm{ParameterList}]
+&\to \epsilon \\
+&\mid [\mathrm{Type}]\ \mathrm{ident},\ [\mathrm{ParameterList}] \\
+&\mid [\mathrm{Type}]\ \mathrm{ident} \\
+[\mathrm{ArgumentList}]
+&\to \epsilon \\
+&\mid [\mathrm{Expression}] \ [\mathrm{ArgumentList}] \\
+&\mid [\mathrm{Expression}] \\
+[\mathrm{AssignmentOperator}]
+&\to \text{=} \\
+&\mid \text{+=} \\
+&\mid \text{-=} \\
+&\mid \text{*=} \\
+&\mid \text{/=} \\
+[\mathrm{Scope}]
+&\to \\{ [\mathrm{StmtList}] \\} \\
+[\mathrm{FunctionType}]
+&\to \text{void} \\
+&\mid [\mathrm{Type}] \\
+[\mathrm{VariableType}]
+&\to \text{let} \\
+&\mid [\mathrm{Type}] \\
+[\mathrm{Type}]
+&\to \text{int} \\
+&\mid \text{bool} \\
+&\mid \text{float}
+\end{aligned}
+$$
+
+$$
+\begin{aligned} \\
+[\mathrm{Expression}]
+&\to [\mathrm{Expression}] \text{||} [\mathrm{AndExpression}] \\
+&\mid [\mathrm{AndExpression}] \\
+[\mathrm{AndExpression}]
+&\to [\mathrm{AndExpression}] \\&\\& [\mathrm{EqualityExpression}] \\
+&\mid [\mathrm{EqualityExpression}] \\
+[\mathrm{EqualityExpression}]
+&\to [\mathrm{EqualityExpression}] == [\mathrm{GreaterExpression}] \\
+&\mid [\mathrm{EqualityExpression}] != [\mathrm{GreaterExpression}] \\
+&\mid [\mathrm{GreaterExpression}] \\
+[\mathrm{GreaterExpression}]
+&\to [\mathrm{GreaterExpression}] > [\mathrm{AddExpression}] \\
+&\mid [\mathrm{GreaterExpression}] >= [\mathrm{AddExpression}] \\
+&\mid [\mathrm{GreaterExpression}] < [\mathrm{AddExpression}] \\
+&\mid [\mathrm{GreaterExpression}] <= [\mathrm{AddExpression}] \\
+&\mid [\mathrm{AddExpression}] \\
+[\mathrm{AddExpression}]
+&\to [\mathrm{AddExpression}] + [\mathrm{MultExpression}] \\
+&\mid [\mathrm{AndExpression}] - [\mathrm{MultExpression}] \\
+&\mid [\mathrm{MultExpression}] \\
+[\mathrm{MultExpression}]
+&\to [\mathrm{MultExpression}] * [\mathrm{UnaryExpression}] \\
+&\mid [\mathrm{MultExpression}] / [\mathrm{UnaryExpression}] \\
+&\mid [\mathrm{UnaryExpression}] \\
+[\mathrm{UnaryExpression}]
+&\to ![\mathrm{Term}] \\
+&\mid [\mathrm{Term}] \\
+[\mathrm{Term}]
+&\to \text{int\\_lit} \\
+&\mid \text{float\\_lit} \\
+&\mid \text{bool\\_lit} \\
+&\mid \text{ident} \\
+&\mid \text{(}[\mathrm{Expression}]\text{)} \\
+&\mid [\mathrm{FunctionInvocation}] \\
+[\mathrm{FunctionInvocation}]
+&\to \mathrm{ident}\text{(}[\mathrm{ArgumentList}]\text{)}
+\end{aligned}
+$$
