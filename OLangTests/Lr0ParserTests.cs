@@ -11,7 +11,7 @@ public class Lr0ParserTests
     [Test]
     public void TestNonLr0Fails()
     {
-        var e = Assert.Throws<Exception>(() => _ = new Lr0ParseTable(new NonLr0Grammar(), new ErrorHelper("")));
+        var e = Assert.Throws<Exception>(() => _ = new Lr0ParseTable(new TestGrammar(), new ErrorHelper("")));
         Assert.That(e.Message.Contains("reduce/reduce conflict", StringComparison.CurrentCultureIgnoreCase) || e.Message.Contains("shift/reduce conflict", StringComparison.CurrentCultureIgnoreCase));
     }
     
@@ -50,44 +50,6 @@ public class Lr0ParserTests
         Assert.That(intNode, Is.Not.Null);
         Assert.That(intNode.BoolLiteralToken.Value, Is.False);
         Assert.That(intNode.IntLiteralToken.Value, Is.EqualTo(1));
-    }
-
-    private class ANode : IANode;
-
-    private class BNode : IBNode;
-
-    private class NonLr0Grammar : IGrammar
-    {
-        private List<BaseGrammarRule> _rules =
-        [
-            GrammarRule.Create((IBNode _, IntLiteralToken _) => new ANode()),
-            GrammarRule.Create((IANode _, IntLiteralToken _) => new ANode()),
-            GrammarRule.Create((BoolLiteralToken _, IntLiteralToken _) => new ANode()),
-            GrammarRule.Create((BoolLiteralToken _) => new BNode()),
-        ];
-        public Type GetStartSymbol()
-        {
-            return typeof(IANode);
-        }
-
-        public List<BaseGrammarRule> GetRules()
-        {
-            return _rules;
-        }
-    }
-
-    private interface IANode : INode;
-    private interface IBNode : INode;
-    private class FloatANode(BoolLiteralToken boolLiteralToken, FloatLiteralToken floatLiteralToken) : IANode
-    {
-        public BoolLiteralToken BoolLiteralToken = boolLiteralToken;
-        public FloatLiteralToken FloatLiteralToken = floatLiteralToken;
-    }
-    
-    private class IntANode(BoolLiteralToken boolLiteralToken, IntLiteralToken intLiteralToken) : IANode
-    {
-        public BoolLiteralToken BoolLiteralToken = boolLiteralToken;
-        public IntLiteralToken IntLiteralToken = intLiteralToken;
     }
 
     private class Lr0Grammar : IGrammar
