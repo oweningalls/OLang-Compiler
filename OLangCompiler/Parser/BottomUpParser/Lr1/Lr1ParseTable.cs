@@ -108,11 +108,15 @@ public class Lr1ParseTable : ILr1ParseTable
     private int CreateState(HashSet<Lr1Configuration> state)
     {
         var newState = _states.Count;
-        if (state.Any(x => x.IsReduce()))
+        var reduceLookaheads = state.Where(x => x.IsReduce()).GroupBy(x => x.GetLookAhead()).ToHashSet();
+        if (reduceLookaheads.Count != 0)
         {
-            if (state.Any(x => x.IsShift())) throw new Exception($"Shift/reduce conflict: `{state.First(x => x.IsShift())}`, `{state.First(x => x.IsReduce())}`");
+            if (reduceLookaheads.Any(x => x.Count() > 1)) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
             
-            if (state.Count != 1) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
+            var shiftLookaheads = state.Where(x => x.IsShift()).Select(configuration => new { configuration, lookahead = configuration.GetLookAhead() }).ToHashSet();
+            var shiftReduceConflict = reduceLookaheads.FirstOrDefault(x => shiftLookaheads.Select(y => y.lookahead).Contains(x.Key));
+            if (shiftReduceConflict != null) throw new Exception($"Shift/reduce conflict: `{shiftLookaheads.First(x => x.lookahead == shiftReduceConflict.Key)}`, `{shiftReduceConflict.First()}`");
+            
             if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
             {
                 _acceptStates.Add(newState);
