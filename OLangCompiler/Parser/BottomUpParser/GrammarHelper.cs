@@ -23,10 +23,10 @@ public class GrammarHelper(IGrammar grammar)
     public HashSet<Type> First(Type symbol)
     {
         _seenTypesForFirst = [];
-        return FirstCheckingSeenTypes(symbol);
+        return FirstWithSeenTypeChecking(symbol);
     }
 
-    private HashSet<Type> FirstCheckingSeenTypes(Type symbol)
+    private HashSet<Type> FirstWithSeenTypeChecking(Type symbol)
     {
         if (typeof(BaseToken).IsAssignableFrom(symbol))
         {
@@ -45,8 +45,40 @@ public class GrammarHelper(IGrammar grammar)
 
         _seenTypesForFirst.Add(symbol);
 
-        return GetProductionsFor(symbol).SelectMany(x => FirstCheckingSeenTypes(x.GetRhsTypes()[0])).ToHashSet();
+        return GetProductionsFor(symbol).SelectMany(x =>
+        {
+            var rhsTypes = x.GetRhsTypes();
+            if (rhsTypes.Count == 0)
+            {
+                return [typeof(Epsilon)];
+            }
+            
+            var first = HandleEpsilonsInFirst(rhsTypes);
+
+            return first;
+        }).ToHashSet();
+    }
+
+    private HashSet<Type> HandleEpsilonsInFirst(IReadOnlyList<Type> rhsTypes)
+    {
+        var first = FirstWithSeenTypeChecking(rhsTypes[0]);
+        var newFirst = first;
+        var i = 0;
+        while (newFirst.Contains(typeof(Epsilon)) && i < rhsTypes.Count - 1)
+        {
+            i += 1;
+            newFirst = FirstWithSeenTypeChecking(rhsTypes[i]);
+            first.UnionWith(newFirst);
+        }
+
+        if (i < rhsTypes.Count - 1)
+        {
+            first.Remove(typeof(Epsilon));
+        }
+
+        return first;
     }
 
     private List<Type> _seenTypesForFirst;
 }
+class Epsilon : BaseToken;

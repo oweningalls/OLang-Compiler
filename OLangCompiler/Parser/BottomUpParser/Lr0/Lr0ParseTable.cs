@@ -106,8 +106,9 @@ public class Lr0ParseTable : ILr0ParseTable
         var newState = _states.Count;
         if (state.Any(x => x.IsReduce()))
         {
-            if (state.Any(x => x.IsShift())) throw new Exception("Shift/reduce conflict");
-            if (state.Count != 1) throw new Exception("Reduce/reduce conflict");
+            if (state.Any(x => x.IsShift())) throw new Exception($"Shift/reduce conflict: `{state.First(x => x.IsShift())}`, `{state.First(x => x.IsReduce())}`");
+            if (state.Count != 1) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
+            
             if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
             {
                 _acceptStates.Add(newState);

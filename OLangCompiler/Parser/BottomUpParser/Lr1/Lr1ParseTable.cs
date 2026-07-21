@@ -54,7 +54,10 @@ public class Lr1ParseTable : ILr1ParseTable
     {
         return state.Where(x => x.GetElementAfterBookmark() != null).Select(x =>
             {
-                var bookmarkAdjusted = new Lr1Configuration(x, x.GetElementAfterBookmark()!);
+                var elementsAfterBookmark = x.GetElementsAfterBookmark().ToList();
+                var lookahead = elementsAfterBookmark.Count >= 2 ? elementsAfterBookmark[1] : x.GetLookAhead();
+                var bookmarkAdjusted = new Lr1Configuration(x, lookahead);
+                
                 return new { element = x.GetElementAfterBookmark(), configurations = GetClosure(bookmarkAdjusted) };
             })
             .GroupBy(x => x.element)
@@ -107,8 +110,9 @@ public class Lr1ParseTable : ILr1ParseTable
         var newState = _states.Count;
         if (state.Any(x => x.IsReduce()))
         {
-            if (state.Any(x => x.IsShift())) throw new Exception("Shift/reduce conflict");
-            if (state.Count != 1) throw new Exception("Reduce/reduce conflict");
+            if (state.Any(x => x.IsShift())) throw new Exception($"Shift/reduce conflict: `{state.First(x => x.IsShift())}`, `{state.First(x => x.IsReduce())}`");
+            
+            if (state.Count != 1) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
             if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
             {
                 _acceptStates.Add(newState);
@@ -134,24 +138,41 @@ public class Lr1ParseTable : ILr1ParseTable
             foreach (var addedConfiguration in previouslyAdded)
             {
                 var afterBookmark = addedConfiguration.GetElementsAfterBookmark().ToList();
+                if (afterBookmark.Count == 0)
+                {
+                    continue;
+                }
+                
                 foreach (var grammarRule in _grammarHelper.GetProductionsFor(afterBookmark[0]))
                 {
-                    var first = _grammarHelper.First(afterBookmark[1]);
-                    if (first.Contains(typeof(Epsilon)))
-                    {
-                        first.Add(addedConfiguration.GetLookAhead());
-                    }
-
-                    newAdditions.AddRange(first.Select(terminal => new Lr1Configuration(grammarRule, terminal)));
+                    var terminals = GetTerminals(addedConfiguration, afterBookmark);
+                    
+                    newAdditions.AddRange(terminals.Select(terminal => new Lr1Configuration(grammarRule, terminal)));
                 }
             }
 
-            previouslyAdded = newAdditions;
+            previouslyAdded = newAdditions.Except(closure).ToList();
         }
 
         return closure;
     }
-    
+
+    private List<Type> GetTerminals(Lr1Configuration addedConfiguration, List<Type> elementsAfterBookmark)
+    {
+        if (elementsAfterBookmark.Count < 2)
+        {
+            return [addedConfiguration.GetLookAhead()];
+        }
+
+        var first = _grammarHelper.First(elementsAfterBookmark[1]).ToList();
+        if (first.Contains(typeof(Epsilon)))
+        {
+            first.Add(addedConfiguration.GetLookAhead());
+        }
+
+        return first;
+    }
+
     private static Type GetInterface(Type type)
     {
         var interfaceType = type.GetInterfaces()
@@ -202,7 +223,7 @@ public class Lr1ParseTable : ILr1ParseTable
         public AugmentStartRule(Type originalStartSymbol)
         {
             _reduce = x => new AugmentStartSymbol((INode)x.Single());
-            _rhsTypes = [originalStartSymbol];
+            _rhsTypes = [originalStartSymbol, typeof(EOI)];
         }
 
         public override Type GetLhsType()
@@ -222,5 +243,5 @@ public class Lr1ParseTable : ILr1ParseTable
 
     }
     
-    private class Epsilon : BaseToken;
+    private class EOI : BaseToken;
 }

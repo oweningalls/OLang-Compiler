@@ -38,10 +38,10 @@ public class Lr1Configuration
         }
     }
 
-    public IEnumerable<Type>? GetElementsAfterBookmark()
+    public IEnumerable<Type> GetElementsAfterBookmark()
     {
         var rhsTypes = _rule.GetRhsTypes();
-        return _bookmark == rhsTypes.Count ? null : rhsTypes.TakeLast(rhsTypes.Count - _bookmark);
+        return _bookmark == rhsTypes.Count ? new List<Type>() : rhsTypes.TakeLast(rhsTypes.Count - _bookmark);
     }
 
     public Type? GetElementAfterBookmark()
@@ -78,13 +78,13 @@ public class Lr1Configuration
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(_bookmark, _rule);
+        return HashCode.Combine(_bookmark, _rule, _lookahead);
     }
 
     public override string ToString()
     {
         var typesWithBookmark = _rule.GetRhsTypes().Select(x => x.Name).ToList();
         typesWithBookmark.Insert(_bookmark, ".");
-        return $"{_rule.GetLhsType().Name} -> {string.Join(" ", typesWithBookmark)}";
+        return $"{_rule.GetLhsType().Name} -> {string.Join(" ", typesWithBookmark)}, {{{_lookahead.Name}}}";
     }
 }

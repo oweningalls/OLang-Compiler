@@ -10,10 +10,48 @@ class TestGrammar : IGrammar
     [
         GrammarRule.Create((IBNode _, IntLiteralToken _) => new ANode()),
         GrammarRule.Create((IANode _, IntLiteralToken _) => new ANode()),
-        GrammarRule.Create((BoolLiteralToken _, IntLiteralToken _) => new ANode()),
+        GrammarRule.Create((IntLiteralToken _, IntLiteralToken _) => new ANode()),
         GrammarRule.Create((BoolLiteralToken _) => new BNode()),
     ];
 
+    public Type GetStartSymbol()
+    {
+        return typeof(IANode);
+    }
+
+    public List<BaseGrammarRule> GetRules()
+    {
+        return _rules;
+    }
+}
+class AmbiguousGrammar : IGrammar
+{
+    private List<BaseGrammarRule> _rules =
+    [
+        GrammarRule.Create((IBNode _) => new ANode()),
+        GrammarRule.Create((IANode _) => new BNode()),
+        GrammarRule.Create((IBNode _) => new BNode()),
+        GrammarRule.Create((BoolLiteralToken _) => new BNode())
+    ];
+
+    public Type GetStartSymbol()
+    {
+        return typeof(IANode);
+    }
+
+    public List<BaseGrammarRule> GetRules()
+    {
+        return _rules;
+    }
+}
+
+class Lr0Grammar : IGrammar
+{
+    private List<BaseGrammarRule> _rules =
+    [
+        GrammarRule.Create((BoolLiteralToken b, IntLiteralToken i) => new IntANode(b, i)),
+        GrammarRule.Create((BoolLiteralToken b, FloatLiteralToken f) => new FloatANode(b, f)),
+    ];
     public Type GetStartSymbol()
     {
         return typeof(IANode);
