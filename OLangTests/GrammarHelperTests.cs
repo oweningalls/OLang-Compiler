@@ -15,6 +15,38 @@ public class GrammarHelperTests
     }
 
     [Test]
+    public void TestEpsilonWorksWithFirst()
+    {
+        var helper = new GrammarHelper(new GrammarWithEpsilons());
+
+        var first = helper.First(typeof(IANode));
+        Assert.That(first.Count, Is.EqualTo(2));
+        Assert.That(first, Does.Contain(typeof(BoolLiteralToken)));
+        Assert.That(first, Does.Contain(typeof(IntLiteralToken)));
+    }
+
+    private class GrammarWithEpsilons : IGrammar
+    {
+        private List<BaseGrammarRule> _rules =
+        [
+            GrammarRule.Create((IBNode _, BoolLiteralToken _) => new ANode()),
+            GrammarRule.Create((IntLiteralToken _) => new BNode()),
+            GrammarRule.Create(() => new BNode()),
+            
+        ];
+
+        public Type GetStartSymbol()
+        {
+            return typeof(IANode);
+        }
+
+        public List<BaseGrammarRule> GetRules()
+        {
+            return _rules;
+        }
+    }
+
+    [Test]
     public void TestANodeFirst()
     {
         var helper = new GrammarHelper(new TestGrammar());

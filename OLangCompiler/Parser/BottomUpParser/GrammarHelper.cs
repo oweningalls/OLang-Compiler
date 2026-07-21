@@ -71,7 +71,7 @@ public class GrammarHelper(IGrammar grammar)
             first.UnionWith(newFirst);
         }
 
-        if (i < rhsTypes.Count - 1)
+        if (!newFirst.Contains(typeof(Epsilon)))
         {
             first.Remove(typeof(Epsilon));
         }
