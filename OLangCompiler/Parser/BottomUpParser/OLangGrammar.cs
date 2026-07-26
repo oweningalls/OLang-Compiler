@@ -33,7 +33,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IStatement statement, IStmtListNode statementList) => new StmtListWithStatement(statement, statementList)),
 
         // Stmt
-        GrammarRule.Create((ExitToken _, IExpression expression) => new Exit(expression)),
+        GrammarRule.Create((ExitToken _, IExpression expression, SemicolonToken _) => new Exit(expression)),
         GrammarRule.Create((LetToken _, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new LetDeclaration(identifier, expression)),
         GrammarRule.Create((IType type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(type, identifier, expression)),
         GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
@@ -61,7 +61,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),
         GrammarRule.Create((IExpression expression) => new ExpressionArgumentList(expression)),
 
-        // SetOperator
+        // AssignmentOperator
         GrammarRule.Create((EqualsToken _) => new Equals()),
         GrammarRule.Create((PlusEqualsToken _) => new PlusEquals()),
         GrammarRule.Create((MinusEqualsToken _) => new MinusEquals()),
