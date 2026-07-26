@@ -8,13 +8,15 @@ $$
 &\mid [\mathrm{Stmt}] [\mathrm{StmtList}] \\
 [\mathrm{Stmt}]
 &\to \text{exit} [\mathrm{Expression}]; \\
-&\mid [\mathrm{VariableType}] \mathrm{ident} = [\mathrm{Expression}]; \\
+&\mid \text{let ident} = [\mathrm{Expression}]; \\
+&\mid [\mathrm{Type}] \mathrm{ident} = [\mathrm{Expression}]; \\
 &\mid \mathrm{ident} [\mathrm{AssignmentOperator}] [\mathrm{Expression}]; \\
 &\mid [\mathrm{Scope}] \\
 &\mid \text{if}\ [\mathrm{Expression}]\ [\mathrm{Scope}]\ [\mathrm{ElseBlock}] \\
 &\mid \text{while}\ [\mathrm{Expression}]\ [\mathrm{Scope}] \\
 &\mid \text{for}\ \mathrm{ident}\ \text{in}\ [\mathrm{Expression}]..[\mathrm{Expression}]\ [\mathrm{Scope}] \\
-&\mid [\mathrm{FunctionType}]\ \mathrm{ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
+&\mid [\mathrm{Type}]\ \mathrm{ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
+&\mid \text{void ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
 &\mid [\mathrm{FunctionInvocation}]; \\
 &\mid \text{return}; \\
 &\mid \text{return}\ [\mathrm{Expression}]; \\
@@ -37,12 +39,6 @@ $$
 &\mid \text{/=} \\
 [\mathrm{Scope}]
 &\to \\{ [\mathrm{StmtList}] \\} \\
-[\mathrm{FunctionType}]
-&\to \text{void} \\
-&\mid [\mathrm{Type}] \\
-[\mathrm{VariableType}]
-&\to \text{let} \\
-&\mid [\mathrm{Type}] \\
 [\mathrm{Type}]
 &\to \text{int} \\
 &\mid \text{bool} \\
