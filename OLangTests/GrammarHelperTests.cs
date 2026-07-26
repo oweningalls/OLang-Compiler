@@ -53,8 +53,9 @@ public class GrammarHelperTests
 
         var aFirst = helper.First(typeof(IANode));
         
-        Assert.That(aFirst, Has.Count.EqualTo(1));
+        Assert.That(aFirst, Has.Count.EqualTo(2));
         Assert.That(aFirst, Does.Contain(typeof(BoolLiteralToken)));
+        Assert.That(aFirst, Does.Contain(typeof(IntLiteralToken)));
     }
     
     [Test]
