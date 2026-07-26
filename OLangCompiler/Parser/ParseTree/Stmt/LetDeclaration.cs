@@ -1,12 +1,10 @@
 ﻿using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 
-public class Declaration(IType type, IdentifierToken identifier, IExpression expression) : IStatement
+public class LetDeclaration(IdentifierToken identifier, IExpression expression) : IStatement
 {
-    public IType Type = type;
     public IdentifierToken Identifier = identifier;
     public IExpression Expression = expression;
 }

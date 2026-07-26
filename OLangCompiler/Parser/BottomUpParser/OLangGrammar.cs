@@ -6,7 +6,6 @@ using OLangCompiler.Parser.ParseTree.ElseBlock;
 using OLangCompiler.Parser.ParseTree.EqualityExpression;
 using OLangCompiler.Parser.ParseTree.Expression;
 using OLangCompiler.Parser.ParseTree.FunctionInvocation;
-using OLangCompiler.Parser.ParseTree.FunctionType;
 using OLangCompiler.Parser.ParseTree.GreaterExpression;
 using OLangCompiler.Parser.ParseTree.MultExpression;
 using OLangCompiler.Parser.ParseTree.ParameterList;
@@ -17,10 +16,8 @@ using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.UnaryExpression;
-using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
-using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
@@ -37,13 +34,15 @@ public class OLangGrammar : IGrammar
 
         // Stmt
         GrammarRule.Create((ExitToken _, IExpression expression) => new Exit(expression)),
-        GrammarRule.Create((IVariableType variableType, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(variableType, identifier, expression)),
+        GrammarRule.Create((LetToken _, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new LetDeclaration(identifier, expression)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(type, identifier, expression)),
         GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
         GrammarRule.Create((IScopeNode scope) => new ScopeStatement(scope)),
         GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope, IElse elseNode) => new If(expression, scope, elseNode)),
         GrammarRule.Create((WhileToken _, IExpression expression, IScopeNode scope) => new While(expression, scope)),
         GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, IExpression startExpression, RangeToken _, IExpression endExpression, IScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
-        GrammarRule.Create((IFunctionType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, parameterList, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, parameterList, scope)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, parameterList, scope)),
         GrammarRule.Create((IFunctionInvocation invocation) => new Invocation(invocation)),
         GrammarRule.Create((ReturnToken _, SemicolonToken _) => new Return()),
         GrammarRule.Create((ReturnToken _, IExpression expression, SemicolonToken _) => new ReturnValue(expression)),
@@ -71,14 +70,6 @@ public class OLangGrammar : IGrammar
 
         // Scope
         GrammarRule.Create((LeftCurlyToken _, IStmtListNode stmtList, RightCurlyToken _) => new ScopeNode(stmtList)),
-
-        // FunctionType
-        GrammarRule.Create((VoidToken _) => new Void()),
-        GrammarRule.Create((IType typeNode) => new PrimitiveFunctionType(typeNode)),
-
-        // VariableType
-        GrammarRule.Create((LetToken _) => new Let()),
-        GrammarRule.Create((IType typeNode) => new PrimitiveVariableType(typeNode)),
 
         // Type
         GrammarRule.Create((IntTypeToken _) => new IntType()),
@@ -111,8 +102,8 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IMultExpression expression) => new NonAddExpression(expression)),
 
         // MultExpression
-        GrammarRule.Create((IMultExpression lhs, MinusToken _, IUnaryExpression rhs) => new Mult(lhs, rhs)),
-        GrammarRule.Create((IMultExpression lhs, MinusToken _, IUnaryExpression rhs) => new Div(lhs, rhs)),
+        GrammarRule.Create((IMultExpression lhs, TimesToken _, IUnaryExpression rhs) => new Mult(lhs, rhs)),
+        GrammarRule.Create((IMultExpression lhs, DivideToken _, IUnaryExpression rhs) => new Div(lhs, rhs)),
         GrammarRule.Create((IUnaryExpression expression) => new NonMultExpression(expression)),
 
         // UnaryExpression

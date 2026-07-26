@@ -11,7 +11,6 @@ using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.UnaryExpression;
-using OLangCompiler.Parser.ParseTree.VariableType;
 using OLangCompiler.Tokens;
 
 namespace OLangTests;
@@ -34,7 +33,7 @@ public class OLangGrammarTests
     public void ReduceDeclarationStatement()
     {
         var rule = new OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
-        var varType = new PrimitiveVariableType(new BoolType());
+        var varType = new BoolType();
         var identifier = new IdentifierToken("test");
         var expression = new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("ident2")))))))));
         

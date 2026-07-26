@@ -1,19 +1,4 @@
-﻿using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Parser.ParseTree.ElseBlock;
-using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.FunctionType;
-using OLangCompiler.Parser.ParseTree.ParameterList;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.Scope;
-using OLangCompiler.Parser.ParseTree.Stmt;
-using OLangCompiler.Parser.ParseTree.StmtList;
-using OLangCompiler.Parser.ParseTree.Term;
-using OLangCompiler.Parser.ParseTree.VariableType;
-using OLangCompiler.Tokens;
-using OLangCompiler.TypeChecking.Types;
-using OLangCompiler.Utility;
-using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
-using Void = OLangCompiler.Parser.ParseTree.FunctionType.Void;
+﻿using OLangCompiler.Parser.ParseTree.Prog;
 
 namespace OLangCompiler.TypeChecking;
 
