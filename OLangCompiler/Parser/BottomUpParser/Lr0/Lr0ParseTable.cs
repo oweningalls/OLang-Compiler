@@ -10,9 +10,9 @@ public class Lr0ParseTable : ILr0ParseTable
     private List<HashSet<Lr0Configuration>> _states = [];
     private List<Dictionary<Type, int>> _transitions = [];
     private List<int> _acceptStates = [];
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public Lr0ParseTable(IGrammar grammar, ErrorHelper errorHelper)
+    public Lr0ParseTable(IGrammar grammar, IErrorHelper errorHelper)
     {
         _grammar = grammar;
         _errorHelper = errorHelper;

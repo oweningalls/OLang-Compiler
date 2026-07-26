@@ -9,7 +9,7 @@ public class Lr1Parser : IParser
     private Stack<IGrammarElement> _input;
     private Stack<ParseState> _stateStack;
     
-    public INode ParseProgram(IGrammar grammar, List<BaseToken> tokens, ErrorHelper errorHelper)
+    public INode ParseProgram(IGrammar grammar, List<BaseToken> tokens, IErrorHelper errorHelper)
     {
         var parseTable = new Lr1ParseTable(grammar, errorHelper);
         _stateStack = new Stack<ParseState>();

@@ -6,5 +6,5 @@ namespace OLangCompiler.Parser;
 
 public interface IParser
 {
-    public INode ParseProgram(IGrammar grammar, List<BaseToken> tokens, ErrorHelper errorHelper);
+    public INode ParseProgram(IGrammar grammar, List<BaseToken> tokens, IErrorHelper errorHelper);
 }

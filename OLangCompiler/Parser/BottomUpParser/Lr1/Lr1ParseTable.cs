@@ -11,9 +11,9 @@ public class Lr1ParseTable : ILr1ParseTable
     private List<HashSet<Lr1Configuration>> _states = [];
     private List<Dictionary<Type, int>> _transitions = [];
     private List<int> _acceptStates = [];
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public Lr1ParseTable(IGrammar grammar, ErrorHelper errorHelper)
+    public Lr1ParseTable(IGrammar grammar, IErrorHelper errorHelper)
     {
         _grammar = grammar;
         _errorHelper = errorHelper;

@@ -6,9 +6,9 @@ namespace OLangCompiler.Parser;
 
 public class OLangParser : IParser
 {
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public INode ParseProgram(IGrammar _, List<BaseToken> tokens, ErrorHelper errorHelper)
+    public INode ParseProgram(IGrammar _, List<BaseToken> tokens, IErrorHelper errorHelper)
     {
         // _errorHelper = errorHelper;
         // _tokens = tokens;

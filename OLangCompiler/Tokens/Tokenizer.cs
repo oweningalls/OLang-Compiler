@@ -2,9 +2,9 @@
 
 public class Tokenizer
 {
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public List<BaseToken> Tokenize(string input, ErrorHelper errorHelper)
+    public List<BaseToken> Tokenize(string input, IErrorHelper errorHelper)
     {
         _errorHelper = errorHelper;
         _input = input;

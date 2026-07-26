@@ -10,13 +10,13 @@ public class Lr1ParserTests
     [Test]
     public void TestGrammarDoesntFail()
     {
-        Assert.DoesNotThrow(() => new Lr1ParseTable(new TestGrammar(), new ErrorHelper("")));
+        Assert.DoesNotThrow(() => new Lr1ParseTable(new TestGrammar(), new NoOpErrorHelper()));
     }
     
     [Test]
     public void TestAmbiguousFails()
     {
-        var e = Assert.Throws<Exception>(() => _ = new Lr1ParseTable(new AmbiguousGrammar(), new ErrorHelper("")));
+        var e = Assert.Throws<Exception>(() => _ = new Lr1ParseTable(new AmbiguousGrammar(), new NoOpErrorHelper()));
         Assert.That(e.Message.Contains("conflict", StringComparison.CurrentCultureIgnoreCase), e.Message);
     }
 
@@ -24,13 +24,13 @@ public class Lr1ParserTests
     public void TestLr0GrammarWorks()
     {
         Lr1ParseTable? table = null;
-        Assert.DoesNotThrow(() => table = new Lr1ParseTable(new Lr0Grammar(), new ErrorHelper("")));
+        Assert.DoesNotThrow(() => table = new Lr1ParseTable(new Lr0Grammar(), new NoOpErrorHelper()));
     }
 
     [Test]
     public void TestOLangGrammar()
     {
-        Assert.DoesNotThrow(() => new Lr1ParseTable(new OLangGrammar(), new ErrorHelper("")));
+        Assert.DoesNotThrow(() => new Lr1ParseTable(new OLangGrammar(), new NoOpErrorHelper()));
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class Lr1ParserTests
             new BoolLiteralToken(false), new IntLiteralToken(1)
         };
         
-        var program = parser.ParseProgram(new Lr0Grammar(), input, new ErrorHelper(""));
+        var program = parser.ParseProgram(new Lr0Grammar(), input, new NoOpErrorHelper());
         var intNode = program as IntANode;
         Assert.That(intNode, Is.Not.Null);
         Assert.Multiple(() =>

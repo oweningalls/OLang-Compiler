@@ -7,9 +7,9 @@ namespace OLangCompiler.Generation;
 
 public class AssemblyGenerator
 {
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public string GenerateProgram(ProgramNode program, ErrorHelper errorHelper)
+    public string GenerateProgram(ProgramNode program, IErrorHelper errorHelper)
     {
         _errorHelper = errorHelper;
         _output = new StringBuilder();

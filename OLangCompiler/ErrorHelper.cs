@@ -3,7 +3,7 @@ using OLangCompiler.Tokens;
 
 namespace OLangCompiler;
 
-public class ErrorHelper(string input)
+public class ErrorHelper(string input) : IErrorHelper
 {
     private string[] _inputLines = input.Split('\n').Select(x => x.TrimEnd()).ToArray();
     

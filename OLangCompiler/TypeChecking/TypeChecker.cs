@@ -4,9 +4,9 @@ namespace OLangCompiler.TypeChecking;
 
 public class TypeChecker
 {
-    private ErrorHelper _errorHelper;
+    private IErrorHelper _errorHelper;
 
-    public void CheckTypes(ProgramNode program, ErrorHelper errorHelper)
+    public void CheckTypes(ProgramNode program, IErrorHelper errorHelper)
     {
         // _errorHelper = errorHelper;
         // _variableTypeStack = new ScopeTracker<string, ExpressionType>();
