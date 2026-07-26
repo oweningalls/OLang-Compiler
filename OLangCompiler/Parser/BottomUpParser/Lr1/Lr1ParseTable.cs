@@ -107,8 +107,15 @@ public class Lr1ParseTable : ILr1ParseTable
         return newState;
     }
 
+    private Dictionary<Lr1Configuration, HashSet<Lr1Configuration>> _closureCache = [];
+
     private HashSet<Lr1Configuration> GetClosure(Lr1Configuration configuration)
     {
+        if (_closureCache.TryGetValue(configuration, out var cachedClosure))
+        {
+            return cachedClosure;
+        }
+
         var closure = new HashSet<Lr1Configuration>();
         List<Lr1Configuration> previouslyAdded = [configuration];
         
@@ -120,6 +127,7 @@ public class Lr1ParseTable : ILr1ParseTable
             previouslyAdded = newAdditions.Distinct().Except(closure).ToList();
         }
 
+        _closureCache[configuration] = closure;
         return closure;
     }
 
