@@ -17,6 +17,7 @@ public class Lr1ParseTable : ILr1ParseTable
         _grammar = grammar;
         _errorHelper = errorHelper;
         _grammarHelper = new GrammarHelper(grammar);
+        _methodCacher = new MethodCacher();
         CreateTable();
     }
 
@@ -107,15 +108,13 @@ public class Lr1ParseTable : ILr1ParseTable
         return newState;
     }
 
-    private Dictionary<Lr1Configuration, HashSet<Lr1Configuration>> _closureCache = [];
-
     private HashSet<Lr1Configuration> GetClosure(Lr1Configuration configuration)
     {
-        if (_closureCache.TryGetValue(configuration, out var cachedClosure))
-        {
-            return cachedClosure;
-        }
-
+        return _methodCacher.RunMethodWithCaching(GetClosureImpl, configuration);
+    }
+    
+    private HashSet<Lr1Configuration> GetClosureImpl(Lr1Configuration configuration)
+    {
         var closure = new HashSet<Lr1Configuration>();
         List<Lr1Configuration> previouslyAdded = [configuration];
         
@@ -127,9 +126,10 @@ public class Lr1ParseTable : ILr1ParseTable
             previouslyAdded = newAdditions.Distinct().Except(closure).ToList();
         }
 
-        _closureCache[configuration] = closure;
         return closure;
     }
+
+    private readonly MethodCacher _methodCacher;
 
     private List<Lr1Configuration> ExpandNonTerminalForClosure(Lr1Configuration addedConfiguration)
     {
