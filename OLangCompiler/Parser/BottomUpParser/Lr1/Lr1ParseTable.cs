@@ -193,9 +193,9 @@ public class Lr1ParseTable : ILr1ParseTable
         return interfaceType;
     }
 
-    public IParseAction GetActionAndState(IGrammarElement? next, int state)
+    public IParseAction GetActionAndState(IGrammarElement? next, Type lookahead, int state)
     {
-        if (_states[state].Count == 1 && _states[state].Single() is {} reduce && reduce.IsReduce())
+        if (_states[state].Count == 1 && _states[state].Single() is {} reduce && reduce.IsReduce() && reduce.GetLookAhead() == lookahead)
         {
             return new Reduce(reduce.GetRule());
         }
@@ -256,5 +256,5 @@ public class Lr1ParseTable : ILr1ParseTable
 
     }
     
-    private class EOI : BaseToken;
+    public class EOI : BaseToken;
 }
