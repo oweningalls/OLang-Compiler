@@ -10,7 +10,6 @@ public class Lr1ParseTable : ILr1ParseTable
     private GrammarHelper _grammarHelper;
     private List<HashSet<Lr1Configuration>> _states = [];
     private List<Dictionary<Type, int>> _transitions = [];
-    private List<int> _acceptStates = [];
     private IErrorHelper _errorHelper;
 
     public Lr1ParseTable(IGrammar grammar, IErrorHelper errorHelper)
@@ -18,15 +17,15 @@ public class Lr1ParseTable : ILr1ParseTable
         _grammar = grammar;
         _errorHelper = errorHelper;
         _grammarHelper = new GrammarHelper(grammar);
-        InitializeTable();
+        CreateTable();
     }
 
-    private void InitializeTable()
+    private void CreateTable()
     {
         var augmentStart = new AugmentStartRule(_grammar.GetStartSymbol());
         var startState = GetClosure(new Lr1Configuration(augmentStart, typeof(EOI)));
-        CreateState(startState);
-        var newStates = MakeTransitionableStates(0);
+        var firstState = CreateState(startState);
+        var newStates = MakeTransitionableStates(firstState);
 
         while (newStates.Count != 0)
         {
@@ -40,8 +39,7 @@ public class Lr1ParseTable : ILr1ParseTable
         var newStates = new List<int>();
         foreach (var transition in connectedStates)
         {
-            var newState = AddStateAndTransition(transition.Item1, startState, transition.Item2);
-            if (newState is { } state)
+            if (AddStateAndTransition(transition.Item1, startState, transition.Item2) is { } state)
             {
                 newStates.Add(state);
             }
@@ -65,6 +63,22 @@ public class Lr1ParseTable : ILr1ParseTable
             .ToList();
     }
 
+    // returns new state if created. returns null if transition to existing state was added
+    private int? AddStateAndTransition(Type element, int fromState, HashSet<Lr1Configuration> toState)
+    {
+        var possibleIdenticalState = GetExistingIdenticalState(toState);
+        if (possibleIdenticalState is { } existingState)
+        {
+            AddTransition(element, fromState, existingState);
+            return null;
+        }
+
+        var newState = CreateState(toState);
+        AddTransition(element, fromState, newState);
+
+        return newState;
+    }
+    
     private int? GetExistingIdenticalState(HashSet<Lr1Configuration> state)
     {
         return _states
@@ -72,28 +86,6 @@ public class Lr1ParseTable : ILr1ParseTable
             .SingleOrDefault(x => x.Item.SetEquals(state))?.Index;
     }
 
-    // returns new state if created. returns null if transition to existing state was added
-    private int? AddStateAndTransition(Type element, int fromState, HashSet<Lr1Configuration> state)
-    {
-        var possibleIdenticalState = GetExistingIdenticalState(state);
-        if (possibleIdenticalState is { } existingState)
-        {
-            AddTransition(element, fromState, existingState);
-            return null;
-        }
-        else
-        {
-            return AddTransition(element, fromState, state);
-        }
-    }
-
-    private int AddTransition(Type element, int fromState, HashSet<Lr1Configuration> state)
-    {
-        var newState = CreateState(state);
-        AddTransition(element, fromState, newState);
-
-        return newState;
-    }
 
     private void AddTransition(Type element, int fromState, int toState)
     {
@@ -107,31 +99,8 @@ public class Lr1ParseTable : ILr1ParseTable
     private int CreateState(HashSet<Lr1Configuration> state)
     {
         var newState = _states.Count;
-        var reduceLookaheadGroups = state.Where(x => x.IsReduce()).GroupBy(x => x.GetLookAhead()).ToHashSet();
-        if (reduceLookaheadGroups.Count != 0)
-        {
-            if (reduceLookaheadGroups.Any(x => x.Count() > 1)) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
+        Lr1ConflictHelper.CheckForConflicts(state);
 
-            var reduces = reduceLookaheadGroups.SelectMany(x => x.AsEnumerable()).ToHashSet();
-            var shifts = state.Where(x => x.IsShift()).ToList();
-            var shiftsOnTerminals = shifts.Where(x => typeof(BaseToken).IsAssignableFrom(x.GetElementAfterBookmark())).ToList();
-
-            var reduceLookaheads = reduces.Select(y => y.GetLookAhead());
-            var conflictingShift = shiftsOnTerminals.FirstOrDefault(x => reduceLookaheads.Contains(x.GetElementAfterBookmark()));
-
-            if (conflictingShift != null)
-            {
-                var conflictingTerminal = conflictingShift.GetElementAfterBookmark();
-                var conflictingReduce = reduces.First(x => x.GetLookAhead() == conflictingTerminal);
-                throw new Exception($"Shift/reduce conflict: `{conflictingShift}`, `{conflictingReduce}`");
-            }
-            
-            if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
-            {
-                _acceptStates.Add(newState);
-            }
-        }
-        
         _states.Add(state);
         _transitions.Add(new Dictionary<Type, int>());
 
@@ -146,28 +115,31 @@ public class Lr1ParseTable : ILr1ParseTable
         while (previouslyAdded.Count != 0)
         {
             closure.UnionWith(previouslyAdded);
+            var newAdditions = previouslyAdded.SelectMany(ExpandNonTerminalForClosure);
 
-            var newAdditions = new List<Lr1Configuration>();
-            foreach (var addedConfiguration in previouslyAdded)
-            {
-                var afterBookmark = addedConfiguration.GetElementsAfterBookmark().ToList();
-                if (afterBookmark.Count == 0)
-                {
-                    continue;
-                }
-                
-                foreach (var grammarRule in _grammarHelper.GetProductionsFor(afterBookmark[0]))
-                {
-                    var terminals = GetTerminals(addedConfiguration, afterBookmark);
-                    
-                    newAdditions.AddRange(terminals.Select(terminal => new Lr1Configuration(grammarRule, terminal)));
-                }
-            }
-
-            previouslyAdded = newAdditions.Except(closure).ToList();
+            previouslyAdded = newAdditions.Distinct().Except(closure).ToList();
         }
 
         return closure;
+    }
+
+    private List<Lr1Configuration> ExpandNonTerminalForClosure(Lr1Configuration addedConfiguration)
+    {
+        var newAdditions = new List<Lr1Configuration>();
+        var afterBookmark = addedConfiguration.GetElementsAfterBookmark().ToList();
+        if (afterBookmark.Count == 0)
+        {
+            return [];
+        }
+            
+        foreach (var grammarRule in _grammarHelper.GetProductionsFor(afterBookmark[0]))
+        {
+            var terminals = GetTerminals(addedConfiguration, afterBookmark);
+                
+            newAdditions.AddRange(terminals.Select(terminal => new Lr1Configuration(grammarRule, terminal)));
+        }
+
+        return newAdditions;
     }
 
     private List<Type> GetTerminals(Lr1Configuration addedConfiguration, List<Type> elementsAfterBookmark)
@@ -193,7 +165,7 @@ public class Lr1ParseTable : ILr1ParseTable
         return interfaceType;
     }
 
-    public IParseAction GetActionAndState(IGrammarElement? next, Type lookahead, int state)
+    public IParseAction GetActionAndState(IGrammarElement? next, Type? lookahead, int state)
     {
         if (_states[state].Count == 1 && _states[state].Single() is {} reduce && reduce.IsReduce() && reduce.GetLookAhead() == lookahead)
         {
@@ -253,7 +225,6 @@ public class Lr1ParseTable : ILr1ParseTable
         {
             return _reduce.Invoke(rhs);
         }
-
     }
     
     public class EOI : BaseToken;

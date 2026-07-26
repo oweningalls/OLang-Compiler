@@ -18,7 +18,10 @@ public class Lr1Parser : IParser
 
         do
         {
-            var input = GetNextInput();
+            if (GetNextInput() is not { } input)
+            {
+                throw new Exception("Unexpected end of input");
+            }
             var action = parseTable.GetActionAndState(input, GetLookahead(), GetCurrentState());
             switch (action)
             {
@@ -59,7 +62,7 @@ public class Lr1Parser : IParser
         return _input.Count != 0 ? _input.Pop() : null;
     }
 
-    private Type? GetLookahead()
+    private Type GetLookahead()
     {
         return _input.Count > 1 ? _input.ElementAt(1).GetType() : typeof(Lr1ParseTable.EOI);
     }
