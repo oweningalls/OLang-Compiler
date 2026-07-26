@@ -7,6 +7,11 @@ public class GrammarHelper(IGrammar grammar)
 {
     public List<BaseGrammarRule> GetProductionsFor(Type symbol)
     {
+        if (_getProductionsForCache.TryGetValue(symbol, out var productions))
+        {
+            return productions;
+        }
+        
         if (!typeof(INode).IsAssignableFrom(symbol))
         {
             return [];
@@ -16,8 +21,14 @@ public class GrammarHelper(IGrammar grammar)
         {
             throw new ArgumentException($"Can't get productions for {symbol}, only for interfaces");
         }
-        return grammar.GetRules().Where(x => x.GetLhsType() == symbol).ToList();
+        
+        productions = grammar.GetRules().Where(x => x.GetLhsType() == symbol).ToList();
+        _getProductionsForCache[symbol] = productions;
+
+        return productions;
     }
+    
+    private readonly Dictionary<Type, List<BaseGrammarRule>> _getProductionsForCache = [];
 
     // returns a list of BaseNode types that can be the first terminal of symbol
     public HashSet<Type> First(Type symbol)
@@ -26,8 +37,15 @@ public class GrammarHelper(IGrammar grammar)
         return FirstWithSeenTypeChecking(symbol);
     }
 
+    private readonly Dictionary<Type, HashSet<Type>> _firstCache = [];
+
     private HashSet<Type> FirstWithSeenTypeChecking(Type symbol)
     {
+        if (_firstCache.TryGetValue(symbol, out var set))
+        {
+            return set;
+        }
+        
         if (typeof(BaseToken).IsAssignableFrom(symbol))
         {
             return [symbol];
@@ -45,7 +63,7 @@ public class GrammarHelper(IGrammar grammar)
 
         _seenTypesForFirst.Add(symbol);
 
-        return GetProductionsFor(symbol).SelectMany(x =>
+        set = GetProductionsFor(symbol).SelectMany(x =>
         {
             var rhsTypes = x.GetRhsTypes();
             if (rhsTypes.Count == 0)
@@ -57,6 +75,9 @@ public class GrammarHelper(IGrammar grammar)
 
             return first;
         }).ToHashSet();
+        _firstCache[symbol] = set;
+
+        return set;
     }
 
     private HashSet<Type> HandleEpsilonsInFirst(IReadOnlyList<Type> rhsTypes)

@@ -24,7 +24,7 @@ public class Lr1ParseTable : ILr1ParseTable
     private void InitializeTable()
     {
         var augmentStart = new AugmentStartRule(_grammar.GetStartSymbol());
-        var startState = GetClosure(new Lr1Configuration(augmentStart, typeof(Epsilon)));
+        var startState = GetClosure(new Lr1Configuration(augmentStart, typeof(EOI)));
         CreateState(startState);
         var newStates = MakeTransitionableStates(0);
 
@@ -54,8 +54,7 @@ public class Lr1ParseTable : ILr1ParseTable
     {
         return state.Where(x => x.GetElementAfterBookmark() != null).Select(x =>
             {
-                var elementsAfterBookmark = x.GetElementsAfterBookmark().ToList();
-                var lookahead = elementsAfterBookmark.Count >= 2 ? elementsAfterBookmark[1] : x.GetLookAhead();
+                var lookahead = x.GetLookAhead();
                 var bookmarkAdjusted = new Lr1Configuration(x, lookahead);
                 
                 return new { element = x.GetElementAfterBookmark(), configurations = GetClosure(bookmarkAdjusted) };
@@ -108,14 +107,24 @@ public class Lr1ParseTable : ILr1ParseTable
     private int CreateState(HashSet<Lr1Configuration> state)
     {
         var newState = _states.Count;
-        var reduceLookaheads = state.Where(x => x.IsReduce()).GroupBy(x => x.GetLookAhead()).ToHashSet();
-        if (reduceLookaheads.Count != 0)
+        var reduceLookaheadGroups = state.Where(x => x.IsReduce()).GroupBy(x => x.GetLookAhead()).ToHashSet();
+        if (reduceLookaheadGroups.Count != 0)
         {
-            if (reduceLookaheads.Any(x => x.Count() > 1)) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
-            
-            var shiftLookaheads = state.Where(x => x.IsShift()).Select(configuration => new { configuration, lookahead = configuration.GetLookAhead() }).ToHashSet();
-            var shiftReduceConflict = reduceLookaheads.FirstOrDefault(x => shiftLookaheads.Select(y => y.lookahead).Contains(x.Key));
-            if (shiftReduceConflict != null) throw new Exception($"Shift/reduce conflict: `{shiftLookaheads.First(x => x.lookahead == shiftReduceConflict.Key)}`, `{shiftReduceConflict.First()}`");
+            if (reduceLookaheadGroups.Any(x => x.Count() > 1)) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
+
+            var reduces = reduceLookaheadGroups.SelectMany(x => x.AsEnumerable()).ToHashSet();
+            var shifts = state.Where(x => x.IsShift()).ToList();
+            var shiftsOnTerminals = shifts.Where(x => typeof(BaseToken).IsAssignableFrom(x.GetElementAfterBookmark())).ToList();
+
+            var reduceLookaheads = reduces.Select(y => y.GetLookAhead());
+            var conflictingShift = shiftsOnTerminals.FirstOrDefault(x => reduceLookaheads.Contains(x.GetElementAfterBookmark()));
+
+            if (conflictingShift != null)
+            {
+                var conflictingTerminal = conflictingShift.GetElementAfterBookmark();
+                var conflictingReduce = reduces.First(x => x.GetLookAhead() == conflictingTerminal);
+                throw new Exception($"Shift/reduce conflict: `{conflictingShift}`, `{conflictingReduce}`");
+            }
             
             if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
             {

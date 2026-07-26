@@ -73,7 +73,7 @@ public class Lr1Configuration
     {
         if (obj is not Lr1Configuration other) return false;
         
-        return other._bookmark == _bookmark && other._rule == _rule;
+        return other._bookmark == _bookmark && other._rule.Equals(_rule) && other._lookahead == _lookahead;
     }
 
     public override int GetHashCode()
