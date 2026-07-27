@@ -17,7 +17,6 @@ using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.UnaryExpression;
 using OLangCompiler.Tokens;
-using FunctionInvocation = OLangCompiler.Parser.ParseTree.FunctionInvocation.FunctionInvocation;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
@@ -43,7 +42,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, IExpression startExpression, RangeToken _, IExpression endExpression, IScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, parameterList, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, parameterList, scope)),
-        GrammarRule.Create((IFunctionInvocation invocation) => new Invocation(invocation)),
+        GrammarRule.Create((IFunctionInvocation invocation, SemicolonToken _) => new Invocation(invocation)),
         GrammarRule.Create((ReturnToken _, SemicolonToken _) => new Return()),
         GrammarRule.Create((ReturnToken _, IExpression expression, SemicolonToken _) => new ReturnValue(expression)),
 
@@ -108,6 +107,7 @@ public class OLangGrammar : IGrammar
 
         // UnaryExpression
         GrammarRule.Create((NotToken _, ITerm term) => new Not(term)),
+        GrammarRule.Create((MinusToken _, ITerm term) => new Negation(term)),
         GrammarRule.Create((ITerm term) => new NonUnaryExpression(term)),
 
         // Term
