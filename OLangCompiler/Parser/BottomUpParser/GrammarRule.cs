@@ -11,7 +11,7 @@ public class GrammarRule : BaseGrammarRule
         _reduce = reduce;
         _rhsTypes = types.ToList();
         _lhsType = lhsType;
-        if (types.Any(x => !typeof(BaseToken).IsAssignableFrom(x) && !x.IsInterface))
+        if (types.Any(x => !x.IsAssignableTo(typeof(BaseToken)) && !x.IsInterface))
         {
             throw new Exception($"RHS of grammar rules must all be tokens or interfaces: {this}");
         }
@@ -134,7 +134,7 @@ public class GrammarRule : BaseGrammarRule
             var expected = _rhsTypes[i];
             var actual = theseRhsTypes[i];
 
-            if (!expected.IsAssignableFrom(actual))
+            if (!actual.IsAssignableTo(expected))
             {
                 throw new Exception($"Incorrect rhs type at index {i}. Expected {expected.Name} but was {actual.Name}");
             }

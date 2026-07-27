@@ -10,7 +10,7 @@ public class Lr1Configuration
 
     private void ValidateLookaheadType(Type lookaheadType)
     {
-        if (!typeof(BaseToken).IsAssignableFrom(lookaheadType))
+        if (!lookaheadType.IsAssignableTo(typeof(BaseToken)))
         {
             throw new ArgumentException($"Invalid lookahead type {lookaheadType} doesn't implement {nameof(BaseToken)}");
         }

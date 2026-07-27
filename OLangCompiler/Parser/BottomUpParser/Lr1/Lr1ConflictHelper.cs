@@ -21,7 +21,7 @@ public static class Lr1ConflictHelper
 
         var reduces = reduceLookaheadGroups.SelectMany(x => x.AsEnumerable()).ToHashSet();
         var shifts = state.Where(x => x.IsShift()).ToList();
-        var shiftsOnTerminals = shifts.Where(x => typeof(BaseToken).IsAssignableFrom(x.GetElementAfterBookmark())).ToList();
+        var shiftsOnTerminals = shifts.Where(x => x.GetElementAfterBookmark().IsAssignableTo(typeof(BaseToken))).ToList();
 
         var reduceLookaheads = reduces.Select(y => y.GetLookAhead());
         var conflictingShift = shiftsOnTerminals.FirstOrDefault(x => reduceLookaheads.Contains(x.GetElementAfterBookmark()));

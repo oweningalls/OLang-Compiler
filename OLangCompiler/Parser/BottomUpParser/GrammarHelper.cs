@@ -20,7 +20,7 @@ public class GrammarHelper
     }
     private List<BaseGrammarRule> GetProductionsForImpl(Type symbol)
     {
-        if (!typeof(INode).IsAssignableFrom(symbol))
+        if (!symbol.IsAssignableTo(typeof(INode)))
         {
             return [];
         }
@@ -48,12 +48,12 @@ public class GrammarHelper
 
     private HashSet<Type> FirstWithSeenTypeChecking(Type symbol)
     {
-        if (typeof(BaseToken).IsAssignableFrom(symbol))
+        if (symbol.IsAssignableTo(typeof(BaseToken)))
         {
             return [symbol];
         }
 
-        if (!typeof(INode).IsAssignableFrom(symbol))
+        if (!symbol.IsAssignableTo(typeof(INode)))
         {
             throw new ArgumentException($"Symbol {symbol.Name} isn't a {nameof(BaseToken)} or a {nameof(INode)}");
         }
