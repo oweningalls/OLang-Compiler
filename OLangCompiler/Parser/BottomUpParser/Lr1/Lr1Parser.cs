@@ -18,17 +18,18 @@ public class Lr1Parser : IParser
 
         do
         {
-            if (GetNextInput() is not { } input)
+            if (PeekNextInput() is not { } input)
             {
                 throw new Exception("Unexpected end of input");
             }
-            var action = parseTable.GetActionAndState(input, GetLookahead(), GetCurrentState());
+            var action = parseTable.GetActionAndState(input, GetCurrentState());
             switch (action)
             {
                 case Accept accept:
                     return accept.Node;
                 case Shift shift:
                     AppendState(input, shift.NewState);
+                    _input.Pop();
                     break;
                 case Reduce reduce:
                     var lhs = DoReduce(reduce.Rule);
@@ -56,15 +57,10 @@ public class Lr1Parser : IParser
     {
         return _stateStack.Peek().State;
     }
-
-    private IGrammarElement? GetNextInput()
+    
+    private IGrammarElement? PeekNextInput()
     {
-        return _input.Count != 0 ? _input.Pop() : null;
-    }
-
-    private Type GetLookahead()
-    {
-        return _input.Count > 1 ? _input.ElementAt(1).GetType() : typeof(Lr1ParseTable.EOI);
+        return _input.TryPeek(out var value) ? value : null;
     }
 
     private void PrependToInput(IGrammarElement element)

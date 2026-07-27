@@ -19,7 +19,7 @@ public class Lr0Parser : IParser
         IParseAction action;
         do
         {
-            var input = GetNextInput();
+            var input = PeekNextInput();
             action = parseTable.GetActionAndState(input, GetCurrentState());
             switch (action)
             {
@@ -27,6 +27,7 @@ public class Lr0Parser : IParser
                     return accept.Node;
                 case Shift shift:
                     AppendState(input, shift.NewState);
+                    _input.Pop();
                     break;
                 case Reduce reduce:
                     var lhs = DoReduce(reduce.Rule);
@@ -55,9 +56,9 @@ public class Lr0Parser : IParser
         return _stateStack.Peek().State;
     }
 
-    private IGrammarElement? GetNextInput()
+    private IGrammarElement? PeekNextInput()
     {
-        return _input.Count != 0 ? _input.Pop() : null;
+        return _input.TryPeek(out var value) ? value : null;
     }
 
     private void PrependToInput(IGrammarElement element)

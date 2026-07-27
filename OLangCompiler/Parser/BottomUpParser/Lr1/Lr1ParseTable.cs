@@ -173,11 +173,12 @@ public class Lr1ParseTable : ILr1ParseTable
         return interfaceType;
     }
 
-    public IParseAction GetActionAndState(IGrammarElement? next, Type? lookahead, int state)
+    public IParseAction GetActionAndState(IGrammarElement? next, int state)
     {
-        if (_states[state].Count == 1 && _states[state].Single() is {} reduce && reduce.IsReduce() && reduce.GetLookAhead() == lookahead)
+        var reduce = _states[state].Where(x => x.IsReduce() && x.GetLookAhead() == next.GetType()).ToList();
+        if (reduce.Count == 1)
         {
-            return new Reduce(reduce.GetRule());
+            return new Reduce(reduce.Single().GetRule());
         }
 
         if (next is null)

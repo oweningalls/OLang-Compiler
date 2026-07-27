@@ -4,5 +4,5 @@ namespace OLangCompiler.Parser.BottomUpParser.Lr1;
 
 public interface ILr1ParseTable
 {
-    public IParseAction GetActionAndState(IGrammarElement next, Type lookahead, int state);
+    public IParseAction GetActionAndState(IGrammarElement next, int state);
 }
