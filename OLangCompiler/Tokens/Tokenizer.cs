@@ -253,11 +253,11 @@ public class Tokenizer
         if (Peek(1) != null)
         {
             var nextTwoChars = Peek()!.Value.ToString() + Peek(1)!.Value;
-            if (OperatorMap.ContainsKey(nextTwoChars))
+            if (OperatorMap.TryGetValue(nextTwoChars, out var value))
             {
                 Consume();
                 Consume();
-                return OperatorMap[nextTwoChars].Invoke();
+                return value.Invoke();
             }
         }
 
@@ -313,15 +313,5 @@ public class Tokenizer
         }
 
         return (char)ret;
-    }
-
-    private char? TryConsume(char c)
-    {
-        if (Peek() == c)
-        {
-            return Consume();
-        }
-
-        return null;
     }
 }
