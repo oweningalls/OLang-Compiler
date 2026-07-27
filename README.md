@@ -74,6 +74,7 @@ $$
 &\mid [\mathrm{UnaryExpression}] \\
 [\mathrm{UnaryExpression}]
 &\to ![\mathrm{Term}] \\
+&\to -[\mathrm{Term}] \\
 &\mid [\mathrm{Term}] \\
 [\mathrm{Term}]
 &\to \text{int\\_lit} \\
