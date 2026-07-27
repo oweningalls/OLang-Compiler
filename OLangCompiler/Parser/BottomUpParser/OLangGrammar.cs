@@ -116,7 +116,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((BoolLiteralToken boolLit) => new BoolLiteral(boolLit)),
         GrammarRule.Create((IdentifierToken ident) => new IdentifierTerm(ident)),
         GrammarRule.Create((LeftParenToken _, IExpression expression, RightParenToken _) => new Paren(expression)),
-        GrammarRule.Create((IFunctionInvocation ident) => new Invocation(ident)),
+        GrammarRule.Create((IFunctionInvocation ident) => new FunctionInvocationTerm(ident)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocation(ident, argumentList)),

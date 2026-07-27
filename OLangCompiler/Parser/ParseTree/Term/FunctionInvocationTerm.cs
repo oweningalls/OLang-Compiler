@@ -1,6 +1,6 @@
 ﻿namespace OLangCompiler.Parser.ParseTree.Term;
 
-public class FunctionInvocationTerm(ParseTree.FunctionInvocation.FunctionInvocation invocationNode) : ITerm
+public class FunctionInvocationTerm(FunctionInvocation.IFunctionInvocation invocationNode) : ITerm
 {
-    public ParseTree.FunctionInvocation.FunctionInvocation InvocationNode = invocationNode;
+    public FunctionInvocation.IFunctionInvocation InvocationNode = invocationNode;
 }
