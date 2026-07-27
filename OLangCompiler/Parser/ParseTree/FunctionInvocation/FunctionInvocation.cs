@@ -1,5 +1,4 @@
 ﻿using OLangCompiler.Parser.ParseTree.ArgumentList;
-using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.FunctionInvocation;

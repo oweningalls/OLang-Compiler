@@ -9,7 +9,6 @@ public class Lr0ParseTable : ILrParseTable
     private GrammarHelper _grammarHelper;
     private List<HashSet<Lr0Configuration>> _states = [];
     private List<Dictionary<Type, int>> _transitions = [];
-    private List<int> _acceptStates = [];
     private IErrorHelper _errorHelper;
 
     public Lr0ParseTable(IGrammar grammar, IErrorHelper errorHelper)
@@ -108,11 +107,6 @@ public class Lr0ParseTable : ILrParseTable
         {
             if (state.Any(x => x.IsShift())) throw new Exception($"Shift/reduce conflict: `{state.First(x => x.IsShift())}`, `{state.First(x => x.IsReduce())}`");
             if (state.Count != 1) throw new Exception($"Reduce/reduce conflict: `{state.First(x => x.IsReduce())}`, `{state.Last(x => x.IsReduce())}`");
-            
-            if (state.First().GetRule().GetLhsType() == typeof(AugmentStartSymbol))
-            {
-                _acceptStates.Add(newState);
-            }
         }
         
         _states.Add(state);

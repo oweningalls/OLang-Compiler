@@ -1,6 +1,4 @@
-﻿using OLangCompiler.Parser;
-
-namespace OLangCompiler.Tokens;
+﻿namespace OLangCompiler.Tokens;
 
 public abstract class BaseToken : IGrammarElement
 {
