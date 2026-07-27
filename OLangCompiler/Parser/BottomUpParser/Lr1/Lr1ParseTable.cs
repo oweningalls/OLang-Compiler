@@ -1,10 +1,9 @@
 ﻿using OLangCompiler.Parser.BottomUpParser.ParseActions;
 using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Tokens;
 
 namespace OLangCompiler.Parser.BottomUpParser.Lr1;
 
-public class Lr1ParseTable : ILr1ParseTable
+public class Lr1ParseTable : ILrParseTable
 {
     private IGrammar _grammar;
     private GrammarHelper _grammarHelper;
@@ -235,6 +234,4 @@ public class Lr1ParseTable : ILr1ParseTable
             return _reduce.Invoke(rhs);
         }
     }
-    
-    public class EOI : BaseToken;
 }

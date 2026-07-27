@@ -3,7 +3,7 @@ using OLangCompiler.Parser.ParseTree;
 
 namespace OLangCompiler.Parser.BottomUpParser.Lr0;
 
-public class Lr0ParseTable : ILr0ParseTable
+public class Lr0ParseTable : ILrParseTable
 {
     private IGrammar _grammar;
     private GrammarHelper _grammarHelper;
