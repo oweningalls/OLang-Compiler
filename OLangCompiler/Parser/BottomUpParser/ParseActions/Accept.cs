@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Parser.ParseTree;
+﻿using Lexing;
 
 namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
 

@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.EqualityExpression;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.EqualityExpression;
 
 public interface IEqualityExpression : INode;

@@ -1,5 +1,4 @@
-﻿using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Tokens;
+﻿using Lexing;
 
 namespace OLangTests;
 

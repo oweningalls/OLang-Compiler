@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Scope;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.Scope;
 
 public interface IScopeNode : INode;

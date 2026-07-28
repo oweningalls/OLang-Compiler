@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Tokens;
+﻿using ErrorHelper;
+using Lexing;
+using OLangCompiler.Parser.BottomUpParser;
 
 namespace OLangCompiler.Parser;
 

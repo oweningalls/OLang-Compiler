@@ -1,6 +1,6 @@
 ﻿using OLangCompiler.Parser.ParseTree.ParameterList;
 using OLangCompiler.Parser.ParseTree.Scope;
-using OLangCompiler.Tokens;
+using OLangTokens.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.Stmt;
 

@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Tokens;
+﻿using Lexing;
 
 namespace OLangCompiler.Parser.BottomUpParser.Lr1;
 

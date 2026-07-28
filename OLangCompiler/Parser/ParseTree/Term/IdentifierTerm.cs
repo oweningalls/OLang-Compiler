@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Tokens;
+﻿using OLangTokens.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.Term;
 

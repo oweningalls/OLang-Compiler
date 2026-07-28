@@ -1,6 +1,6 @@
-﻿using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.ParseTree;
-using OLangCompiler.Tokens;
+﻿using Lexing;
+using OLangCompiler.Parser.BottomUpParser;
+using OLangTokens.Tokens;
 
 namespace OLangTests;
 

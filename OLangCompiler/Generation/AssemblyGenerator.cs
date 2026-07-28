@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using ErrorHelper;
 using OLangCompiler.Parser.ParseTree.Prog;
 using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Utility;

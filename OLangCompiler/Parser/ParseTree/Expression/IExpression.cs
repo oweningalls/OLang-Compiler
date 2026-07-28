@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Expression;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.Expression;
 
 public interface IExpression : INode;

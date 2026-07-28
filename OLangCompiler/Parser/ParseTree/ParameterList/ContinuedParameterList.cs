@@ -1,5 +1,5 @@
 ﻿using OLangCompiler.Parser.ParseTree.Type;
-using OLangCompiler.Tokens;
+using OLangTokens.Tokens;
 
 namespace OLangCompiler.Parser.ParseTree.ParameterList;
 

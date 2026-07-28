@@ -1,5 +1,5 @@
 ﻿using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Tokens;
+using OLangTokens.Tokens;
 
 namespace OLangTests;
 

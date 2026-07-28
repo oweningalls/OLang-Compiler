@@ -11,4 +11,9 @@
     <ItemGroup>
       <Folder Include="my_obj\" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
+      <ProjectReference Include="..\OLangTokenizer\OLangTokenizer.csproj" />
+    </ItemGroup>
 </Project>

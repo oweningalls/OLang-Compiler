@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Term;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.Term;
 
 public interface ITerm : INode;

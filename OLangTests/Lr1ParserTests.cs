@@ -1,4 +1,4 @@
-﻿using OLangCompiler;
+﻿using Lexing;
 using OLangCompiler.Parser.BottomUpParser;
 using OLangCompiler.Parser.BottomUpParser.Lr1;
 using OLangCompiler.Parser.ParseTree.AddExpression;
@@ -17,7 +17,8 @@ using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.UnaryExpression;
-using OLangCompiler.Tokens;
+using OLangLexing;
+using OLangTokens.Tokens;
 
 namespace OLangTests;
 
@@ -93,7 +94,7 @@ public class Lr1ParserTests
 
         var expectedProgram = new ProgramNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new StmtListWithStatement(exitStatement, new EmptyStmtList()))));
 
-        var errorHelper = new ErrorHelper(code);
+        var errorHelper = new OLangHelpers.ErrorHelper(code);
         var tokens = new Tokenizer().Tokenize(code, errorHelper);
         var parser = new Lr1Parser();
 

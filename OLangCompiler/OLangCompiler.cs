@@ -2,8 +2,8 @@
 using OLangCompiler.Parser.BottomUpParser;
 using OLangCompiler.Parser.BottomUpParser.Lr1;
 using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Tokens;
 using OLangCompiler.TypeChecking;
+using OLangLexing;
 
 namespace OLangCompiler;
 
@@ -31,7 +31,7 @@ public static class OLangCompiler
 
     public static string GenerateAssembly(string program)
     {
-        var errorHelper = new ErrorHelper(program);
+        var errorHelper = new OLangHelpers.ErrorHelper(program);
         var tokenizer = new Tokenizer();
         var tokens = tokenizer.Tokenize(program, errorHelper);
 

@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.Prog;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.Prog;
 
 public interface IProgramNode : INode;

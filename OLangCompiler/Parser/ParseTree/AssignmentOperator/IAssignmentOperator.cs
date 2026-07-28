@@ -1,3 +1,5 @@
-﻿namespace OLangCompiler.Parser.ParseTree.AssignmentOperator;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.ParseTree.AssignmentOperator;
 
 public interface IAssignmentOperator : INode;
