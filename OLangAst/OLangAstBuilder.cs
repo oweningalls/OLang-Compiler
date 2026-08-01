@@ -5,6 +5,7 @@ using OLangAst.Statements;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
+using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
@@ -26,6 +27,7 @@ using FunctionDeclaration = OLangAst.Statements.FunctionDeclaration;
 using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
 using GreaterOrEqual = OLangAst.Expressions.GreaterOrEqual;
 using IExpression = OLangAst.Expressions.IExpression;
+using IntLiteral = OLangAst.Expressions.IntLiteral;
 using IStatement = OLangAst.Statements.IStatement;
 using Not = OLangAst.Expressions.Not;
 using NotEqual = OLangAst.Expressions.NotEqual;
@@ -53,7 +55,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             case EmptyStmtList:
                 return [];
             case StmtListWithStatement statement:
-                var statements = new List<IStatement> { ParseStatement(statement.Statement) };
+                var statements = new List<IStatement>();
                 IStmtListNode currentStatement = statement;
 
                 while (currentStatement is StmtListWithStatement nextStatement)
@@ -72,7 +74,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return statement switch
         {
-            Assignment assignment => new VariableAssignment { Identifier = ParseIdentifier(assignment.Identifier), Value = ParseExpression(assignment.Expression) },
+            Assignment assignment => ParseAssignment(assignment),
             Declaration declaration => new VariableDeclarationStatement { Identifier = ParseIdentifier(declaration.Identifier), Type = ParseType(declaration.Type) },
             LetDeclaration letDeclaration => new VariableDeclarationStatement { Identifier = ParseIdentifier(letDeclaration.Identifier), Type = null },
             Exit exit => new ExitStatement { Expression = ParseExpression(exit.Expression) },
@@ -87,6 +89,23 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             ScopeStatement scopeStatement => ParseScope(scopeStatement.Scope),
             _ => throw errorHelper.UnknownVariant("statement", statement.GetType())
         };
+    }
+
+    protected VariableAssignment ParseAssignment(Assignment assignment)
+    {
+        IExpression value;
+        var identifier = ParseIdentifier(assignment.Identifier);
+        var parsedExpression = ParseExpression(assignment.Expression);
+        value = assignment.Operator switch
+        {
+            Equals _ => parsedExpression,
+            PlusEquals => new Add { Left = new VariableAccess { Identifier = identifier }, Right = parsedExpression },
+            MinusEquals => new Subtract { Left = new VariableAccess { Identifier = identifier }, Right = parsedExpression },
+            TimesEquals => new Multiply { Left = new VariableAccess { Identifier = identifier }, Right = parsedExpression },
+            DivideEquals => new Divide { Left = new VariableAccess { Identifier = identifier }, Right = parsedExpression },
+            _ => throw errorHelper.UnknownVariant("assignment operator", assignment.Operator.GetType())
+        };
+        return new VariableAssignment { Identifier = ParseIdentifier(assignment.Identifier), Value = value };
     }
 
     protected Scope ParseScope(IScopeNode scope)
@@ -181,6 +200,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return term switch
         {
             OLangGrammar.ParseTree.Term.BoolLiteral boolLiteral => new BoolLiteral { Value = boolLiteral.Value.Value },
+            OLangGrammar.ParseTree.Term.IntLiteral intLiteral => new IntLiteral { Value = intLiteral.Value.Value },
             OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral { Value = floatLiteral.Value.Value },
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess { Identifier = ParseIdentifier(identifierTerm.Identifier) },

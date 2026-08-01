@@ -1,15 +1,17 @@
-﻿using Lexing;
+﻿using System.Collections;
+using Lexing;
+using OLangAst;
 
 namespace OLangTests;
 
 public static class ProgramComparer
 {
-    public static bool AreEquivalent<T>(T first, T second) where T : INode
+    public static bool AreEquivalent<T>(T first, T second)
     {
-        return AreEquivalent((object)first, second);
+        return GenericAreEquivalent(first, second);
     }
 
-    private static bool AreEquivalent(object first, object second, int maxDepth = 100)
+    private static bool GenericAreEquivalent(object first, object second, int maxDepth = 100)
     {
         if (maxDepth <= 0)
         {
@@ -40,19 +42,45 @@ public static class ProgramComparer
         {
             var firstValue = field.GetValue(first);
             var secondValue = field.GetValue(second);
-            if (field.FieldType.IsAssignableTo(typeof(INode)) || field.FieldType.IsAssignableTo(typeof(BaseToken)))
+            if (field.FieldType.IsAssignableTo(typeof(INode)) || field.FieldType.IsAssignableTo(typeof(BaseToken)) || field.FieldType.IsAssignableTo(typeof(IAstNode)))
             {
-                if (!AreEquivalent(firstValue, secondValue, maxDepth - 1))
+                if (!GenericAreEquivalent(firstValue, secondValue, maxDepth - 1))
                 {
                     return false;
                 }
             }
             else
             {
+                if (firstValue is IEnumerable firstEnumerable && secondValue is IEnumerable secondEnumerable)
+                {
+                    return CompareEnumerables(firstEnumerable, secondEnumerable);
+                }
+                
                 if (!firstValue.Equals(secondValue))
                 {
                     return false;
                 }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool CompareEnumerables(IEnumerable firstEnumerable, IEnumerable secondEnumerable)
+    {
+        var firstList = firstEnumerable.Cast<object>().ToList();
+        var secondList = secondEnumerable.Cast<object>().ToList();
+
+        if (firstList.Count != secondList.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < firstList.Count; i++)
+        {
+            if (!GenericAreEquivalent(firstList[i], secondList[i]))
+            {
+                return false;
             }
         }
 
