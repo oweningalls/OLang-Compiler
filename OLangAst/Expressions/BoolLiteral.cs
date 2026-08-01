@@ -1,6 +1,6 @@
 ﻿namespace OLangAst.Expressions;
 
-public class BoolLiteral : IExpression
+public class BoolLiteral(bool value) : IExpression
 {
-    public bool Value;
+    public bool Value = value;
 }

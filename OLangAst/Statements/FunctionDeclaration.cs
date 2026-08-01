@@ -2,9 +2,10 @@
 
 namespace OLangAst.Statements;
 
-public class FunctionDeclaration : IStatement
+public class FunctionDeclaration(IVariableType? type, string identifier, List<Parameter> parameters)
+    : IStatement
 {
-    public IVariableType? Type;
-    public string Identifier;
-    public List<Parameter> Parameters;
+    public IVariableType? Type = type;
+    public string Identifier = identifier;
+    public List<Parameter> Parameters = parameters;
 }

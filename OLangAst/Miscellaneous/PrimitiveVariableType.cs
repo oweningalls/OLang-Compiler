@@ -1,8 +1,8 @@
 ﻿namespace OLangAst.Miscellaneous;
 
-public class PrimitiveVariableType : IVariableType
+public class PrimitiveVariableType(PrimitiveVariableTypeEnum type) : IVariableType
 {
-    public PrimitiveVariableTypeEnum Type;
+    public PrimitiveVariableTypeEnum Type = type;
 }
 
 public enum PrimitiveVariableTypeEnum

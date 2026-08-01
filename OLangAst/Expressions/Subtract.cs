@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class Subtract : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class Subtract(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);

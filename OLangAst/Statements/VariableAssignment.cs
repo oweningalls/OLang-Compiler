@@ -2,8 +2,8 @@
 
 namespace OLangAst.Statements;
 
-public class VariableAssignment : IStatement
+public class VariableAssignment(string identifier, IExpression value) : IStatement
 {
-    public string Identifier;
-    public IExpression Value;
+    public string Identifier = identifier;
+    public IExpression Value = value;
 }

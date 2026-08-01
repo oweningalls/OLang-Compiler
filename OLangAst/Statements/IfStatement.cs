@@ -2,9 +2,9 @@
 
 namespace OLangAst.Statements;
 
-public class IfStatement : IStatement
+public class IfStatement(IExpression predicate, Scope body, Scope? @else) : IStatement
 {
-    public IExpression Predicate;
-    public Scope Body;
-    public ElseBlock? Else;
+    public IExpression Predicate = predicate;
+    public Scope Body = body;
+    public Scope? Else = @else;
 }

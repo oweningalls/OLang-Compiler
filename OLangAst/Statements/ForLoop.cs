@@ -2,10 +2,10 @@
 
 namespace OLangAst.Statements;
 
-public class ForLoop : IStatement
+public class ForLoop(string identifier, IExpression rangeStart, IExpression rangeEnd, Scope body) : IStatement
 {
-    public string Identifier;
-    public IExpression RangeStart;
-    public IExpression RangeEnd;
-    public Scope Body;
+    public string Identifier = identifier;
+    public IExpression RangeStart = rangeStart;
+    public IExpression RangeEnd = rangeEnd;
+    public Scope Body = body;
 }

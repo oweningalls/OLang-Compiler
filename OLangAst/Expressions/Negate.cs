@@ -1,6 +1,6 @@
 ﻿namespace OLangAst.Expressions;
 
-public class Negate : IExpression
+public class Negate(IExpression value) : IExpression
 {
-    public IExpression Value;
+    public IExpression Value = value;
 }

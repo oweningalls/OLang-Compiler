@@ -2,7 +2,7 @@
 
 namespace OLangAst.Statements;
 
-public class ExitStatement : IStatement
+public class ExitStatement(IExpression expression) : IStatement
 {
-    public IExpression Expression;
+    public IExpression Expression = expression;
 }

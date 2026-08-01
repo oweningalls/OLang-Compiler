@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class Divide : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class Divide(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);

@@ -30,8 +30,8 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var expected = new Program
         {
             Statements = [
-                new Scope {Statements = []},
-                new Scope {Statements = []}
+                new Scope([]),
+                new Scope([])
             ]
         
         };
@@ -47,8 +47,8 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var parsed = new Assignment(new IdentifierToken(identifier), new Equals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
-        var intLiteral = new IntLiteral { Value = 11 };
-        var expected = new VariableAssignment { Identifier = identifier, Value = intLiteral };
+        var intLiteral = new IntLiteral(11);
+        var expected = new VariableAssignment(identifier, intLiteral);
 
         AssertEquivalence(converted, expected);
     }
@@ -60,7 +60,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var parsed = new OLangGrammar.ParseTree.Term.IntLiteral(new IntLiteralToken(value));
 
         var converted = ParseTerm(parsed);
-        var expected = new IntLiteral { Value = 11 };
+        var expected = new IntLiteral(11);
 
         AssertEquivalence(converted, expected);
     }

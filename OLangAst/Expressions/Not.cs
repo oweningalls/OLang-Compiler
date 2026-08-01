@@ -1,6 +1,6 @@
 ﻿namespace OLangAst.Expressions;
 
-public class Not : IExpression
+public class Not(IExpression value) : IExpression
 {
-    public IExpression Value;
+    public IExpression Value = value;
 }

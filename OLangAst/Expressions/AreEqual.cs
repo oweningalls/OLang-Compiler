@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class AreEqual : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class AreEqual(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);

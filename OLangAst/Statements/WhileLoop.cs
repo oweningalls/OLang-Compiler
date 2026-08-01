@@ -2,8 +2,8 @@
 
 namespace OLangAst.Statements;
 
-public class WhileLoop : IStatement
+public class WhileLoop(IExpression predicate, Scope body) : IStatement
 {
-    public IExpression Predicate;
-    public Scope Body;
+    public IExpression Predicate = predicate;
+    public Scope Body = body;
 }

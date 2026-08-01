@@ -1,6 +1,6 @@
 ﻿namespace OLangAst.Expressions;
 
-public class FloatLiteral : IExpression
+public class FloatLiteral(float value) : IExpression
 {
-    public float Value;
+    public float Value = value;
 }

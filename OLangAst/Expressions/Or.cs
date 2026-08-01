@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class Or : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class Or(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);

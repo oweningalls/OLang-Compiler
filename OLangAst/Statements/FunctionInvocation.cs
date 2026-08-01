@@ -2,8 +2,8 @@
 
 namespace OLangAst.Statements;
 
-public class FunctionInvocation : IStatement, IExpression
+public class FunctionInvocation(string identifier, List<IExpression> arguments) : IStatement, IExpression
 {
-    public string Identifier;
-    public List<IExpression> Arguments;
+    public string Identifier = identifier;
+    public List<IExpression> Arguments = arguments;
 }

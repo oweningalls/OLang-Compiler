@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class NotEqual : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class NotEqual(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);

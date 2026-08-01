@@ -1,6 +1,6 @@
 ﻿namespace OLangAst.Expressions;
 
-public class VariableAccess : IExpression
+public class VariableAccess(string identifier) : IExpression
 {
-    public string Identifier;
+    public string Identifier = identifier;
 }

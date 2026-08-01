@@ -2,7 +2,7 @@
 
 namespace OLangAst.Statements;
 
-public class Return : IStatement
+public class Return(IExpression? value) : IStatement
 {
-    public IExpression? Value;
+    public IExpression? Value = value;
 }

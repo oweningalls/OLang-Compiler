@@ -1,7 +1,3 @@
 ﻿namespace OLangAst.Expressions;
 
-public class GreaterThan : IExpression
-{
-    public IExpression Left;
-    public IExpression Right;
-}
+public class GreaterThan(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);
