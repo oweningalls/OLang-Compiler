@@ -1,4 +1,6 @@
-﻿namespace OLangCompiler.Parser.BottomUpParser.Lr0;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.BottomUpParser.Lr0;
 
 public class Lr0Configuration
 {

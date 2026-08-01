@@ -1,4 +1,6 @@
-﻿namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
+﻿using Lexing;
+
+namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
 
 public class Reduce(BaseGrammarRule rule) : IParseAction
 {

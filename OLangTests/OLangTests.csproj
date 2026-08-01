@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\OLangAst\OLangAst.csproj" />
       <ProjectReference Include="..\OLangCompiler\OLangCompiler.csproj" />
     </ItemGroup>
 

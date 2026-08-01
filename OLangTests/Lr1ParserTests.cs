@@ -1,22 +1,22 @@
 ﻿using Lexing;
 using OLangCompiler.Parser.BottomUpParser;
 using OLangCompiler.Parser.BottomUpParser.Lr1;
-using OLangCompiler.Parser.ParseTree.AddExpression;
-using OLangCompiler.Parser.ParseTree.AndExpression;
-using OLangCompiler.Parser.ParseTree.ArgumentList;
-using OLangCompiler.Parser.ParseTree.EqualityExpression;
-using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.FunctionInvocation;
-using OLangCompiler.Parser.ParseTree.GreaterExpression;
-using OLangCompiler.Parser.ParseTree.MultExpression;
-using OLangCompiler.Parser.ParseTree.ParameterList;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.Scope;
-using OLangCompiler.Parser.ParseTree.Stmt;
-using OLangCompiler.Parser.ParseTree.StmtList;
-using OLangCompiler.Parser.ParseTree.Term;
-using OLangCompiler.Parser.ParseTree.Type;
-using OLangCompiler.Parser.ParseTree.UnaryExpression;
+using OLangGrammar.ParseTree.AddExpression;
+using OLangGrammar.ParseTree.AndExpression;
+using OLangGrammar.ParseTree.ArgumentList;
+using OLangGrammar.ParseTree.EqualityExpression;
+using OLangGrammar.ParseTree.Expression;
+using OLangGrammar.ParseTree.FunctionInvocation;
+using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.MultExpression;
+using OLangGrammar.ParseTree.ParameterList;
+using OLangGrammar.ParseTree.Prog;
+using OLangGrammar.ParseTree.Scope;
+using OLangGrammar.ParseTree.Stmt;
+using OLangGrammar.ParseTree.StmtList;
+using OLangGrammar.ParseTree.Term;
+using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.UnaryExpression;
 using OLangLexing;
 using OLangTokens.Tokens;
 
@@ -47,7 +47,7 @@ public class Lr1ParserTests
     [Test]
     public void TestOLangGrammar()
     {
-        Assert.DoesNotThrow(() => new Lr1ParseTable(new OLangGrammar(), new NoOpErrorHelper()));
+        Assert.DoesNotThrow(() => new Lr1ParseTable(new OLangGrammar.OLangGrammar(), new NoOpErrorHelper()));
     }
 
     [Test]
@@ -98,7 +98,7 @@ public class Lr1ParserTests
         var tokens = new Tokenizer().Tokenize(code, errorHelper);
         var parser = new Lr1Parser();
 
-        var actualProgram = parser.ParseProgram(new OLangGrammar(), tokens, errorHelper);
+        var actualProgram = parser.ParseProgram(new OLangGrammar.OLangGrammar(), tokens, errorHelper);
         
         Assert.That(ProgramComparer.AreEquivalent(expectedProgram, actualProgram));
     }

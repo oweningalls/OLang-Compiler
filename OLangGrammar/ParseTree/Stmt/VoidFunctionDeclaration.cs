@@ -1,0 +1,12 @@
+﻿using OLangGrammar.ParseTree.ParameterList;
+using OLangGrammar.ParseTree.Scope;
+using OLangTokens.Tokens;
+
+namespace OLangGrammar.ParseTree.Stmt;
+
+public class VoidFunctionDeclaration(IdentifierToken identifier, IParameterListNode parameters, IScopeNode scope) : IStatement
+{
+    public IdentifierToken Identifier = identifier;
+    public IParameterListNode Parameters = parameters;
+    public IScopeNode Scope = scope;
+}

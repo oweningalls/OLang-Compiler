@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using ErrorHelper;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.StmtList;
 using OLangCompiler.Utility;
+using OLangGrammar.ParseTree.Prog;
+using OLangGrammar.ParseTree.StmtList;
 
 namespace OLangCompiler.Generation;
 

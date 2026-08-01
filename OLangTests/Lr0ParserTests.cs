@@ -31,7 +31,7 @@ public class Lr0ParserTests
     [Test]
     public void TestOLangGrammar()
     {
-        var e = Assert.Throws<Exception>(() => new Lr0ParseTable(new OLangGrammar(), new NoOpErrorHelper()));
+        var e = Assert.Throws<Exception>(() => new Lr0ParseTable(new OLangGrammar.OLangGrammar(), new NoOpErrorHelper()));
         Assert.That(e.Message.Contains("reduce/reduce conflict", StringComparison.CurrentCultureIgnoreCase) || e.Message.Contains("shift/reduce conflict", StringComparison.CurrentCultureIgnoreCase));
     }
 

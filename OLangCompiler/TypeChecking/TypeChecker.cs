@@ -1,5 +1,5 @@
 ﻿using ErrorHelper;
-using OLangCompiler.Parser.ParseTree.Prog;
+using OLangGrammar.ParseTree.Prog;
 
 namespace OLangCompiler.TypeChecking;
 

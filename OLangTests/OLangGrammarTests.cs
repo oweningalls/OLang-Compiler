@@ -1,16 +1,16 @@
 ﻿using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.ParseTree.AddExpression;
-using OLangCompiler.Parser.ParseTree.AndExpression;
-using OLangCompiler.Parser.ParseTree.EqualityExpression;
-using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.GreaterExpression;
-using OLangCompiler.Parser.ParseTree.MultExpression;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.Stmt;
-using OLangCompiler.Parser.ParseTree.StmtList;
-using OLangCompiler.Parser.ParseTree.Term;
-using OLangCompiler.Parser.ParseTree.Type;
-using OLangCompiler.Parser.ParseTree.UnaryExpression;
+using OLangGrammar.ParseTree.AddExpression;
+using OLangGrammar.ParseTree.AndExpression;
+using OLangGrammar.ParseTree.EqualityExpression;
+using OLangGrammar.ParseTree.Expression;
+using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.MultExpression;
+using OLangGrammar.ParseTree.Prog;
+using OLangGrammar.ParseTree.Stmt;
+using OLangGrammar.ParseTree.StmtList;
+using OLangGrammar.ParseTree.Term;
+using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.UnaryExpression;
 using OLangTokens.Tokens;
 
 namespace OLangTests;
@@ -20,7 +20,7 @@ public class OLangGrammarTests
     [Test]
     public void ReduceProgramNode()
     {
-        var rule = new OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(ProgramNode));
+        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(ProgramNode));
         var stmtList = new EmptyStmtList();
         var program = rule.ReduceRule([stmtList]);
 
@@ -32,7 +32,7 @@ public class OLangGrammarTests
     [Test]
     public void ReduceDeclarationStatement()
     {
-        var rule = new OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
+        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
         var varType = new BoolType();
         var identifier = new IdentifierToken("test");
         var expression = new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("ident2")))))))));

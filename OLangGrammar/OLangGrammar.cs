@@ -1,26 +1,25 @@
-﻿using OLangCompiler.Parser.ParseTree.AddExpression;
-using OLangCompiler.Parser.ParseTree.AndExpression;
-using OLangCompiler.Parser.ParseTree.ArgumentList;
-using OLangCompiler.Parser.ParseTree.AssignmentOperator;
-using OLangCompiler.Parser.ParseTree.ElseBlock;
-using OLangCompiler.Parser.ParseTree.EqualityExpression;
-using OLangCompiler.Parser.ParseTree.Expression;
-using OLangCompiler.Parser.ParseTree.FunctionInvocation;
-using OLangCompiler.Parser.ParseTree.GreaterExpression;
-using OLangCompiler.Parser.ParseTree.MultExpression;
-using OLangCompiler.Parser.ParseTree.ParameterList;
-using OLangCompiler.Parser.ParseTree.Prog;
-using OLangCompiler.Parser.ParseTree.Scope;
-using OLangCompiler.Parser.ParseTree.Stmt;
-using OLangCompiler.Parser.ParseTree.StmtList;
-using OLangCompiler.Parser.ParseTree.Term;
-using OLangCompiler.Parser.ParseTree.Type;
-using OLangCompiler.Parser.ParseTree.UnaryExpression;
+﻿using Lexing;
+using OLangGrammar.ParseTree.AddExpression;
+using OLangGrammar.ParseTree.AndExpression;
+using OLangGrammar.ParseTree.ArgumentList;
+using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ElseBlock;
+using OLangGrammar.ParseTree.EqualityExpression;
+using OLangGrammar.ParseTree.Expression;
+using OLangGrammar.ParseTree.FunctionInvocation;
+using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.MultExpression;
+using OLangGrammar.ParseTree.ParameterList;
+using OLangGrammar.ParseTree.Prog;
+using OLangGrammar.ParseTree.Scope;
+using OLangGrammar.ParseTree.Stmt;
+using OLangGrammar.ParseTree.StmtList;
+using OLangGrammar.ParseTree.Term;
+using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.UnaryExpression;
 using OLangTokens.Tokens;
-using Expression = OLangCompiler.Parser.ParseTree.Expression.Expression;
-using Parameter = OLangCompiler.Parser.ParseTree.ParameterList.Parameter;
 
-namespace OLangCompiler.Parser.BottomUpParser;
+namespace OLangGrammar;
 
 public class OLangGrammar : IGrammar
 {
