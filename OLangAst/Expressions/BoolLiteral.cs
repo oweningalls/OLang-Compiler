@@ -2,5 +2,5 @@
 
 public class BoolLiteral : IExpression
 {
-    public IExpression Value;
+    public bool Value;
 }

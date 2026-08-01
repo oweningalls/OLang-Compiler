@@ -2,5 +2,5 @@
 
 public class FloatLiteral : IExpression
 {
-    public IExpression Value;
+    public float Value;
 }

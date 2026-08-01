@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\OLangCompiler\OLangCompiler.csproj" />
+    </ItemGroup>
+
 </Project>

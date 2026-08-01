@@ -17,6 +17,8 @@ using OLangCompiler.Parser.ParseTree.Term;
 using OLangCompiler.Parser.ParseTree.Type;
 using OLangCompiler.Parser.ParseTree.UnaryExpression;
 using OLangTokens.Tokens;
+using Expression = OLangCompiler.Parser.ParseTree.Expression.Expression;
+using Parameter = OLangCompiler.Parser.ParseTree.ParameterList.Parameter;
 
 namespace OLangCompiler.Parser.BottomUpParser;
 
