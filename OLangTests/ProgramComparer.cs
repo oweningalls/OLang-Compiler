@@ -22,6 +22,11 @@ public static class ProgramComparer
 
         var type = first.GetType();
 
+        if (type.IsPrimitive)
+        {
+            return first.Equals(second);
+        }
+
         var fields = type.GetFields();
 
         var isToken = type.IsAssignableTo(typeof(BaseToken));
@@ -51,16 +56,25 @@ public static class ProgramComparer
             }
             else
             {
-                if (firstValue is IEnumerable firstEnumerable && secondValue is IEnumerable secondEnumerable)
-                {
-                    return CompareEnumerables(firstEnumerable, secondEnumerable);
-                }
-                
-                if (!firstValue.Equals(secondValue))
-                {
-                    return false;
-                }
+                if (!CompareNonNodes(firstValue, secondValue)) return false;
             }
+        }
+
+        return true;
+    }
+
+    private static bool CompareNonNodes(object? firstValue, object? secondValue)
+    {
+        if (firstValue is IEnumerable firstEnumerable && secondValue is IEnumerable secondEnumerable)
+        {
+            if (!CompareEnumerables(firstEnumerable, secondEnumerable))
+            {
+                return false;
+            }
+        }
+        else if (!firstValue.Equals(secondValue))
+        {
+            return false;
         }
 
         return true;

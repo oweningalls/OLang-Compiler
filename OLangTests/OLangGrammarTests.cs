@@ -1,4 +1,4 @@
-﻿using OLangCompiler.Parser.BottomUpParser;
+﻿using Lexing;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -20,7 +20,7 @@ public class OLangGrammarTests
     [Test]
     public void ReduceProgramNode()
     {
-        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(ProgramNode));
+        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(IProgramNode));
         var stmtList = new EmptyStmtList();
         var program = rule.ReduceRule([stmtList]);
 
@@ -32,7 +32,7 @@ public class OLangGrammarTests
     [Test]
     public void ReduceDeclarationStatement()
     {
-        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(Declaration));
+        var rule = GrammarRule.Create((IType type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(type, identifier, expression));
         var varType = new BoolType();
         var identifier = new IdentifierToken("test");
         var expression = new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("ident2")))))))));

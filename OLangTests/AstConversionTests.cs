@@ -47,8 +47,60 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var parsed = new Assignment(new IdentifierToken(identifier), new Equals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
-        var intLiteral = new IntLiteral(11);
+        var intLiteral = new IntLiteral(value);
         var expected = new VariableAssignment(identifier, intLiteral);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseAssignment_PlusEquals()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new Assignment(new IdentifierToken(identifier), new PlusEquals(), GetIntLiteralExpression(value));
+
+        var converted = ParseAssignment(parsed);
+        var expected = new VariableAssignment(identifier, new Add(new VariableAccess(identifier), new IntLiteral(value)));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseAssignment_MinusEquals()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new Assignment(new IdentifierToken(identifier), new MinusEquals(), GetIntLiteralExpression(value));
+
+        var converted = ParseAssignment(parsed);
+        var expected = new VariableAssignment(identifier, new Subtract(new VariableAccess(identifier), new IntLiteral(value)));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseAssignment_TimesEquals()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new Assignment(new IdentifierToken(identifier), new TimesEquals(), GetIntLiteralExpression(value));
+
+        var converted = ParseAssignment(parsed);
+        var expected = new VariableAssignment(identifier, new Multiply(new VariableAccess(identifier), new IntLiteral(value)));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseAssignment_DivideEquals()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new Assignment(new IdentifierToken(identifier), new DivideEquals(), GetIntLiteralExpression(value));
+
+        var converted = ParseAssignment(parsed);
+        var expected = new VariableAssignment(identifier, new Divide(new VariableAccess(identifier), new IntLiteral(value)));
 
         AssertEquivalence(converted, expected);
     }
