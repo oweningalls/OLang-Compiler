@@ -11,11 +11,21 @@ public static class ProgramComparer
         return GenericAreEquivalent(first, second);
     }
 
-    private static bool GenericAreEquivalent(object first, object second, int maxDepth = 100)
+    private static bool GenericAreEquivalent(object? first, object? second, int maxDepth = 100)
     {
         if (maxDepth <= 0)
         {
             throw new Exception("Exceeded recursion limit");
+        }
+        
+        if (first == second)
+        {
+            return true;
+        }
+        
+        if (first == null || second == null)
+        {
+            return false;
         }
         
         ValidateComparable(first, second);

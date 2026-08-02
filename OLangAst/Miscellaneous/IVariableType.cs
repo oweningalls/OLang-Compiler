@@ -1,3 +1,3 @@
 ﻿namespace OLangAst.Miscellaneous;
 
-public interface IVariableType;
+public interface IVariableType : IAstNode;

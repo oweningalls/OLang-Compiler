@@ -1,20 +1,26 @@
 ﻿using OLangAst;
 using OLangAst.Expressions;
+using OLangAst.Miscellaneous;
 using OLangAst.Statements;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.GreaterExpression;
 using OLangGrammar.ParseTree.MultExpression;
+using OLangGrammar.ParseTree.ParameterList;
 using OLangGrammar.ParseTree.Prog;
 using OLangGrammar.ParseTree.Scope;
 using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
+using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangTokens.Tokens;
+using FunctionDeclaration = OLangGrammar.ParseTree.Stmt.FunctionDeclaration;
 using IExpression = OLangGrammar.ParseTree.Expression.IExpression;
+using Return = OLangGrammar.ParseTree.Stmt.Return;
 
 namespace OLangTests;
 
@@ -23,7 +29,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     [Test]
     public void TestParseProgram()
     {
-        var emptyScope = new ScopeStatement(new ScopeNode(new EmptyStmtList()));
+        var emptyScope = new ScopeStatement(GetEmptyScope());
         var parsed = new ProgramNode(new StmtListWithStatement(emptyScope, new StmtListWithStatement(emptyScope, new EmptyStmtList())));
         
         var converted = ParseProgram(parsed);
@@ -44,7 +50,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     {
         var value = 321;
         var identifier = "a";
-        var parsed = new Assignment(new IdentifierToken(identifier), new Equals(), GetIntLiteralExpression(value));
+        var parsed = new Assignment(GetIdentifier(identifier), new Equals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
         var intLiteral = new IntLiteral(value);
@@ -58,7 +64,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     {
         var value = 321;
         var identifier = "a";
-        var parsed = new Assignment(new IdentifierToken(identifier), new PlusEquals(), GetIntLiteralExpression(value));
+        var parsed = new Assignment(GetIdentifier(identifier), new PlusEquals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
         var expected = new VariableAssignment(identifier, new Add(new VariableAccess(identifier), new IntLiteral(value)));
@@ -71,7 +77,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     {
         var value = 321;
         var identifier = "a";
-        var parsed = new Assignment(new IdentifierToken(identifier), new MinusEquals(), GetIntLiteralExpression(value));
+        var parsed = new Assignment(GetIdentifier(identifier), new MinusEquals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
         var expected = new VariableAssignment(identifier, new Subtract(new VariableAccess(identifier), new IntLiteral(value)));
@@ -84,7 +90,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     {
         var value = 321;
         var identifier = "a";
-        var parsed = new Assignment(new IdentifierToken(identifier), new TimesEquals(), GetIntLiteralExpression(value));
+        var parsed = new Assignment(GetIdentifier(identifier), new TimesEquals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
         var expected = new VariableAssignment(identifier, new Multiply(new VariableAccess(identifier), new IntLiteral(value)));
@@ -97,10 +103,167 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     {
         var value = 321;
         var identifier = "a";
-        var parsed = new Assignment(new IdentifierToken(identifier), new DivideEquals(), GetIntLiteralExpression(value));
+        var parsed = new Assignment(GetIdentifier(identifier), new DivideEquals(), GetIntLiteralExpression(value));
 
         var converted = ParseAssignment(parsed);
         var expected = new VariableAssignment(identifier, new Divide(new VariableAccess(identifier), new IntLiteral(value)));
+
+        AssertEquivalence(converted, expected);
+    }
+
+    [Test]
+    public void TestParseStatement_LetDeclaration()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new LetDeclaration(GetIdentifier(identifier), GetIntLiteralExpression(value));
+
+        var converted = ParseStatement(parsed);
+        var expected = new VariableDeclarationStatement(null, identifier, new IntLiteral(value));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_TypedDeclaration()
+    {
+        var value = 321;
+        var identifier = "a";
+        var parsed = new Declaration(new IntType(), GetIdentifier(identifier), GetIntLiteralExpression(value));
+
+        var converted = ParseStatement(parsed);
+        var expected = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int), identifier, new IntLiteral(value));
+
+        AssertEquivalence(converted, expected);
+    }
+
+    private static IdentifierToken GetIdentifier(string identifier)
+    {
+        return new IdentifierToken(identifier);
+    }
+
+    [Test]
+    public void TestParseStatement_ExitStatement()
+    {
+        var value = 321;
+        var parsed = new Exit(GetIntLiteralExpression(value));
+
+        var converted = ParseStatement(parsed);
+        var expected = new ExitStatement(new IntLiteral(value));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_ForLoop()
+    {
+        var ident = "a";
+        var start = 0;
+        var end = 1;
+        var parsed = new For(GetIdentifier(ident), GetIntLiteralExpression(start), GetIntLiteralExpression(end), GetEmptyScope());
+
+        var converted = ParseStatement(parsed);
+        var expected = new ForLoop(ident, new IntLiteral(start), new IntLiteral(end), new Scope([]));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_WhileLoop()
+    {
+        var start = 0;
+        var end = 1;
+        var parsed = new While(GetBoolLiteralExpression(true), GetEmptyScope());
+
+        var converted = ParseStatement(parsed);
+        var expected = new WhileLoop(new BoolLiteral(true), new Scope([]));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_FunctionDeclaration()
+    {
+        var start = 0;
+        var end = 1;
+        var ident = "a";
+        var parsed = new FunctionDeclaration(new BoolType(), GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
+
+        var converted = ParseStatement(parsed);
+        var expected = new OLangAst.Statements.FunctionDeclaration(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool), ident, []);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_VoidFunctionDeclaration()
+    {
+        var start = 0;
+        var end = 1;
+        var ident = "a";
+        var parsed = new VoidFunctionDeclaration(GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
+
+        var converted = ParseStatement(parsed);
+        var expected = new OLangAst.Statements.FunctionDeclaration(null, ident, []);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_IfStatement()
+    {
+        var ident = "a";
+        var start = 0;
+        var end = 1;
+        var parsed = new If(GetBoolLiteralExpression(true), GetEmptyScope(), new EmptyElse());
+
+        var converted = ParseStatement(parsed);
+        var expected = new IfStatement(new BoolLiteral(true), new Scope([]), null);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_Return()
+    {
+        var parsed = new Return();
+
+        var converted = ParseStatement(parsed);
+        var expected = new OLangAst.Statements.Return(null);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseStatement_ReturnValue()
+    {
+        var value = 321;
+        var parsed = new ReturnValue(GetIntLiteralExpression(value));
+
+        var converted = ParseStatement(parsed);
+        var expected = new OLangAst.Statements.Return(new IntLiteral(value));
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseScope_EmptyScope()
+    {
+        var parsed = new ScopeNode(new EmptyStmtList());
+
+        var converted = ParseScope(parsed);
+        var expected = new Scope([]);
+
+        AssertEquivalence(converted, expected);
+    }
+    
+    [Test]
+    public void TestParseScope_ScopeWithValue()
+    {
+        var parsed = new ScopeNode(new StmtListWithStatement(new ScopeStatement(GetEmptyScope()), new EmptyStmtList()));
+
+        var converted = ParseScope(parsed);
+        var expected = new Scope([new Scope([])]);
 
         AssertEquivalence(converted, expected);
     }
@@ -120,6 +283,16 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     private static IExpression GetIntLiteralExpression(int value)
     {
         return new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new OLangGrammar.ParseTree.Term.IntLiteral(new IntLiteralToken(value)))))))));
+    }
+
+    private static IExpression GetBoolLiteralExpression(bool value)
+    {
+        return new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new OLangGrammar.ParseTree.Term.BoolLiteral(new BoolLiteralToken(value)))))))));
+    }
+
+    private static ScopeNode GetEmptyScope()
+    {
+        return new ScopeNode(new EmptyStmtList());
     }
 
     private static void AssertEquivalence<T>(T actual, T expected) where T : IAstNode 
