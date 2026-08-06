@@ -94,7 +94,7 @@ public class Lr1ParserTests
 
         var expectedProgram = new ProgramNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new StmtListWithStatement(exitStatement, new EmptyStmtList()))));
 
-        var errorHelper = new OLangHelpers.ErrorHelper(code);
+        var errorHelper = new OLangHelpers.ErrorHelper(new SourceReader(code));
         var tokens = new Tokenizer().Tokenize(code, errorHelper);
         var parser = new Lr1Parser();
 

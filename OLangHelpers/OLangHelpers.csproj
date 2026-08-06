@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ErrorHelper\ErrorHelper.csproj" />
+      <ProjectReference Include="..\OLangTokenizer\OLangTokenizer.csproj" />
       <ProjectReference Include="..\OLangTokens\OLangTokens.csproj" />
     </ItemGroup>
 

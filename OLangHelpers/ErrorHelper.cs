@@ -1,12 +1,13 @@
 ﻿using ErrorHelper;
 using Lexing;
+using OLangLexing;
 using OLangTokens.Tokens;
 
 namespace OLangHelpers;
 
-public class ErrorHelper(string input) : IErrorHelper
+public class ErrorHelper(SourceReader source) : IErrorHelper
 {
-    private string[] _inputLines = input.Split('\n').Select(x => x.TrimEnd()).ToArray();
+    private SourceReader _source = source;
     
     public Exception UnknownVariant(string name, Type type)
     {
@@ -25,12 +26,12 @@ public class ErrorHelper(string input) : IErrorHelper
 
     public Exception ShowErrorMessageAtToken(string message, BaseToken token)
     {
-        // var quotedCode = GetInputLine(token);
-        // var indicator = GetIndicator(token.RelativeStartCharNumber + 1, token.RelativeEndCharNumber + 1);
-        // var errorMessage = $"{message} on line {token.LineNumber}, character {token.RelativeStartCharNumber}\n`{quotedCode}`\n{indicator}";
-        // return new Exception(errorMessage);
-        // TODO: FIX
-        return null;
+        var quotedCode = GetInputLine(token);
+        var (line, relativeCharacterNumber) = _source.GetLineAndRelativeCharacterNumber(token.Span);
+        
+        var indicator = GetIndicator(relativeCharacterNumber + 1, relativeCharacterNumber + token.Span.Length + 1); // this will break if a token spans a newline
+        var errorMessage = $"{message} on line {line + 1}, character {relativeCharacterNumber}\n`{quotedCode}`\n{indicator}";
+        return new Exception(errorMessage);
     }
 
     private string GetIndicator(int pointerStart, int pointerEnd)
@@ -65,10 +66,8 @@ public class ErrorHelper(string input) : IErrorHelper
 
     private string GetInputLine(BaseToken token)
     {
-        // TODO: FIX
-        return null;
-        // return _inputLines[token.LineNumber - 1];
-        // return _input.Substring(token.AbsoluteStartCharNumber, token.AbsoluteEndCharNumber - token.AbsoluteStartCharNumber + 1);
+        var (line, _) = _source.GetLineAndRelativeCharacterNumber(token.Span);
+        return _source.GetLine(line);
     }
 
     private string NameOfTokenType<T>() where T : BaseToken

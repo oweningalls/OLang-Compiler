@@ -19,4 +19,24 @@ public class SourceReaderTests
         
         Assert.That(reader.GetLineAndRelativeCharacterNumber(absoluteChar), Is.EqualTo((expectedLineNumber, expectedRelativeCharNumber)));
     }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public void TestGetLine(int lineNumber)
+    {
+        const string source = "1\n2asd\n\nasdf";
+        var reader = new SourceReader(source);
+        
+        Assert.That(reader.GetLine(lineNumber), Is.EqualTo(source.Split("\n")[lineNumber] + "\n"));
+    }
+    
+    [Test]
+    public void TestGetLastLine()
+    {
+        const string source = "1\n2asd\n\nasdf";
+        var reader = new SourceReader(source);
+        
+        Assert.That(reader.GetLine(3), Is.EqualTo("asdf"));
+    }
 }

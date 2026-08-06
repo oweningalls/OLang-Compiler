@@ -31,7 +31,8 @@ public static class OLangCompiler
 
     public static string GenerateAssembly(string program)
     {
-        var errorHelper = new OLangHelpers.ErrorHelper(program);
+        var reader = new SourceReader(program);
+        var errorHelper = new OLangHelpers.ErrorHelper(reader);
         var tokenizer = new Tokenizer();
         var tokens = tokenizer.Tokenize(program, errorHelper);
 
