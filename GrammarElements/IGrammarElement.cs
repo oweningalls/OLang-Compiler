@@ -1,3 +1,6 @@
 ﻿namespace Lexing;
 
-public interface IGrammarElement;
+public interface IGrammarElement
+{
+    public SourceSpan Span { get; set; }
+}

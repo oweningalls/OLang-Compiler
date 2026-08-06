@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.AssignmentOperator;
+﻿using Lexing;
 
-public class TimesEquals : IAssignmentOperator;
+namespace OLangGrammar.ParseTree.AssignmentOperator;
+
+public class TimesEquals : IAssignmentOperator
+{
+    public SourceSpan Span { get; set; }
+}

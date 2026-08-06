@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.ElseBlock;
+﻿using Lexing;
+using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.Scope;
 
@@ -9,4 +10,5 @@ public class If(IExpression condition, IScopeNode scope, IElse elseBlock) : ISta
     public IExpression Condition = condition;
     public IScopeNode Scope = scope;
     public IElse ElseBlock = elseBlock;
+    public SourceSpan Span { get; set; }
 }

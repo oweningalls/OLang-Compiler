@@ -176,6 +176,7 @@ public class Lr0ParseTable : ILrParseTable
     private class AugmentStartSymbol(INode program) : INode
     {
         public INode Program = program;
+        public SourceSpan Span { get; set; }
     }
 
     private class AugmentStartRule : BaseGrammarRule

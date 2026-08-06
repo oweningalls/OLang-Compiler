@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.AddExpression;
+﻿using Lexing;
+using OLangGrammar.ParseTree.AddExpression;
 
 namespace OLangGrammar.ParseTree.GreaterExpression;
 
@@ -6,4 +7,5 @@ public class GreaterOrEqual(IGreaterExpression lhs, IAddExpression rhs) : IGreat
 {
     public IGreaterExpression Lhs = lhs;
     public IAddExpression Rhs = rhs;
+    public SourceSpan Span { get; set; }
 }

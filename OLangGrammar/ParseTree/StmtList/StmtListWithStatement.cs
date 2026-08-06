@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.Stmt;
+﻿using Lexing;
+using OLangGrammar.ParseTree.Stmt;
 
 namespace OLangGrammar.ParseTree.StmtList;
 
@@ -6,4 +7,5 @@ public class StmtListWithStatement(IStatement statement, IStmtListNode stmtList)
 {
     public IStatement Statement = statement;
     public IStmtListNode StmtList = stmtList;
+    public SourceSpan Span { get; set; }
 }

@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.AssignmentOperator;
+﻿using Lexing;
 
-public class DivideEquals : IAssignmentOperator;
+namespace OLangGrammar.ParseTree.AssignmentOperator;
+
+public class DivideEquals : IAssignmentOperator
+{
+    public SourceSpan Span { get; set; }
+}

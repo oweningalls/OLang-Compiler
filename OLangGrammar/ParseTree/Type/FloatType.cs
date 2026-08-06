@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.Type;
+﻿using Lexing;
 
-public class FloatType : IType;
+namespace OLangGrammar.ParseTree.Type;
+
+public class FloatType : IType
+{
+    public SourceSpan Span { get; set; }
+}

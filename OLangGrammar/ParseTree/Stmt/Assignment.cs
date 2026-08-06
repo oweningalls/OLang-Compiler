@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.AssignmentOperator;
+﻿using Lexing;
+using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.Expression;
 using OLangTokens.Tokens;
 
@@ -9,4 +10,5 @@ public class Assignment(IdentifierToken identifier, IAssignmentOperator operator
     public IdentifierToken Identifier = identifier;
     public IAssignmentOperator Operator = operatorNode;
     public IExpression Expression = expression;
+    public SourceSpan Span { get; set; }
 }

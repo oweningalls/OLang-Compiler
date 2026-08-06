@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.Expression;
+﻿using Lexing;
+using OLangGrammar.ParseTree.Expression;
 using OLangTokens.Tokens;
 
 namespace OLangGrammar.ParseTree.Stmt;
@@ -7,4 +8,5 @@ public class LetDeclaration(IdentifierToken identifier, IExpression expression) 
 {
     public IdentifierToken Identifier = identifier;
     public IExpression Expression = expression;
+    public SourceSpan Span { get; set; }
 }

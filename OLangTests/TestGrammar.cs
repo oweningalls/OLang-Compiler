@@ -63,9 +63,15 @@ class Lr0Grammar : IGrammar
     }
 }
 
-class ANode : IANode;
+class ANode : IANode
+{
+    public SourceSpan Span { get; set; }
+}
 
-class BNode : IBNode;
+class BNode : IBNode
+{
+    public SourceSpan Span { get; set; }
+}
 
 interface IANode : INode;
 
@@ -75,10 +81,12 @@ class FloatANode(BoolLiteralToken boolLiteralToken, FloatLiteralToken floatLiter
 {
     public BoolLiteralToken BoolLiteralToken = boolLiteralToken;
     public FloatLiteralToken FloatLiteralToken = floatLiteralToken;
+    public SourceSpan Span { get; set; }
 }
 
 class IntANode(BoolLiteralToken boolLiteralToken, IntLiteralToken intLiteralToken) : IANode
 {
     public BoolLiteralToken BoolLiteralToken = boolLiteralToken;
     public IntLiteralToken IntLiteralToken = intLiteralToken;
+    public SourceSpan Span { get; set; }
 }

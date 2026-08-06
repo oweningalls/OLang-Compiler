@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.GreaterExpression;
+﻿using Lexing;
+using OLangGrammar.ParseTree.GreaterExpression;
 
 namespace OLangGrammar.ParseTree.EqualityExpression;
 
@@ -6,4 +7,5 @@ public class DoubleEquals(IEqualityExpression lhs, IGreaterExpression rhs) : IEq
 {
     public IEqualityExpression Lhs = lhs;
     public IGreaterExpression Rhs = rhs;
+    public SourceSpan Span { get; set; }
 }

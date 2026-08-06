@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.AssignmentOperator;
+﻿using Lexing;
 
-public class Equals: IAssignmentOperator;
+namespace OLangGrammar.ParseTree.AssignmentOperator;
+
+public class Equals: IAssignmentOperator
+{
+    public SourceSpan Span { get; set; }
+}

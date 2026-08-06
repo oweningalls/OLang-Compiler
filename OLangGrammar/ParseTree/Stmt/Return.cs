@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.Stmt;
+﻿using Lexing;
 
-public class Return : IStatement;
+namespace OLangGrammar.ParseTree.Stmt;
+
+public class Return : IStatement
+{
+    public SourceSpan Span { get; set; }
+}

@@ -38,12 +38,7 @@ namespace OLangAst;
 
 public class OLangAstBuilder(IErrorHelper errorHelper)
 {
-    public Program BuildAst(ProgramNode parsedProgram)
-    {
-        return ParseProgram(parsedProgram);
-    }
-
-    protected Program ParseProgram(ProgramNode programNode)
+    public Program ParseProgram(ProgramNode programNode)
     {
         return new Program { Statements = ParseStatementList(programNode.StmtList) };
     }

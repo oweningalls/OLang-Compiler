@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.Expression;
+﻿using Lexing;
+using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.Type;
 using OLangTokens.Tokens;
 
@@ -9,4 +10,5 @@ public class Declaration(IType type, IdentifierToken identifier, IExpression exp
     public IType Type = type;
     public IdentifierToken Identifier = identifier;
     public IExpression Expression = expression;
+    public SourceSpan Span { get; set; }
 }

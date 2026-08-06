@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.StmtList;
+﻿using Lexing;
 
-public class EmptyStmtList : IStmtListNode;
+namespace OLangGrammar.ParseTree.StmtList;
+
+public class EmptyStmtList : IStmtListNode
+{
+    public SourceSpan Span { get; set; }
+}

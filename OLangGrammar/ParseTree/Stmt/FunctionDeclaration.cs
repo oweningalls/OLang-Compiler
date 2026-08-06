@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.ParameterList;
+﻿using Lexing;
+using OLangGrammar.ParseTree.ParameterList;
 using OLangGrammar.ParseTree.Scope;
 using OLangGrammar.ParseTree.Type;
 using OLangTokens.Tokens;
@@ -11,4 +12,5 @@ public class FunctionDeclaration(IType type, IdentifierToken identifier, IParame
     public IdentifierToken Identifier = identifier;
     public IParameterListNode Parameters = parameters;
     public IScopeNode Scope = scope;
+    public SourceSpan Span { get; set; }
 }

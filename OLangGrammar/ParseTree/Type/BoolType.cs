@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.Type;
+﻿using Lexing;
 
-public class BoolType : IType;
+namespace OLangGrammar.ParseTree.Type;
+
+public class BoolType : IType
+{
+    public SourceSpan Span { get; set; }
+}

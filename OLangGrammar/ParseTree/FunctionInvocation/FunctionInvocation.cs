@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.ArgumentList;
+﻿using Lexing;
+using OLangGrammar.ParseTree.ArgumentList;
 using OLangTokens.Tokens;
 
 namespace OLangGrammar.ParseTree.FunctionInvocation;
@@ -7,4 +8,5 @@ public class FunctionInvocation(IdentifierToken identifier, IArgumentList argume
 {
     public IdentifierToken Identifier = identifier;
     public IArgumentList Arguments = argumentList;
+    public SourceSpan Span { get; set; }
 }

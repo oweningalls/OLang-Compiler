@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.ElseBlock;
+﻿using Lexing;
 
-public class EmptyElse : IElse;
+namespace OLangGrammar.ParseTree.ElseBlock;
+
+public class EmptyElse : IElse
+{
+    public SourceSpan Span { get; set; }
+}

@@ -1,3 +1,8 @@
-﻿namespace OLangGrammar.ParseTree.ParameterList;
+﻿using Lexing;
 
-public class EmptyParameterList : IParameterListNode;
+namespace OLangGrammar.ParseTree.ParameterList;
+
+public class EmptyParameterList : IParameterListNode
+{
+    public SourceSpan Span { get; set; }
+}

@@ -1,4 +1,5 @@
-﻿using OLangGrammar.ParseTree.ParameterList;
+﻿using Lexing;
+using OLangGrammar.ParseTree.ParameterList;
 using OLangGrammar.ParseTree.Scope;
 using OLangTokens.Tokens;
 
@@ -9,4 +10,5 @@ public class VoidFunctionDeclaration(IdentifierToken identifier, IParameterListN
     public IdentifierToken Identifier = identifier;
     public IParameterListNode Parameters = parameters;
     public IScopeNode Scope = scope;
+    public SourceSpan Span { get; set; }
 }
