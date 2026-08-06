@@ -13,24 +13,20 @@ public class Tokenizer
         _errorHelper = errorHelper;
         _input = input;
         _currentIndex = 0;
-        _characterNumber = 0;
-        _lineNumber = 1;
         var tokens = new List<BaseToken>();
-        var startChar = _characterNumber;
         var absoluteCharacterNumber = _absoluteCharacterNumber;
 
         SkipWhitespaceAndComments();
         var token = GetNextToken();
-        SetLineAndCharNumbers(token, startChar, absoluteCharacterNumber);
+        SetLineAndCharNumbers(token, absoluteCharacterNumber);
 
         while (token != null)
         {
             SkipWhitespaceAndComments();
             tokens.Add(token);
-            startChar = _characterNumber;
             absoluteCharacterNumber = _absoluteCharacterNumber;
             token = GetNextToken();
-            SetLineAndCharNumbers(token, startChar, absoluteCharacterNumber);
+            SetLineAndCharNumbers(token, absoluteCharacterNumber);
         }
 
         return tokens;
@@ -111,19 +107,15 @@ public class Tokenizer
         }
     }
 
-    private void SetLineAndCharNumbers(BaseToken? token, int startCharNumber, int absoluteStartCharNumber)
+    private void SetLineAndCharNumbers(BaseToken? token, int absoluteStartCharNumber)
     {
         if (token == null)
         {
             return;
         }
 
-        token.RelativeStartCharNumber = startCharNumber;
-        token.LineNumber = _lineNumber;
-        token.AbsoluteStartCharNumber = absoluteStartCharNumber;
-
-        token.RelativeEndCharNumber = _characterNumber - 1;
-        token.AbsoluteEndCharNumber = _absoluteCharacterNumber - 1;
+        var span = new SourceSpan { Start = absoluteStartCharNumber, Length = _absoluteCharacterNumber - absoluteStartCharNumber };
+        token.Span = span;
     }
 
     private BaseToken? GetNextToken()
@@ -284,8 +276,6 @@ public class Tokenizer
     private string? _input;
     private int _currentIndex;
 
-    private int _lineNumber;
-    private int _characterNumber;
     private int _absoluteCharacterNumber;
 
     private char? Peek(int offset = 0)
@@ -306,15 +296,6 @@ public class Tokenizer
         }
 
         _absoluteCharacterNumber++;
-        if (ret == '\n')
-        {
-            _characterNumber = 0;
-            _lineNumber++;
-        }
-        else
-        {
-            _characterNumber++;
-        }
 
         return (char)ret;
     }

@@ -25,10 +25,12 @@ public class ErrorHelper(string input) : IErrorHelper
 
     public Exception ShowErrorMessageAtToken(string message, BaseToken token)
     {
-        var quotedCode = GetInputLine(token);
-        var indicator = GetIndicator(token.RelativeStartCharNumber + 1, token.RelativeEndCharNumber + 1);
-        var errorMessage = $"{message} on line {token.LineNumber}, character {token.RelativeStartCharNumber}\n`{quotedCode}`\n{indicator}";
-        return new Exception(errorMessage);
+        // var quotedCode = GetInputLine(token);
+        // var indicator = GetIndicator(token.RelativeStartCharNumber + 1, token.RelativeEndCharNumber + 1);
+        // var errorMessage = $"{message} on line {token.LineNumber}, character {token.RelativeStartCharNumber}\n`{quotedCode}`\n{indicator}";
+        // return new Exception(errorMessage);
+        // TODO: FIX
+        return null;
     }
 
     private string GetIndicator(int pointerStart, int pointerEnd)
@@ -63,7 +65,9 @@ public class ErrorHelper(string input) : IErrorHelper
 
     private string GetInputLine(BaseToken token)
     {
-        return _inputLines[token.LineNumber - 1];
+        // TODO: FIX
+        return null;
+        // return _inputLines[token.LineNumber - 1];
         // return _input.Substring(token.AbsoluteStartCharNumber, token.AbsoluteEndCharNumber - token.AbsoluteStartCharNumber + 1);
     }
 

@@ -44,11 +44,7 @@ public static class ProgramComparer
         {
             var excludedFields = new List<string>
             {
-                nameof(BaseToken.LineNumber),
-                nameof(BaseToken.AbsoluteEndCharNumber),
-                nameof(BaseToken.AbsoluteStartCharNumber),
-                nameof(BaseToken.RelativeEndCharNumber),
-                nameof(BaseToken.RelativeStartCharNumber),
+                nameof(BaseToken.Span),
             };
             fields = fields.Where(x => !excludedFields.Contains(x.Name)).ToArray();
         }
