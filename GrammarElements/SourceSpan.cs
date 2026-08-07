@@ -1,9 +1,9 @@
 ﻿namespace Lexing;
 
-public struct SourceSpan
+public struct SourceSpan(int start, int length)
 {
-    public int Start;
-    public int Length;
+    public int Start = start;
+    public int Length = length;
 
     public static SourceSpan CombineSpans(params SourceSpan[] spans)
     {

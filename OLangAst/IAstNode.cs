@@ -1,3 +1,8 @@
-﻿namespace OLangAst;
+﻿using Lexing;
 
-public interface IAstNode;
+namespace OLangAst;
+
+public interface IAstNode
+{
+    public SourceSpan Span { get; set; }
+}
