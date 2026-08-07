@@ -1,5 +1,4 @@
-﻿
-namespace Lexing;
+﻿namespace Lexing;
 
 public class GrammarRule : BaseGrammarRule
 {
@@ -24,7 +23,13 @@ public class GrammarRule : BaseGrammarRule
         where T1 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0]), GetInterface(typeof(TNode)), typeof(T1));
+        return new GrammarRule(x =>
+        {
+            var node = reduce((T1)x[0]);
+            node.Span = CombineNodeSourceSpans((T1)x[0]);
+
+            return node;
+        }, GetInterface(typeof(TNode)), typeof(T1));
     }
 
     public static GrammarRule Create<TNode, T1, T2>(Func<T1, T2, TNode> reduce)
@@ -32,7 +37,13 @@ public class GrammarRule : BaseGrammarRule
         where T2 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1]), GetInterface(typeof(TNode)), typeof(T1), typeof(T2));
+        return new GrammarRule(x =>
+        {
+            var node = reduce((T1)x[0], (T2)x[1]);
+            node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1]);
+
+            return node;
+        }, GetInterface(typeof(TNode)), typeof(T1), typeof(T2));
     }
 
     public static GrammarRule Create<TNode, T1, T2, T3>(Func<T1, T2, T3, TNode> reduce)
@@ -41,7 +52,13 @@ public class GrammarRule : BaseGrammarRule
         where T3 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2]),
+        return new GrammarRule(x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2]);
+
+                return node;
+            },
             GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3));
     }
 
@@ -52,7 +69,13 @@ public class GrammarRule : BaseGrammarRule
         where T4 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3]),
+        return new GrammarRule(x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3]);
+
+                return node;
+            },
             GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4));
     }
 
@@ -64,7 +87,13 @@ public class GrammarRule : BaseGrammarRule
         where T5 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4]),
+        return new GrammarRule(x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4]);
+
+                return node;
+            },
             GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
     }
 
@@ -77,7 +106,13 @@ public class GrammarRule : BaseGrammarRule
         where T6 : IGrammarElement
         where TNode : INode
     {
-        return new GrammarRule(x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5]),
+        return new GrammarRule(x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5]);
+
+                return node;
+            },
             GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6));
     }
 
@@ -92,9 +127,20 @@ public class GrammarRule : BaseGrammarRule
         where TNode : INode
     {
         return new GrammarRule(
-            x => reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6]),
+            x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6]);
+
+                return node;
+            },
             GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7)
         );
+    }
+
+    private static SourceSpan CombineNodeSourceSpans(params IGrammarElement[] elements)
+    {
+        return SourceSpan.CombineSpans(elements.Select(x => x.Span).ToArray());
     }
 
     private static Type GetInterface(Type type)

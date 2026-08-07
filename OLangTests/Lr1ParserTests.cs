@@ -4,6 +4,7 @@ using OLangCompiler.Parser.BottomUpParser.Lr1;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
+using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -29,7 +30,7 @@ public class Lr1ParserTests
     {
         Assert.DoesNotThrow(() => new Lr1ParseTable(new TestGrammar(), new NoOpErrorHelper()));
     }
-    
+
     [Test]
     public void TestAmbiguousFails()
     {
@@ -58,7 +59,7 @@ public class Lr1ParserTests
         {
             new BoolLiteralToken(false), new IntLiteralToken(1)
         };
-        
+
         var program = parser.ParseProgram(new Lr0Grammar(), input, new NoOpErrorHelper());
         var intNode = program as IntANode;
         Assert.That(intNode, Is.Not.Null);
@@ -99,7 +100,57 @@ public class Lr1ParserTests
         var parser = new Lr1Parser();
 
         var actualProgram = parser.ParseProgram(new OLangGrammar.OLangGrammar(), tokens, errorHelper);
-        
+
         Assert.That(ProgramComparer.AreEquivalent(expectedProgram, actualProgram));
+    }
+
+    [Test]
+    public void TestSpansGetCombined()
+    {
+        var tokens = new List<BaseToken>
+        {
+            new LetToken(),
+            new IdentifierToken("ident"),
+            new EqualsToken(),
+            new IntLiteralToken(1),
+            new SemicolonToken(),
+            new IdentifierToken("ident"),
+            new PlusEqualsToken(),
+            new IntLiteralToken(2),
+            new SemicolonToken()
+        };
+
+        var firstStatementLengths = new List<int> { 4, 6, 3, 1, 1, };
+        var secondStatementLengths = new List<int> { 6, 3, 1, 1 };
+        
+        AddSpansToTokens(tokens, firstStatementLengths.Concat(secondStatementLengths).ToList());
+
+        var parser = new Lr1Parser();
+        var program = (ProgramNode)parser.ParseProgram(new OLangGrammar.OLangGrammar(),tokens, new NoOpErrorHelper());
+        var statementList = (StmtListWithStatement)program.StmtList;
+        var letStatement = (LetDeclaration)statementList.Statement;
+        var plusEqualsStatement = (Assignment)((StmtListWithStatement)statementList.StmtList).Statement;
+        
+        Assert.That(letStatement.Span.Start, Is.EqualTo(0));
+        var firstStatementLength = firstStatementLengths.Sum();
+        Assert.That(letStatement.Span.Length, Is.EqualTo(firstStatementLength));
+        var intLiteralExpression = letStatement.Expression;
+        Assert.That(intLiteralExpression.Span.Start, Is.EqualTo(firstStatementLength - 2)); // starts before the `1;`
+        Assert.That(intLiteralExpression.Span.Length, Is.EqualTo(1));
+        
+        Assert.That(plusEqualsStatement.Span.Start, Is.EqualTo(firstStatementLength));
+        var secondStatementLength = secondStatementLengths.Sum();
+        Assert.That(plusEqualsStatement.Span.Length, Is.EqualTo(secondStatementLength));
+    }
+
+    private void AddSpansToTokens(List<BaseToken> tokens, List<int> lengths)
+    {
+        if (tokens.Count != lengths.Count) throw new Exception("Lengths don't match");
+        var character = 0;
+        foreach (var (token, length) in tokens.Zip(lengths))
+        {
+            token.Span = new SourceSpan() { Start = character, Length = length };
+            character += length;
+        }
     }
 }
