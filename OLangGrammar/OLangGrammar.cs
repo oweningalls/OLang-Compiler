@@ -3,7 +3,6 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
-using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -29,7 +28,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IStmtListNode stmtList) => new ProgramNode(stmtList)),
 
         // StmtList
-        GrammarRule.Create(() => new EmptyStmtList()),
+        GrammarRule.Create((IStatement statement) => new SingleStatementStmtList(statement)),
         GrammarRule.Create((IStatement statement, IStmtListNode statementList) => new StmtListWithStatement(statement, statementList)),
 
         // Stmt
@@ -38,26 +37,23 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IType type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(type, identifier, expression)),
         GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
         GrammarRule.Create((IScopeNode scope) => new ScopeStatement(scope)),
-        GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope, IElse elseNode) => new If(expression, scope, elseNode)),
+        GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope) => new If(expression, scope)),
+        GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope, ElseToken _, IScopeNode elseScope) => new IfWithElse(expression, scope, elseScope)),
         GrammarRule.Create((WhileToken _, IExpression expression, IScopeNode scope) => new While(expression, scope)),
         GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, IExpression startExpression, RangeToken _, IExpression endExpression, IScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
-        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, parameterList, scope)),
-        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, parameterList, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclarationWithParameters(type, identifier, parameterList, scope)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclarationWithParameters(identifier, parameterList, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, scope)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, scope)),
         GrammarRule.Create((IFunctionInvocation invocation, SemicolonToken _) => new Invocation(invocation)),
         GrammarRule.Create((ReturnToken _, SemicolonToken _) => new Return()),
         GrammarRule.Create((ReturnToken _, IExpression expression, SemicolonToken _) => new ReturnValue(expression)),
 
-        // ElseBlock
-        GrammarRule.Create(() => new EmptyElse()),
-        GrammarRule.Create((ElseToken _, IScopeNode scope) => new Else(scope)),
-
         // ParameterList
-        GrammarRule.Create(() => new EmptyParameterList()),
         GrammarRule.Create((IType type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(type, identifier, parameterList)),
         GrammarRule.Create((IType type, IdentifierToken identifier) => new Parameter(type, identifier)),
 
         // ArgumentList
-        GrammarRule.Create(() => new EmptyArgumentList()),
         GrammarRule.Create((IExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),
         GrammarRule.Create((IExpression expression) => new ExpressionArgumentList(expression)),
 
@@ -70,6 +66,7 @@ public class OLangGrammar : IGrammar
 
         // Scope
         GrammarRule.Create((LeftCurlyToken _, IStmtListNode stmtList, RightCurlyToken _) => new ScopeNode(stmtList)),
+        GrammarRule.Create((LeftCurlyToken _, RightCurlyToken _) => new EmptyScope()),
 
         // Type
         GrammarRule.Create((IntTypeToken _) => new IntType()),
@@ -120,7 +117,8 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IFunctionInvocation ident) => new FunctionInvocationTerm(ident)),
 
         // FunctionInvocation
-        GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocation(ident, argumentList)),
+        GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),
+        GrammarRule.Create((IdentifierToken ident, LeftParenToken _, RightParenToken _) => new FunctionInvocation(ident)),
     ];
 
     public Type GetStartSymbol()

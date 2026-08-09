@@ -6,7 +6,6 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
-using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -40,15 +39,16 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 {
     public Program ParseProgram(ProgramNode programNode)
     {
-        return new Program { Statements = ParseStatementList(programNode.StmtList) };
+        var statements = ParseStatementList(programNode.StmtList);
+        return new Program(statements);
     }
 
     protected List<IStatement> ParseStatementList(IStmtListNode statementList)
     {
         switch (statementList)
         {
-            case EmptyStmtList:
-                return [];
+            case SingleStatementStmtList statement:
+                return [ParseStatement(statement.Statement)];
             case StmtListWithStatement statement:
                 var statements = new List<IStatement>();
                 IStmtListNode currentStatement = statement;
@@ -58,6 +58,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
                     statements.Add(ParseStatement(nextStatement.Statement));
                     currentStatement = nextStatement.StmtList;
                 }
+                
+                statements.Add(ParseStatement(((SingleStatementStmtList)currentStatement).Statement));
                 
                 return statements;
             default:
@@ -75,9 +77,12 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             Exit exit => new ExitStatement(ParseExpression(exit.Expression)),
             For forStatement => new ForLoop(ParseIdentifier(forStatement.Identifier), ParseExpression(forStatement.Start), ParseExpression(forStatement.End), ParseScope(forStatement.Scope)),
             While whileStatement => new WhileLoop(ParseExpression(whileStatement.Condition), ParseScope(whileStatement.Scope)),
-            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters)),
-            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters)),
-            If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), ParseElse(ifStatement.ElseBlock)),
+            FunctionDeclarationWithParameters functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters)),
+            VoidFunctionDeclarationWithParameters voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters)),
+            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), []),
+            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), []),
+            If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), null),
+            IfWithElse ifStatementWithElse => new IfStatement(ParseExpression(ifStatementWithElse.Condition), ParseScope(ifStatementWithElse.Scope), ParseScope(ifStatementWithElse.ElseBlock)),
             Invocation invocation => ParseFunctionInvocation(invocation.InvocationNode),
             OLangGrammar.ParseTree.Stmt.Return => new Return(null),
             ReturnValue returnValueStatement => new Return(ParseExpression(returnValueStatement.Expression)),
@@ -88,10 +93,9 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     protected VariableAssignment ParseAssignment(Assignment assignment)
     {
-        IExpression value;
         var identifier = ParseIdentifier(assignment.Identifier);
         var parsedExpression = ParseExpression(assignment.Expression);
-        value = assignment.Operator switch
+        var value = assignment.Operator switch
         {
             Equals _ => parsedExpression,
             PlusEquals => new Add(new VariableAccess(identifier), parsedExpression),
@@ -105,12 +109,12 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     protected Scope ParseScope(IScopeNode scope)
     {
-        if (scope is not ScopeNode scopeNode)
+        return scope switch
         {
-            throw errorHelper.UnknownVariant("scope", scope.GetType());
-        }
-
-        return new Scope(ParseStatementList(scopeNode.StmtList));
+            EmptyScope _ => new Scope([]),
+            ScopeNode scopeNode => new Scope(ParseStatementList(scopeNode.StmtList)),
+            _ => throw errorHelper.UnknownVariant("scope", scope.GetType())
+        };
     }
 
     protected IExpression ParseExpression(OLangGrammar.ParseTree.Expression.IExpression expression)
@@ -247,29 +251,25 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return new Parameter(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type));
     }
 
-    protected Scope? ParseElse(IElse elseBlock)
-    {
-        if (elseBlock is EmptyElse)
-        {
-            return null;
-        }
-
-        if (elseBlock is Else actualElse)
-        {
-            return ParseScope(actualElse.Scope);
-        }
-
-        throw errorHelper.UnknownVariant("else block", elseBlock.GetType());
-    }
-
     protected FunctionInvocation ParseFunctionInvocation(IFunctionInvocation functionInvocation)
     {
-        if (functionInvocation is not OLangGrammar.ParseTree.FunctionInvocation.FunctionInvocation invocation)
+        List<IExpression> arguments;
+        IdentifierToken identifier;
+        switch (functionInvocation)
         {
-            throw errorHelper.UnknownVariant("function invocation", functionInvocation.GetType());
+            case OLangGrammar.ParseTree.FunctionInvocation.FunctionInvocation invocation:
+                arguments = new List<IExpression>();
+                identifier = invocation.Identifier;
+                break;
+            case FunctionInvocationWithArguments invocationWithArguments:
+                arguments = ParseArgumentList(invocationWithArguments.Arguments);
+                identifier = invocationWithArguments.Identifier;
+                break;
+            default:
+                throw errorHelper.UnknownVariant("function invocation", functionInvocation.GetType());
         }
 
-        return new FunctionInvocation(ParseIdentifier(invocation.Identifier), ParseArgumentList(invocation.Arguments));
+        return new FunctionInvocation(ParseIdentifier(identifier), arguments);
     }
     
     protected List<IExpression> ParseArgumentList(IArgumentList argumentList)

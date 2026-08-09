@@ -4,9 +4,10 @@ using OLangGrammar.ParseTree.Scope;
 
 namespace OLangGrammar.ParseTree.Stmt;
 
-public class If(IExpression condition, IScopeNode scope) : IStatement
+public class IfWithElse(IExpression condition, IScopeNode scope, IScopeNode elseBlock) : IStatement
 {
     public IExpression Condition = condition;
     public IScopeNode Scope = scope;
+    public IScopeNode ElseBlock = elseBlock;
     public SourceSpan Span { get; set; }
 }

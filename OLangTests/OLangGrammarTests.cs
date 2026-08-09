@@ -21,7 +21,7 @@ public class OLangGrammarTests
     public void ReduceProgramNode()
     {
         var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(IProgramNode));
-        var stmtList = new EmptyStmtList();
+        var stmtList = new SingleStatementStmtList(null);
         var program = rule.ReduceRule([stmtList]);
 
         var programNode = program as ProgramNode;

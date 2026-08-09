@@ -30,7 +30,7 @@ public class ErrorHelper(SourceReader source) : IErrorHelper
         var (line, relativeCharacterNumber) = _source.GetLineAndRelativeCharacterNumber(token.Span);
         
         var indicator = GetIndicator(relativeCharacterNumber + 1, relativeCharacterNumber + token.Span.Length + 1); // this will break if a token spans a newline
-        var errorMessage = $"{message} on line {line + 1}, character {relativeCharacterNumber}\n`{quotedCode}`\n{indicator}";
+        var errorMessage = $"{message} on line {line + 1}, character {relativeCharacterNumber + 1}\n`{quotedCode}`\n{indicator}";
         return new Exception(errorMessage);
     }
 

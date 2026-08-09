@@ -86,14 +86,14 @@ public class Lr1ParserTests
 
         var letAStatement = new LetDeclaration(new IdentifierToken("a"), GetIntLiteralExpression(1));
 
-        var bScope = new ScopeNode(new StmtListWithStatement(new ReturnValue(GetIntLiteralExpression(2)), new EmptyStmtList()));
-        var bDeclarationStatement = new FunctionDeclaration(new IntType(), new IdentifierToken("b"), new EmptyParameterList(), bScope);
+        var bScope = new ScopeNode(new SingleStatementStmtList(new ReturnValue(GetIntLiteralExpression(2))));
+        var bDeclarationStatement = new FunctionDeclarationWithParameters(new IntType(), new IdentifierToken("b"), new EmptyParameterList(), bScope);
 
         var aAccess = new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new IdentifierTerm(new IdentifierToken("a")))));
-        var bInvocation = new NonMultExpression(new NonUnaryExpression(new FunctionInvocationTerm(new FunctionInvocation(new IdentifierToken("b"), new EmptyArgumentList()))));
+        var bInvocation = new NonMultExpression(new NonUnaryExpression(new FunctionInvocationTerm(new FunctionInvocationWithArguments(new IdentifierToken("b"), new EmptyArgumentList()))));
         var exitStatement = new Exit(new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new Plus(aAccess, bInvocation))))));
 
-        var expectedProgram = new ProgramNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new StmtListWithStatement(exitStatement, new EmptyStmtList()))));
+        var expectedProgram = new ProgramNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new SingleStatementStmtList(exitStatement))));
 
         var errorHelper = new OLangHelpers.ErrorHelper(new SourceReader(code));
         var tokens = new Tokenizer().Tokenize(code, errorHelper);
