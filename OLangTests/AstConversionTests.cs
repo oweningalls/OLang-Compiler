@@ -1,11 +1,11 @@
-﻿using OLangAst;
+﻿using Lexing;
+using OLangAst;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.AssignmentOperator;
-using OLangGrammar.ParseTree.ElseBlock;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.GreaterExpression;
@@ -18,7 +18,6 @@ using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangTokens.Tokens;
-using FunctionDeclaration = OLangGrammar.ParseTree.Stmt.FunctionDeclaration;
 using IExpression = OLangGrammar.ParseTree.Expression.IExpression;
 using Return = OLangGrammar.ParseTree.Stmt.Return;
 
@@ -30,17 +29,13 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     public void TestParseProgram()
     {
         var emptyScope = new ScopeStatement(GetEmptyScope());
-        var parsed = new ProgramNode(new StmtListWithStatement(emptyScope, new StmtListWithStatement(emptyScope, new EmptyStmtList())));
+        var parsed = new ProgramNode(new StmtListWithStatement(emptyScope, new SingleStatementStmtList(emptyScope)));
         
         var converted = ParseProgram(parsed);
-        var expected = new Program
-        {
-            Statements = [
-                new Scope([]),
-                new Scope([])
-            ]
-        
-        };
+        var expected = new Program([
+            new Scope([]),
+            new Scope([])
+        ]);
 
         AssertEquivalence(converted, expected);
     }
@@ -187,7 +182,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var start = 0;
         var end = 1;
         var ident = "a";
-        var parsed = new FunctionDeclaration(new BoolType(), GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
+        var parsed = new FunctionDeclarationWithParameters(new BoolType(), GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
 
         var converted = ParseStatement(parsed);
         var expected = new OLangAst.Statements.FunctionDeclaration(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool), ident, []);
@@ -201,7 +196,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var start = 0;
         var end = 1;
         var ident = "a";
-        var parsed = new VoidFunctionDeclaration(GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
+        var parsed = new VoidFunctionDeclarationWithParameters(GetIdentifier(ident), new EmptyParameterList(), GetEmptyScope());
 
         var converted = ParseStatement(parsed);
         var expected = new OLangAst.Statements.FunctionDeclaration(null, ident, []);
@@ -215,7 +210,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var ident = "a";
         var start = 0;
         var end = 1;
-        var parsed = new If(GetBoolLiteralExpression(true), GetEmptyScope(), new EmptyElse());
+        var parsed = new If(GetBoolLiteralExpression(true), GetEmptyScope());
 
         var converted = ParseStatement(parsed);
         var expected = new IfStatement(new BoolLiteral(true), new Scope([]), null);
@@ -249,7 +244,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     [Test]
     public void TestParseScope_EmptyScope()
     {
-        var parsed = new ScopeNode(new EmptyStmtList());
+        var parsed = new EmptyScope();
 
         var converted = ParseScope(parsed);
         var expected = new Scope([]);
@@ -260,7 +255,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
     [Test]
     public void TestParseScope_ScopeWithValue()
     {
-        var parsed = new ScopeNode(new StmtListWithStatement(new ScopeStatement(GetEmptyScope()), new EmptyStmtList()));
+        var parsed = new ScopeNode(new SingleStatementStmtList(new ScopeStatement(GetEmptyScope())));
 
         var converted = ParseScope(parsed);
         var expected = new Scope([new Scope([])]);
@@ -279,6 +274,17 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
 
         AssertEquivalence(converted, expected);
     }
+    
+    [Test]
+    public void SourcesFromIndividualTokens_GetPreserved()
+    {
+        var intLiteral = new OLangGrammar.ParseTree.Term.IntLiteral(new IntLiteralToken(1)) { Span = new SourceSpan(1, 2) };
+
+        var parsed = ParseTerm(intLiteral);
+        
+        Assert.That(parsed.Span.Start, Is.EqualTo(intLiteral.Span.Start));
+        Assert.That(parsed.Span.Length, Is.EqualTo(intLiteral.Span.Length));
+    }
 
     private static IExpression GetIntLiteralExpression(int value)
     {
@@ -290,9 +296,9 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         return new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new NonAddExpression(new NonMultExpression(new NonUnaryExpression(new OLangGrammar.ParseTree.Term.BoolLiteral(new BoolLiteralToken(value)))))))));
     }
 
-    private static ScopeNode GetEmptyScope()
+    private static IScopeNode GetEmptyScope()
     {
-        return new ScopeNode(new EmptyStmtList());
+        return new EmptyScope();
     }
 
     private static void AssertEquivalence<T>(T actual, T expected) where T : IAstNode 

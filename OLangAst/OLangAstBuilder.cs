@@ -72,20 +72,20 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return statement switch
         {
             Assignment assignment => ParseAssignment(assignment),
-            Declaration declaration => new VariableDeclarationStatement(ParseType(declaration.Type), ParseIdentifier(declaration.Identifier), ParseExpression(declaration.Expression)),
-            LetDeclaration letDeclaration => new VariableDeclarationStatement(null, ParseIdentifier(letDeclaration.Identifier), ParseExpression(letDeclaration.Expression)),
-            Exit exit => new ExitStatement(ParseExpression(exit.Expression)),
-            For forStatement => new ForLoop(ParseIdentifier(forStatement.Identifier), ParseExpression(forStatement.Start), ParseExpression(forStatement.End), ParseScope(forStatement.Scope)),
-            While whileStatement => new WhileLoop(ParseExpression(whileStatement.Condition), ParseScope(whileStatement.Scope)),
-            FunctionDeclarationWithParameters functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters)),
-            VoidFunctionDeclarationWithParameters voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters)),
-            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), []),
-            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), []),
-            If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), null),
-            IfWithElse ifStatementWithElse => new IfStatement(ParseExpression(ifStatementWithElse.Condition), ParseScope(ifStatementWithElse.Scope), ParseScope(ifStatementWithElse.ElseBlock)),
+            Declaration declaration => new VariableDeclarationStatement(ParseType(declaration.Type), ParseIdentifier(declaration.Identifier), ParseExpression(declaration.Expression)) { Span = declaration.Span },
+            LetDeclaration letDeclaration => new VariableDeclarationStatement(null, ParseIdentifier(letDeclaration.Identifier), ParseExpression(letDeclaration.Expression)) { Span = letDeclaration.Span },
+            Exit exit => new ExitStatement(ParseExpression(exit.Expression)) { Span = exit.Span },
+            For forStatement => new ForLoop(ParseIdentifier(forStatement.Identifier), ParseExpression(forStatement.Start), ParseExpression(forStatement.End), ParseScope(forStatement.Scope)) { Span = forStatement.Span },
+            While whileStatement => new WhileLoop(ParseExpression(whileStatement.Condition), ParseScope(whileStatement.Scope)) { Span = whileStatement.Span },
+            FunctionDeclarationWithParameters functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters)) { Span = functionDeclaration.Span },
+            VoidFunctionDeclarationWithParameters voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters)) { Span = voidFunctionDeclaration.Span },
+            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), []) { Span = functionDeclaration.Span },
+            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), []) { Span = voidFunctionDeclaration.Span },
+            If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), null) { Span = ifStatement.Span },
+            IfWithElse ifStatementWithElse => new IfStatement(ParseExpression(ifStatementWithElse.Condition), ParseScope(ifStatementWithElse.Scope), ParseScope(ifStatementWithElse.ElseBlock)) { Span = ifStatementWithElse.Span },
             Invocation invocation => ParseFunctionInvocation(invocation.InvocationNode),
-            OLangGrammar.ParseTree.Stmt.Return => new Return(null),
-            ReturnValue returnValueStatement => new Return(ParseExpression(returnValueStatement.Expression)),
+            OLangGrammar.ParseTree.Stmt.Return returnStatement => new Return(null) { Span = returnStatement.Span },
+            ReturnValue returnValueStatement => new Return(ParseExpression(returnValueStatement.Expression)) { Span = returnValueStatement.Span },
             ScopeStatement scopeStatement => ParseScope(scopeStatement.Scope),
             _ => throw errorHelper.UnknownVariant("statement", statement.GetType())
         };
@@ -104,15 +104,15 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             DivideEquals => new Divide(new VariableAccess(identifier), parsedExpression),
             _ => throw errorHelper.UnknownVariant("assignment operator", assignment.Operator.GetType())
         };
-        return new VariableAssignment(ParseIdentifier(assignment.Identifier), value);
+        return new VariableAssignment(ParseIdentifier(assignment.Identifier), value) { Span = assignment.Span };
     }
 
     protected Scope ParseScope(IScopeNode scope)
     {
         return scope switch
         {
-            EmptyScope _ => new Scope([]),
-            ScopeNode scopeNode => new Scope(ParseStatementList(scopeNode.StmtList)),
+            EmptyScope emptyScope => new Scope([]) { Span = emptyScope.Span },
+            ScopeNode scopeNode => new Scope(ParseStatementList(scopeNode.StmtList)) { Span = scopeNode.Span },
             _ => throw errorHelper.UnknownVariant("scope", scope.GetType())
         };
     }
@@ -121,7 +121,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            Expression orExpression => new Or(ParseExpression(orExpression.Lhs), ParseAndExpression(orExpression.Rhs)),
+            Expression orExpression => new Or(ParseExpression(orExpression.Lhs), ParseAndExpression(orExpression.Rhs)) { Span = orExpression.Span },
             NonExpression andExpression => ParseAndExpression(andExpression.Expression),
             _ => throw errorHelper.UnknownVariant("expression", expression.GetType())
         };
@@ -131,7 +131,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            AndExpression and => new And(ParseAndExpression(and.Lhs), ParseEqualityExpression(and.Rhs)),
+            AndExpression and => new And(ParseAndExpression(and.Lhs), ParseEqualityExpression(and.Rhs)) { Span = and.Span },
             NonAnd nonAnd => ParseEqualityExpression(nonAnd.Expression),
             _ => throw errorHelper.UnknownVariant("and expression", expression.GetType())
         };
@@ -141,8 +141,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            DoubleEquals doubleEquals => new AreEqual(ParseEqualityExpression(doubleEquals.Lhs), ParseGreaterExpression(doubleEquals.Rhs)),
-            OLangGrammar.ParseTree.EqualityExpression.NotEqual notEqual => new NotEqual(ParseEqualityExpression(notEqual.Lhs), ParseGreaterExpression(notEqual.Rhs)),
+            DoubleEquals doubleEquals => new AreEqual(ParseEqualityExpression(doubleEquals.Lhs), ParseGreaterExpression(doubleEquals.Rhs)) { Span = doubleEquals.Span },
+            OLangGrammar.ParseTree.EqualityExpression.NotEqual notEqual => new NotEqual(ParseEqualityExpression(notEqual.Lhs), ParseGreaterExpression(notEqual.Rhs)) { Span = notEqual.Span },
             NonEquality nonEquality => ParseGreaterExpression(nonEquality.Expression),
             _ => throw errorHelper.UnknownVariant("equality expression", expression.GetType())
         };
@@ -152,10 +152,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            Greater greater => new GreaterThan(ParseGreaterExpression(greater.Lhs), ParseAddExpression(greater.Rhs)),
-            OLangGrammar.ParseTree.GreaterExpression.GreaterOrEqual greater => new GreaterOrEqual(ParseGreaterExpression(greater.Lhs), ParseAddExpression(greater.Rhs)),
-            Less greater => new LessThan(ParseGreaterExpression(greater.Lhs), ParseAddExpression(greater.Rhs)),
-            LessOrEqual lessOrEqual => new GreaterOrEqual(ParseGreaterExpression(lessOrEqual.Lhs), ParseAddExpression(lessOrEqual.Rhs)),
+            Greater greater => new GreaterThan(ParseGreaterExpression(greater.Lhs), ParseAddExpression(greater.Rhs)) { Span = greater.Span },
+            OLangGrammar.ParseTree.GreaterExpression.GreaterOrEqual greaterOrEqual => new GreaterOrEqual(ParseGreaterExpression(greaterOrEqual.Lhs), ParseAddExpression(greaterOrEqual.Rhs)) { Span = greaterOrEqual.Span },
+            Less less => new LessThan(ParseGreaterExpression(less.Lhs), ParseAddExpression(less.Rhs)) { Span = less.Span },
+            LessOrEqual lessOrEqual => new LessThanOrEqual(ParseGreaterExpression(lessOrEqual.Lhs), ParseAddExpression(lessOrEqual.Rhs)) { Span = lessOrEqual.Span },
             NonGreaterExpression nonGreaterExpression => ParseAddExpression(nonGreaterExpression.Expression),
             _ => throw errorHelper.UnknownVariant("greater expression", expression.GetType())
         };
@@ -165,8 +165,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            Plus plus => new Add(ParseAddExpression(plus.Lhs), ParseMultExpression(plus.Rhs)),
-            Minus minus => new Subtract(ParseAddExpression(minus.Lhs), ParseMultExpression(minus.Rhs)),
+            Plus plus => new Add(ParseAddExpression(plus.Lhs), ParseMultExpression(plus.Rhs)) { Span = plus.Span },
+            Minus minus => new Subtract(ParseAddExpression(minus.Lhs), ParseMultExpression(minus.Rhs)) { Span = minus.Span },
             NonAddExpression nonAdd => ParseMultExpression(nonAdd.Expression),
             _ => throw errorHelper.UnknownVariant("add expression", expression.GetType())
         };
@@ -176,8 +176,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            Mult mu => new Multiply(ParseMultExpression(mu.Lhs), ParseUnaryExpression(mu.Rhs)),
-            Div div => new Multiply(ParseMultExpression(div.Lhs), ParseUnaryExpression(div.Rhs)),
+            Mult mu => new Multiply(ParseMultExpression(mu.Lhs), ParseUnaryExpression(mu.Rhs)) { Span = mu.Span },
+            Div div => new Divide(ParseMultExpression(div.Lhs), ParseUnaryExpression(div.Rhs)) { Span = div.Span },
             NonMultExpression nonAdd => ParseUnaryExpression(nonAdd.Expression),
             _ => throw errorHelper.UnknownVariant("mult expression", expression.GetType())
         };
@@ -187,8 +187,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return expression switch
         {
-            OLangGrammar.ParseTree.UnaryExpression.Not not => new Not(ParseTerm(not.Term)),
-            Negation not => new Negate(ParseTerm(not.Term)),
+            OLangGrammar.ParseTree.UnaryExpression.Not not => new Not(ParseTerm(not.Term)) { Span = not.Span },
+            Negation negate => new Negate(ParseTerm(negate.Term)) { Span = negate.Span },
             NonUnaryExpression nonUnary => ParseTerm(nonUnary.Term),
             _ => throw errorHelper.UnknownVariant("mult expression", expression.GetType())
         };
@@ -198,9 +198,9 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return term switch
         {
-            OLangGrammar.ParseTree.Term.BoolLiteral boolLiteral => new BoolLiteral(boolLiteral.Value.Value),
-            OLangGrammar.ParseTree.Term.IntLiteral intLiteral => new IntLiteral(intLiteral.Value.Value),
-            OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral(floatLiteral.Value.Value),
+            OLangGrammar.ParseTree.Term.BoolLiteral boolLiteral => new BoolLiteral(boolLiteral.Value.Value) { Span = boolLiteral.Span },
+            OLangGrammar.ParseTree.Term.IntLiteral intLiteral => new IntLiteral(intLiteral.Value.Value) { Span = intLiteral.Span },
+            OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral(floatLiteral.Value.Value) { Span = floatLiteral.Span },
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)),
 
@@ -212,9 +212,9 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return type switch
         {
-            BoolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool),
-            IntType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int),
-            FloatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float),
+            BoolType boolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool) { Span = boolType.Span },
+            IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int) { Span = intType.Span },
+            FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float) { Span = floatType.Span },
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }
@@ -248,7 +248,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     protected Parameter ParseParameter(OLangGrammar.ParseTree.ParameterList.Parameter parameter)
     {
-        return new Parameter(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type));
+        return new Parameter(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type)) { Span = parameter.Span };
     }
 
     protected FunctionInvocation ParseFunctionInvocation(IFunctionInvocation functionInvocation)
@@ -269,7 +269,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
                 throw errorHelper.UnknownVariant("function invocation", functionInvocation.GetType());
         }
 
-        return new FunctionInvocation(ParseIdentifier(identifier), arguments);
+        return new FunctionInvocation(ParseIdentifier(identifier), arguments) { Span = functionInvocation.Span };
     }
     
     protected List<IExpression> ParseArgumentList(IArgumentList argumentList)
