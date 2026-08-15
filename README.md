@@ -13,7 +13,7 @@ $$
 &\mid \mathrm{ident} [\mathrm{AssignmentOperator}] [\mathrm{Expression}]; \\
 &\mid [\mathrm{Scope}] \\
 &\mid \text{if}\ [\mathrm{Expression}]\ [\mathrm{Scope}]\ \text{else}\ [\mathrm{Scope}] \\
-&\mid \text{if}\ [\mathrm{Expression}]\ [\mathrm{Scope}]\ \\
+&\mid \text{if}\ [\mathrm{Expression}]\ [\mathrm{Scope}] \\
 &\mid \text{while}\ [\mathrm{Expression}]\ [\mathrm{Scope}] \\
 &\mid \text{for}\ \mathrm{ident}\ \text{in}\ [\mathrm{Expression}]..[\mathrm{Expression}]\ [\mathrm{Scope}] \\
 &\mid [\mathrm{Type}]\ \mathrm{ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
@@ -35,16 +35,12 @@ $$
 &\mid \text{-=} \\
 &\mid \text{*=} \\
 &\mid \text{/=} \\
-[\mathrm{Scope}] &\to { [\mathrm{StmtList}] \\} \\
+[\mathrm{Scope}]
+&\to \{ [\mathrm{StmtList}] \} \\
 [\mathrm{Type}]
 &\to \text{int} \\
 &\mid \text{bool} \\
-&\mid \text{float}
-\end{aligned}
-$$
-
-$$
-\begin{aligned} \\
+&\mid \text{float} \\
 [\mathrm{Expression}]
 &\to [\mathrm{Expression}] \text{||} [\mathrm{AndExpression}] \\
 &\mid [\mathrm{AndExpression}] \\
