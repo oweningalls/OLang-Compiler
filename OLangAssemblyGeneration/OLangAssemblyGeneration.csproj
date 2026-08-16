@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>AssemblyGeneration</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ErrorHelper\ErrorHelper.csproj" />
+      <ProjectReference Include="..\OLangAst\OLangAst.csproj" />
+      <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
+    </ItemGroup>
+
+</Project>

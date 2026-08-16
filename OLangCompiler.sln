@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parser", "Parser\Parser.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangTypeChecking", "OLangTypeChecking\OLangTypeChecking.csproj", "{5AA26E8F-B328-4317-8BE1-912D14DB87DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangAssemblyGeneration", "OLangAssemblyGeneration\OLangAssemblyGeneration.csproj", "{231AEECD-C7FE-473F-BD8C-58F3338407A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,5 +74,9 @@ Global
 		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{231AEECD-C7FE-473F-BD8C-58F3338407A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{231AEECD-C7FE-473F-BD8C-58F3338407A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{231AEECD-C7FE-473F-BD8C-58F3338407A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{231AEECD-C7FE-473F-BD8C-58F3338407A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

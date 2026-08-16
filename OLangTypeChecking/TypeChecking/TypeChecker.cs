@@ -106,7 +106,8 @@ public class TypeChecker
             case FunctionDeclaration functionDeclaration:
                 CheckFunctionDeclarationTypes(functionDeclaration);
                 break;
-            case FunctionInvocation:
+            case FunctionInvocation invocation:
+                // TODO: validate arguments match parameters
                 break;
             case Return returnStatement:
                 if (!_isInFunction)
@@ -318,6 +319,7 @@ public class TypeChecker
     
     private PrimitiveVariableTypeEnum? MarkAndCheckInvocation(FunctionInvocation invocation)
     {
+        // TODO: validate arguments match parameters
         if (!_functionTypeStack.ContainsKey(invocation.Identifier))
         {
             throw _errorHelper.ShowErrorMessage($"Unknown function: {invocation.Identifier}", invocation.Span);

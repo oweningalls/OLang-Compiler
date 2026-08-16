@@ -14,6 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\OLangAssemblyGeneration\OLangAssemblyGeneration.csproj" />
       <ProjectReference Include="..\OLangAst\OLangAst.csproj" />
       <ProjectReference Include="..\OLangGrammar\OLangGrammar.csproj" />
       <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />

@@ -295,7 +295,11 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
         if (argumentList is ExpressionArgumentList singleParameter)
         {
-            return [ParseExpression(singleParameter.Expression)];
+            parameters.Add(ParseExpression(singleParameter.Expression));
+        }
+        else
+        {
+            throw errorHelper.UnknownVariant("argument list", argumentList.GetType());
         }
 
         return parameters;

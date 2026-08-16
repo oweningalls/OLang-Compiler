@@ -798,8 +798,7 @@ public class CompilerTests
         var exitCode = values.Item2;
         
         CompileAndExecuteProgram(program);
-        // TODO: uncomment once generation is fixed
-        // Assert.That(CompileAndExecuteProgram(program), Is.EqualTo(exitCode));
+        Assert.That(CompileAndExecuteProgram(program), Is.EqualTo(exitCode));
     }
 
     [TestCase("let a = a;")] // a hasn't been declared yet
@@ -913,9 +912,6 @@ public class CompilerTests
     private int CompileAndExecuteProgram(string program)
     {
         var assembly = OLangCompiler.OLangCompiler.GenerateAssembly(program);
-
-        return 0;
-        // TODO: uncomment once generation is fixed
         
         var outputFile = "test.asm";
         File.WriteAllText(outputFile, assembly);

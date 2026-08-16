@@ -1,5 +1,5 @@
-﻿using OLangAst;
-using OLangCompiler.Generation;
+﻿using AssemblyGeneration.Generation;
+using OLangAst;
 using OLangGrammar.ParseTree.Prog;
 using OLangLexing;
 using OLangTypeChecking.TypeChecking;
@@ -46,8 +46,8 @@ public static class OLangCompiler
         var typeChecker = new TypeChecker();
         typeChecker.CheckTypes(ast, errorHelper);
 
-        var generator = new AssemblyGenerator();
-        var assembly = generator.GenerateProgram(programNode, errorHelper);
+        var generator = new X86AssemblyGenerator();
+        var assembly = generator.GenerateProgram(ast, errorHelper);
 
         return assembly;
     }
