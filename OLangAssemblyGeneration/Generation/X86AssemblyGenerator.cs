@@ -22,23 +22,20 @@ public class X86AssemblyGenerator
         _functionTracker = new ScopeTracker<string, string>();
         _functions = new List<StringBuilder>();
 
+        var start = "_start";
+        
         _output.Append("""
                        global _start
 
                        section .text
-                       _start:
 
                        """);
+        WriteLabel(start);
 
         GenerateStatements(program.Statements);
 
-        _output!.Append("""
-                            mov rdi, 0
-                            mov rax, 60
-                            syscall
-
-
-                        """);
+        WriteExit(0);
+        
         foreach (var function in _functions)
         {
             _output.Append(function);
@@ -107,12 +104,42 @@ public class X86AssemblyGenerator
      private void GenerateExitStatement(ExitStatement exit)
      {
          GenerateExpression(exit.Expression);
-         _output!.Append($"""
-                              {GetPopStatement("rdi")}
-                              mov rax, 60
-                              syscall
+         WriteExit();
+     }
 
-                          """);
+     private void WriteInstruction(string instruction)
+     {
+         _output!.Append($"    {instruction}\n");
+     }
+     
+     private void WritePop(string register)
+     {
+         WriteInstruction(GetPopStatement(register));
+     }
+     
+     private void WritePush(string register)
+     {
+         WriteInstruction(GetPushStatement(register));
+     }
+
+
+     private void WriteLabel(string label)
+     {
+         _output!.Append($"{label}:\n");
+     }
+
+     private void WriteExit(int? value = null)
+     {
+         if (value != null)
+         {
+             WriteInstruction($"mov rdi, {value}");
+         }
+         else
+         {
+             WritePop("rdi");
+         }
+         WriteInstruction("mov rax, 60");
+         WriteInstruction("syscall");
      }
 
      private void GenerateVarDeclarationStatement(VariableDeclarationStatement declaration)
@@ -124,11 +151,8 @@ public class X86AssemblyGenerator
      private void GenerateAssignmentStatement(VariableAssignment assignment)
      {
          GenerateExpression(assignment.Value);
-         _output!.Append($"""
-                              {GetPopStatement("rax")}
-                              mov {GetVariableLocation(assignment.Identifier)}, rax
-
-                          """);
+         WritePop("rax");
+         WriteInstruction($"mov {GetVariableLocation(assignment.Identifier)}, rax");
      }
 
      private void GenerateScopeStatement(Scope scopeStatement)
@@ -136,30 +160,29 @@ public class X86AssemblyGenerator
          GenerateScope(scopeStatement);
      }
 
-     private void GenerateIfStatement(IfStatement @if)
+     private void GenerateIfStatement(IfStatement ifStatement)
      {
-         GenerateExpression(@if.Predicate);
+         GenerateExpression(ifStatement.Predicate);
          var label = GetLabel("ifEnd");
-         _output!.Append($"""
-                              {GetPopStatement("rax")}
-                              cmp rax, 0
-                              je {label}
-
-                          """);
-         GenerateScope(@if.Body);
-         if (@if.Else is {} elseScope)
+         
+         WritePop("rax");
+         WriteInstruction("cmp rax, 0");
+         WriteInstruction($"je {label}");
+         
+         GenerateScope(ifStatement.Body);
+         if (ifStatement.Else is {} elseScope)
          {
              var elseEndLabel = GetLabel("elseEnd");
-             _output.Append($"    jmp {elseEndLabel}\n");
+             WriteInstruction($"jmp {elseEndLabel}");
 
-             _output.Append($"{label}:\n");
+             WriteLabel(label);
              GenerateScope(elseScope);
 
-             _output.Append($"{elseEndLabel}:\n");
+             WriteLabel(elseEndLabel);
          }
          else
          {
-             _output.Append($"{label}:\n");
+             WriteLabel(label);
          }
      }
 
@@ -168,21 +191,17 @@ public class X86AssemblyGenerator
          var whileBegin = GetLabel("whileBegin");
          var whileEnd = GetLabel("whileEnd");
 
-         _output!.Append($"{whileBegin}:\n");
+         WriteLabel(whileBegin);
 
          GenerateExpression(@while.Predicate);
-         _output.Append($"""
-                             {GetPopStatement("rax")}
-                             cmp rax, 0
-                             je {whileEnd}
-
-                         """);
+         WritePop("rax");
+         WriteInstruction("cmp rax, 0");
+         WriteInstruction($"je {whileEnd}");
+         
          GenerateScope(@while.Body);
-         _output.Append($"""
-                             jmp {whileBegin}
-                         {whileEnd}:
-
-                         """);
+         
+         WriteInstruction($"jmp {whileBegin}");
+         WriteLabel(whileEnd);
      }
 
      private void GenerateForStatement(ForLoop @for)
@@ -204,7 +223,7 @@ public class X86AssemblyGenerator
 
          GenerateWhileStatement(whileStatement);
          var toPop = EndScope();
-         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+         WriteInstruction($"add rsp, {toPop.Count * 8}");
          _stackOffset -= toPop.Count;
      }
 
@@ -225,7 +244,7 @@ public class X86AssemblyGenerator
          _output = functionOutput;
          _functions.Add(functionOutput);
 
-         _output.Append($"{label}:\n");
+         WriteLabel(label);
 
          // save callee-saved registers
          var registersToSave = new[] { "rbx", "rbp", "r12", "r13", "r14", "r15" };
@@ -234,9 +253,9 @@ public class X86AssemblyGenerator
 
          var removeLocalVars = GenerateFunctionScope(functionDeclaration.Scope, functionDeclaration.Parameters);
 
+         WriteLabel(returnLabel);
          // restore callee-saved registers
          _output.Append($"""
-                         {returnLabel}:
                              {removeLocalVars}
                          {MakeReversePops(registersToSave)}    ret
                          """);
@@ -273,7 +292,7 @@ public class X86AssemblyGenerator
 
              GenerateExpression(argument);
 
-             _output!.Append($"    {GetPopStatement(argRegisters[i])}\n");
+             WritePop(argRegisters[i]);
          }
 
          var pops = MakeReversePops("rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11");
@@ -284,10 +303,8 @@ public class X86AssemblyGenerator
          }
 
          var label = _functionTracker.GetValue(funcName);
-         _output.Append($"""
-                             call {label}
-                         {pops}
-                         """);
+         WriteInstruction($"call {label}");
+         _output.Append($"{pops}");
          _output.Append(returnPushes);
      }
 
@@ -319,7 +336,7 @@ public class X86AssemblyGenerator
          GenerateStatements(scopeNode.Statements);
 
          var toPop = EndScope();
-         _output!.Append($"    add rsp, {toPop.Count * 8}\n");
+         WriteInstruction($"add rsp, {toPop.Count * 8}");
          _stackOffset -= toPop.Count;
      }
 
@@ -338,7 +355,7 @@ public class X86AssemblyGenerator
          for (var i = 0; i < parameterList.Count; i++)
          {
              var identifier = parameterList[i].Identifier;
-             _output!.Append($"    {GetPushStatement(argRegisters[i])}\n");
+             WritePush(argRegisters[i]);
              SaveVariableLocation(identifier);
          }
 
@@ -362,11 +379,8 @@ public class X86AssemblyGenerator
      {
          GenerateExpression(returnValue);
 
-         _output!.Append($"""
-                              {GetPopStatement("rax")}
-                              jmp {_currentFunctionReturnLabel}
-
-                          """);
+         WritePop("rax");
+         WriteInstruction($"jmp {_currentFunctionReturnLabel}");
      }
 
      private void GenerateExpression(IExpression expression)
@@ -375,117 +389,84 @@ public class X86AssemblyGenerator
          {
              case Not notExpression:
                  GenerateExpression(notExpression.Value);
-                 _output!.Append($"""
-                                      {GetPopStatement("rdi")}
-                                      cmp rdi, 1
-                                      setne al
-                                      movzx rax, al
-                                      {GetPushStatement("rax")}
-
-                                  """);
+                 WritePop("rdi");
+                 WriteInstruction("cmp rdi, 1");
+                 WriteInstruction("setne al");
+                 WriteInstruction("movzx rax, al");
+                 WritePush("rax");
                  break;
              case BaseBinaryExpression binaryExpressionNode:
                  GenerateExpression(binaryExpressionNode.Lhs);
                  GenerateExpression(binaryExpressionNode.Rhs);
 
-                 _output!.Append($"""
-                                      {GetPopStatement("rdi")}
-                                      {GetPopStatement("rax")}
-
-                                  """);
+                 WritePop("rdi");
+                 WritePop("rax");
                  switch (binaryExpressionNode)
                  {
                      case Add:
-                         _output!.Append("    add rax, rdi\n");
+                         WriteInstruction("add rax, rdi");
                          break;
                      case Subtract:
-                         _output!.Append("    sub rax, rdi\n");
+                         WriteInstruction("sub rax, rdi");
                          break;
                      case Multiply:
-                         _output!.Append("    mul rdi\n");
+                         WriteInstruction("mul rdi");
                          break;
                      case Divide:
-                         _output!.Append("    cqo\n"); // extends RAX into RDX
-                         _output!.Append("    idiv rdi\n"); // does 128 signed division of RDX:RAX / RDI
+                         WriteInstruction("cqo"); // extends RAX into RDX
+                         WriteInstruction("idiv rdi"); // does 128 signed division of RDX:RAX / RDI
                          break;
                      case AreEqual:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            sete al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("sete al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case NotEqual:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            setne al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("setne al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case GreaterThan:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            setg al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("setg al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case GreaterOrEqual:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            setge al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("setge al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case LessThan:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            setl al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("setl al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case LessThanOrEqual:
-                         _output.Append("""
-                                            cmp rax, rdi
-                                            setle al
-                                            movzx rax, al
-
-                                        """);
+                         WriteInstruction("cmp rax, rdi");
+                         WriteInstruction("setle al");
+                         WriteInstruction("movzx rax, al");
                          break;
                      case And:
-                         _output!.Append("    and rax, rdi\n");
+                         WriteInstruction("and rax, rdi");
                          break;
                      case Or:
-                         _output!.Append("    or rax, rdi\n");
+                         WriteInstruction("or rax, rdi");
                          break;
                      default:
                          throw _errorHelper.UnknownVariant("expression", expression.GetType());
                  }
 
-                 _output.Append($"    {GetPushStatement("rax")}\n");
+                 WritePush("rax");
 
                  break;
              case IntLiteral intLiteralTerm:
-                 _output!.Append($"""
-                                      {GetPushStatement(intLiteralTerm.Value.ToString())}
-
-                                  """);
+                 WritePush(intLiteralTerm.Value.ToString());
                  break;
              case BoolLiteral boolLiteralTerm:
-                 _output!.Append($"""
-                                      {GetPushStatement((boolLiteralTerm.Value ? 1 : 0).ToString())}
-
-                                  """);
+                 WritePush((boolLiteralTerm.Value ? 1 : 0).ToString());
                  break;
              case VariableAccess identifierTerm:
-                 _output!.Append($"""
-                                      {GetPushStatement($"QWORD {GetVariableLocation(identifierTerm.Identifier)}")}
-
-                                  """);
+                 WritePush($"QWORD {GetVariableLocation(identifierTerm.Identifier)}");
                  break;
              case FunctionInvocation invocationTerm:
                  GenerateInvocation(invocationTerm, true);
@@ -502,12 +483,9 @@ public class X86AssemblyGenerator
      {
          GenerateExpression(negate.Value);
          var reg = "rax";
-         _output!.Append($"""
-                          {GetPopStatement(reg)}
-                          neg {reg}
-                          {GetPushStatement(reg)}
-                          
-                          """);
+         WritePop(reg);
+         WriteInstruction($"neg {reg}");
+         WritePush(reg);
      }
 
      private string GetPushStatement(string value)

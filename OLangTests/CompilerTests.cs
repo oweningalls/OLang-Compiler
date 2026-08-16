@@ -912,6 +912,7 @@ public class CompilerTests
     private int CompileAndExecuteProgram(string program)
     {
         var assembly = OLangCompiler.OLangCompiler.GenerateAssembly(program);
+        TestContext.Out.WriteLine(assembly);
         
         var outputFile = "test.asm";
         File.WriteAllText(outputFile, assembly);
