@@ -1,37 +1,29 @@
 ﻿using ErrorHelper;
-using OLangCompiler.TypeChecking.Types;
+using OLangAst;
+using OLangAst.Statements;
 using OLangCompiler.Utility;
-using OLangGrammar.ParseTree.Prog;
+using OLangTypeChecking.TypeChecking.Types;
 
-namespace OLangCompiler.TypeChecking;
+namespace OLangTypeChecking.TypeChecking;
 
 public class TypeChecker
 {
     private IErrorHelper _errorHelper;
 
-    public void CheckTypes(ProgramNode program, IErrorHelper errorHelper)
+    public void CheckTypes(Program program, IErrorHelper errorHelper)
     {
         // _errorHelper = errorHelper;
         // _variableTypeStack = new ScopeTracker<string, ExpressionType>();
         // _functionTypeStack = new ScopeTracker<string, ExpressionType?>();
         //
-        // CheckStmtListType(program.StmtList);
+        // CheckStmtListType(program.Statements);
     }
-    //
-    // private void CheckStmtListType(IStmtListNode stmtList)
+    
+    // private void CheckStmtListType(List<IStatement> stmtList)
     // {
-    //     switch (stmtList)
+    //     foreach (var statement in stmtList)
     //     {
-    //         case EmptyStmtList:
-    //             break;
-    //         case StmtListWithStatement stmtListWithStatement:
-    //             CheckStatementType(stmtListWithStatement.Statement);
-    //             CheckStmtListType(stmtListWithStatement.StmtList);
-    //             break;
-    //         default:
-    //         {
-    //             throw _errorHelper.UnknownVariant("statement list", stmtList.GetType());
-    //         }
+    //         CheckStatementType(statement);
     //     }
     // }
     //

@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangGrammar", "OLangGramma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parser", "Parser\Parser.csproj", "{D2C86C24-4804-4057-8296-7F5E63CEE699}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OLangTypeChecking", "OLangTypeChecking\OLangTypeChecking.csproj", "{5AA26E8F-B328-4317-8BE1-912D14DB87DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{D2C86C24-4804-4057-8296-7F5E63CEE699}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2C86C24-4804-4057-8296-7F5E63CEE699}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2C86C24-4804-4057-8296-7F5E63CEE699}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AA26E8F-B328-4317-8BE1-912D14DB87DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

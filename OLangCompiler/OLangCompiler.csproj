@@ -10,12 +10,15 @@
 
     <ItemGroup>
       <Folder Include="my_obj\" />
+      <Folder Include="Utility\" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\OLangAst\OLangAst.csproj" />
       <ProjectReference Include="..\OLangGrammar\OLangGrammar.csproj" />
       <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
       <ProjectReference Include="..\OLangTokenizer\OLangTokenizer.csproj" />
+      <ProjectReference Include="..\OLangTypeChecking\OLangTypeChecking.csproj" />
       <ProjectReference Include="..\Parser\Parser.csproj" />
     </ItemGroup>
 </Project>

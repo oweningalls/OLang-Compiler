@@ -1,7 +1,8 @@
-﻿using OLangCompiler.Generation;
-using OLangCompiler.TypeChecking;
+﻿using OLangAst;
+using OLangCompiler.Generation;
 using OLangGrammar.ParseTree.Prog;
 using OLangLexing;
+using OLangTypeChecking.TypeChecking;
 using Parser.Parser.BottomUpParser;
 using Parser.Parser.BottomUpParser.Lr1;
 
@@ -40,8 +41,10 @@ public static class OLangCompiler
         var parseTable = new Lr1ParseTable(new OLangGrammar.OLangGrammar(), errorHelper);
         var programNode = (ProgramNode)parser.ParseProgram(parseTable, tokens, errorHelper);
 
+        var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
+
         var typeChecker = new TypeChecker();
-        typeChecker.CheckTypes(programNode, errorHelper);
+        typeChecker.CheckTypes(ast, errorHelper);
 
         var generator = new AssemblyGenerator();
         var assembly = generator.GenerateProgram(programNode, errorHelper);
