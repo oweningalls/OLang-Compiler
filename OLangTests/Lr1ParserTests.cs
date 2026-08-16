@@ -1,6 +1,4 @@
 ﻿using Lexing;
-using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.BottomUpParser.Lr1;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
@@ -20,6 +18,7 @@ using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangLexing;
 using OLangTokens.Tokens;
+using Parser.Parser.BottomUpParser.Lr1;
 
 namespace OLangTests;
 

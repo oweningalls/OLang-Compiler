@@ -16,5 +16,6 @@
       <ProjectReference Include="..\OLangGrammar\OLangGrammar.csproj" />
       <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
       <ProjectReference Include="..\OLangTokenizer\OLangTokenizer.csproj" />
+      <ProjectReference Include="..\Parser\Parser.csproj" />
     </ItemGroup>
 </Project>

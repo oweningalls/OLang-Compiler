@@ -1,4 +1,6 @@
 ﻿using ErrorHelper;
+using OLangCompiler.TypeChecking.Types;
+using OLangCompiler.Utility;
 using OLangGrammar.ParseTree.Prog;
 
 namespace OLangCompiler.TypeChecking;
@@ -28,7 +30,7 @@ public class TypeChecker
     //             break;
     //         default:
     //         {
-    //             throw _errorHelper.UnknownVariant("statment list", stmtList.GetType());
+    //             throw _errorHelper.UnknownVariant("statement list", stmtList.GetType());
     //         }
     //     }
     // }

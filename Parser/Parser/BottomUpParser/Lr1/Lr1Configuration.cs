@@ -1,6 +1,6 @@
 ﻿using Lexing;
 
-namespace OLangCompiler.Parser.BottomUpParser.Lr1;
+namespace Parser.Parser.BottomUpParser.Lr1;
 
 public class Lr1Configuration
 {

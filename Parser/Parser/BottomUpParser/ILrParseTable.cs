@@ -1,7 +1,7 @@
 ﻿using Lexing;
-using OLangCompiler.Parser.BottomUpParser.ParseActions;
+using Parser.Parser.BottomUpParser.ParseActions;
 
-namespace OLangCompiler.Parser.BottomUpParser;
+namespace Parser.Parser.BottomUpParser;
 
 public interface ILrParseTable
 {

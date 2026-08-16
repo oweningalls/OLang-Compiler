@@ -1,8 +1,7 @@
 ﻿using ErrorHelper;
 using Lexing;
-using OLangCompiler.Parser.BottomUpParser;
 
-namespace OLangCompiler.Parser;
+namespace Parser.Parser;
 
 public interface IParser
 {

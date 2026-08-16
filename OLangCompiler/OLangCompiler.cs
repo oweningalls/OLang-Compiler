@@ -1,9 +1,9 @@
 ﻿using OLangCompiler.Generation;
-using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.BottomUpParser.Lr1;
 using OLangCompiler.TypeChecking;
 using OLangGrammar.ParseTree.Prog;
 using OLangLexing;
+using Parser.Parser.BottomUpParser;
+using Parser.Parser.BottomUpParser.Lr1;
 
 namespace OLangCompiler;
 

@@ -1,4 +1,4 @@
-﻿namespace OLangCompiler.Parser.BottomUpParser.ParseActions;
+﻿namespace Parser.Parser.BottomUpParser.ParseActions;
 
 public class Shift(int newState) : IParseAction
 {

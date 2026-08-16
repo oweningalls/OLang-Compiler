@@ -1,8 +1,8 @@
 ﻿using ErrorHelper;
 using Lexing;
-using OLangCompiler.Parser.BottomUpParser.ParseActions;
+using Parser.Parser.BottomUpParser.ParseActions;
 
-namespace OLangCompiler.Parser.BottomUpParser.Lr0;
+namespace Parser.Parser.BottomUpParser.Lr0;
 
 public class Lr0ParseTable : ILrParseTable
 {

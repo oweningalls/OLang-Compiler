@@ -1,7 +1,6 @@
 ﻿using Lexing;
-using OLangCompiler.Parser.BottomUpParser;
-using OLangCompiler.Parser.BottomUpParser.Lr0;
 using OLangTokens.Tokens;
+using Parser.Parser.BottomUpParser.Lr0;
 
 namespace OLangTests;
 

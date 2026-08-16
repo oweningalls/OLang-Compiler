@@ -1,4 +1,4 @@
-﻿namespace OLangCompiler.Parser.BottomUpParser;
+﻿namespace Parser.Parser.BottomUpParser;
 
 public class MethodCacher
 {
