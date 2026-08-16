@@ -1,7 +1,6 @@
 ﻿using Lexing;
-using OLangAst.Miscellaneous;
 
-namespace OLangAst.Statements;
+namespace OLangAst.Miscellaneous;
 
 public class Parameter(string identifier, IVariableType type) : IAstNode
 {

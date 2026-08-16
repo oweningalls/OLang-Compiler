@@ -42,7 +42,7 @@ public class LrParser
     
     private void SetInput(List<BaseToken> tokens)
     {
-        var reverseTokens = tokens.Append(new EOI()).AsEnumerable().ToList();
+        var reverseTokens = tokens.Append(new EOI() { Span = new SourceSpan(tokens.Last().Span.Start + tokens.Last().Span.Length, 0) }).AsEnumerable().ToList();
         reverseTokens.Reverse();
         _input = new Stack<IGrammarElement>(reverseTokens);
     }

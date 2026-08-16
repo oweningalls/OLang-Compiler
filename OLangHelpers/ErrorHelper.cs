@@ -14,46 +14,31 @@ public class ErrorHelper(SourceReader source) : IErrorHelper
         return new Exception($"Unknown {name} type: {type}");
     }
 
-    public Exception ExpectedToken<T>(BaseToken token) where T : BaseToken
+    public Exception ShowErrorMessage(string message, SourceSpan span)
     {
-        return ShowErrorMessageAtToken($"Expected {NameOfTokenType<T>()}.", token);
-    }
-    
-    public Exception ExpectedValue(string expectedName, BaseToken token)
-    {
-        return ShowErrorMessageAtToken($"Expected {expectedName}", token);
-    }
-
-    public Exception ShowErrorMessageAtToken(string message, BaseToken token)
-    {
-        var quotedCode = GetInputLine(token);
-        var (line, relativeCharacterNumber) = _source.GetLineAndRelativeCharacterNumber(token.Span);
+        var quotedCode = GetInputLine(span).TrimEnd();
+        var (line, relativeCharacterNumber) = _source.GetLineAndRelativeCharacterNumber(span);
         
-        var indicator = GetIndicator(relativeCharacterNumber + 1, relativeCharacterNumber + token.Span.Length + 1); // this will break if a token spans a newline
+        var indicator = GetIndicator(relativeCharacterNumber + 1, relativeCharacterNumber + span.Length + 1); // this will break if a token spans a newline
         var errorMessage = $"{message} on line {line + 1}, character {relativeCharacterNumber + 1}\n`{quotedCode}`\n{indicator}";
         return new Exception(errorMessage);
     }
 
     private string GetIndicator(int pointerStart, int pointerEnd)
     {
-        return $"{new string(' ', pointerStart)}{new string('^', pointerEnd - pointerStart + 1)}";
+        return $"{new string(' ', pointerStart)}{new string('^', pointerEnd - pointerStart)}";
     }
 
     public Exception ShowErrorMessageAtElement(string message, IGrammarElement element)
     {
         return element switch
         {
-            INode node => ShowErrorMessageAtNode(message, node),
-            BaseToken token => ShowErrorMessageAtToken(message, token),
+            INode node => ShowErrorMessage(message, node.Span),
+            BaseToken token => ShowErrorMessage(message, token.Span),
             _ => throw UnknownVariant("grammar element", element.GetType())
         };
     }
     
-    public Exception ShowErrorMessageAtNode(string message, INode node)
-    {
-        return new Exception(message);
-    }
-
     public Exception UnexpectedChar(char c)
     {
         return new Exception($"Unexpected character: `{c}`");
@@ -64,9 +49,9 @@ public class ErrorHelper(SourceReader source) : IErrorHelper
         return new Exception($"Unexpected end of input after `{c}`");
     }
 
-    private string GetInputLine(BaseToken token)
+    private string GetInputLine(SourceSpan span)
     {
-        var (line, _) = _source.GetLineAndRelativeCharacterNumber(token.Span);
+        var (line, _) = _source.GetLineAndRelativeCharacterNumber(span);
         return _source.GetLine(line);
     }
 

@@ -1,4 +1,5 @@
 ﻿using ErrorHelper;
+using Lexing;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -30,7 +31,7 @@ using IntLiteral = OLangAst.Expressions.IntLiteral;
 using IStatement = OLangAst.Statements.IStatement;
 using Not = OLangAst.Expressions.Not;
 using NotEqual = OLangAst.Expressions.NotEqual;
-using Parameter = OLangAst.Statements.Parameter;
+using Parameter = OLangAst.Miscellaneous.Parameter;
 using Return = OLangAst.Statements.Return;
 
 namespace OLangAst;
@@ -40,7 +41,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     public Program ParseProgram(ProgramNode programNode)
     {
         var statements = ParseStatementList(programNode.StmtList);
-        return new Program(statements);
+        return new Program(statements) { Span = SourceSpan.CombineSpans(statements.Select(x => x.Span).ToArray()) };
     }
 
     protected List<IStatement> ParseStatementList(IStmtListNode statementList)
@@ -77,10 +78,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             Exit exit => new ExitStatement(ParseExpression(exit.Expression)) { Span = exit.Span },
             For forStatement => new ForLoop(ParseIdentifier(forStatement.Identifier), ParseExpression(forStatement.Start), ParseExpression(forStatement.End), ParseScope(forStatement.Scope)) { Span = forStatement.Span },
             While whileStatement => new WhileLoop(ParseExpression(whileStatement.Condition), ParseScope(whileStatement.Scope)) { Span = whileStatement.Span },
-            FunctionDeclarationWithParameters functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters)) { Span = functionDeclaration.Span },
-            VoidFunctionDeclarationWithParameters voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters)) { Span = voidFunctionDeclaration.Span },
-            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), []) { Span = functionDeclaration.Span },
-            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), []) { Span = voidFunctionDeclaration.Span },
+            FunctionDeclarationWithParameters functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), ParseParameterList(functionDeclaration.Parameters), ParseScope(functionDeclaration.Scope)) { Span = functionDeclaration.Span },
+            VoidFunctionDeclarationWithParameters voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), ParseParameterList(voidFunctionDeclaration.Parameters), ParseScope(voidFunctionDeclaration.Scope)) { Span = voidFunctionDeclaration.Span },
+            OLangGrammar.ParseTree.Stmt.FunctionDeclaration functionDeclaration => new FunctionDeclaration(ParseType(functionDeclaration.Type), ParseIdentifier(functionDeclaration.Identifier), [], ParseScope(functionDeclaration.Scope)) { Span = functionDeclaration.Span },
+            VoidFunctionDeclaration voidFunctionDeclaration => new FunctionDeclaration(null, ParseIdentifier(voidFunctionDeclaration.Identifier), [], ParseScope(voidFunctionDeclaration.Scope)) { Span = voidFunctionDeclaration.Span },
             If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), null) { Span = ifStatement.Span },
             IfWithElse ifStatementWithElse => new IfStatement(ParseExpression(ifStatementWithElse.Condition), ParseScope(ifStatementWithElse.Scope), ParseScope(ifStatementWithElse.ElseBlock)) { Span = ifStatementWithElse.Span },
             Invocation invocation => ParseFunctionInvocation(invocation.InvocationNode),
@@ -98,12 +99,14 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         var value = assignment.Operator switch
         {
             Equals _ => parsedExpression,
-            PlusEquals => new Add(new VariableAccess(identifier), parsedExpression),
-            MinusEquals => new Subtract(new VariableAccess(identifier), parsedExpression),
-            TimesEquals => new Multiply(new VariableAccess(identifier), parsedExpression),
-            DivideEquals => new Divide(new VariableAccess(identifier), parsedExpression),
+            PlusEquals => new Add(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
+            MinusEquals => new Subtract(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
+            TimesEquals => new Multiply(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
+            DivideEquals => new Divide(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
             _ => throw errorHelper.UnknownVariant("assignment operator", assignment.Operator.GetType())
         };
+
+        value.Span = assignment.Expression.Span;
         return new VariableAssignment(ParseIdentifier(assignment.Identifier), value) { Span = assignment.Span };
     }
 
@@ -202,8 +205,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             OLangGrammar.ParseTree.Term.IntLiteral intLiteral => new IntLiteral(intLiteral.Value.Value) { Span = intLiteral.Span },
             OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral(floatLiteral.Value.Value) { Span = floatLiteral.Span },
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
-            IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)),
-
+            IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
+            Paren paren => ParseExpression(paren.Expression),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
@@ -240,7 +243,11 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
         if (parameterList is OLangGrammar.ParseTree.ParameterList.Parameter singleParameter)
         {
-            return [ParseParameter(singleParameter)];
+            parameters.Add(ParseParameter(singleParameter));
+        }
+        else
+        {
+            throw errorHelper.UnknownVariant("parameter", parameterList.GetType());
         }
 
         return parameters;

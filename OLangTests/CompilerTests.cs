@@ -848,6 +848,7 @@ public class CompilerTests
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);
         var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program));
         
+        TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
     }
 
