@@ -8,7 +8,7 @@ using OLangCompiler.Utility;
 
 namespace AssemblyGeneration.Generation;
 
-public class X86AssemblyGenerator
+public class X86AssemblyGenerator : IGenerator
 {
     private IErrorHelper _errorHelper;
 

@@ -1,10 +1,5 @@
 ﻿using AssemblyGeneration.Generation;
-using OLangAst;
-using OLangGrammar.ParseTree.Prog;
 using OLangLexing;
-using OLangTypeChecking.TypeChecking;
-using Parser.Parser.BottomUpParser;
-using Parser.Parser.BottomUpParser.Lr1;
 
 namespace OLangCompiler;
 
@@ -12,10 +7,10 @@ public static class OLangCompiler
 {
     public static void Main()
     {
-        CompileFile("test.ol");
+        CompileFile("test.ol", CompileTargets.X86);
     }
     
-    public static void CompileFile(string fileName, string? outputFile = null)
+    public static void CompileFile(string fileName, CompileTargets target, string? outputFile = null)
     {
         if (!fileName.EndsWith(".ol"))
         {
@@ -23,32 +18,38 @@ public static class OLangCompiler
         }
 
         var baseName = fileName.Substring(0, fileName.Length - ".ol".Length);
-        outputFile ??= $"{baseName}.asm";
+        var extension = target switch
+        {
+            CompileTargets.X86 => "asm",
+            CompileTargets.Cil => "exe",
+            _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
+        };
+        
+        outputFile ??= $"{baseName}.{extension}";
         var contents = File.ReadAllText(fileName);
 
-        var assembly = GenerateAssembly(contents);
+        var assembly = GenerateAssembly(contents, target);
         File.WriteAllText(outputFile, assembly);
     }
 
-    public static string GenerateAssembly(string program)
+    public static string GenerateAssembly(string program, CompileTargets target)
     {
         var reader = new SourceReader(program);
         var errorHelper = new OLangHelpers.ErrorHelper(reader);
-        var tokenizer = new Tokenizer();
-        var tokens = tokenizer.Tokenize(program, errorHelper);
 
-        var parser = new LrParser();
-        var parseTable = new Lr1ParseTable(new OLangGrammar.OLangGrammar(), errorHelper);
-        var programNode = (ProgramNode)parser.ParseProgram(parseTable, tokens, errorHelper);
+        var generator = target switch
+        {
+            CompileTargets.X86 => new X86AssemblyGenerator(),
+            // CompileTargets.Cil => new CilGenerator(),
+            _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
+        };
 
-        var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
+        return new OLangFrontEnd().Compile(program, generator, errorHelper);
+    }
 
-        var typeChecker = new TypeChecker();
-        typeChecker.CheckTypes(ast, errorHelper);
-
-        var generator = new X86AssemblyGenerator();
-        var assembly = generator.GenerateProgram(ast, errorHelper);
-
-        return assembly;
+    public enum CompileTargets
+    {
+        X86,
+        Cil
     }
 }

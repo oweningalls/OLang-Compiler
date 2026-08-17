@@ -845,7 +845,7 @@ public class CompilerTests
     public void TestInvalidPrograms(string program)
     {
         // OLangCompiler.OLangCompiler.GenerateAssembly(program);
-        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program));
+        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, OLangCompiler.OLangCompiler.CompileTargets.X86));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
@@ -911,7 +911,7 @@ public class CompilerTests
 
     private int CompileAndExecuteProgram(string program)
     {
-        var assembly = OLangCompiler.OLangCompiler.GenerateAssembly(program);
+        var assembly = OLangCompiler.OLangCompiler.GenerateAssembly(program, OLangCompiler.OLangCompiler.CompileTargets.X86);
         TestContext.Out.WriteLine(assembly);
         
         var outputFile = "test.asm";
