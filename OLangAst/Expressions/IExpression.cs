@@ -1,3 +1,8 @@
-﻿namespace OLangAst.Expressions;
+﻿using OLangAst.Miscellaneous;
 
-public interface IExpression : IAstNode;
+namespace OLangAst.Expressions;
+
+public interface IExpression : IAstNode
+{
+    IVariableType? Type { get; set; }
+}

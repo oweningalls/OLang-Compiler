@@ -22,8 +22,8 @@ public class OLangFrontEnd : IOLangFrontEnd
 
         var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
 
-        var typeChecker = new TypeChecker();
-        typeChecker.CheckTypes(ast, errorHelper);
+        var typeChecker = new TypeChecker(errorHelper);
+        typeChecker.VisitProgram(ast);
         
         var assembly = generator.GenerateProgram(ast, errorHelper);
 

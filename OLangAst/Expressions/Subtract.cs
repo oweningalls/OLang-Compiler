@@ -1,3 +1,8 @@
-﻿namespace OLangAst.Expressions;
+﻿using OLangAst.Miscellaneous;
 
-public class Subtract(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs);
+namespace OLangAst.Expressions;
+
+public class Subtract(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs)
+{
+    public override IVariableType? Type { get; set; }
+}

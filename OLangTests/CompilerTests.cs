@@ -844,7 +844,6 @@ public class CompilerTests
     // [TestCase("float a = 1.01.312;")] // float can only have one decimal point
     public void TestInvalidPrograms(string program)
     {
-        // OLangCompiler.OLangCompiler.GenerateAssembly(program);
         var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, OLangCompiler.OLangCompiler.CompileTargets.X86));
         
         TestContext.Out.WriteLine(ex.Message);
