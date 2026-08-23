@@ -839,6 +839,12 @@ public class CompilerTests
                      """)] // modifying variable from outside loop
     [TestCase("int a() { return true; }")] // wrong return type
     [TestCase("let a = 1 / true;")] // can't divide by bool
+    [TestCase("void a() {} a(1);")] // a takes no parameters
+    [TestCase("void a(int first) {} a();")] // first parameter not passed
+    [TestCase("void a(int first, bool second) {} a(1);")] // second parameter not passed
+    [TestCase("void a(int first, bool second) {} a(true, 1);")] // parameters have incorrect types
+    [TestCase("void a() {} let b = a();")] // cannot assign return of void
+    [TestCase("void a() {} int b = a();")] // cannot assign return of void
     // TODO: uncomment once floats are implemented
     // [TestCase("int a = 1.1;")] // can't implicitly convert float to int
     // [TestCase("float a = 1.01.312;")] // float can only have one decimal point

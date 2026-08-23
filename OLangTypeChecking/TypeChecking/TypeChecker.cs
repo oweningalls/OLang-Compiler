@@ -5,6 +5,7 @@ using OLangAst.Expressions;
 using OLangAst.Statements;
 using OLangAst.Miscellaneous;
 using OLangCompiler.Utility;
+using OLangTypeChecking.TypeChecking.Types;
 
 namespace OLangTypeChecking.TypeChecking;
 
@@ -13,7 +14,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     public override Program VisitProgram(Program program)
     {
         _variableTypeStack = new ScopeTracker<string, PrimitiveVariableTypeEnum>();
-        _functionTypeStack = new ScopeTracker<string, PrimitiveVariableTypeEnum?>();
+        _functionTypeStack = new ScopeTracker<string, FunctionSignature>();
 
         return base.VisitProgram(program);
     }
@@ -32,9 +33,9 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         }
 
         var expressionType = GetExpressionType(returnStatement.Value);
-        if (expressionType != _currentFunctionType)
+        if (expressionType != _currentFunctionReturnType)
         {
-            throw ErrorHelper.ShowErrorMessage($"Function of type {_currentFunctionType.ToString()} cannot return expression of type {expressionType.ToString()}", returnStatement.Value.Span);
+            throw ErrorHelper.ShowErrorMessage($"Function of type {_currentFunctionReturnType.ToString()} cannot return expression of type {expressionType.ToString()}", returnStatement.Value.Span);
         }
 
         return returnStatement;
@@ -141,19 +142,15 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return declarationStatement;
     }
 
-    private PrimitiveVariableTypeEnum? GetTypeFromFunctionType(IVariableType? type)
+    private static FunctionSignature GetTypeFromFunctionDeclaration(FunctionDeclaration declaration)
     {
-        if (type is not PrimitiveVariableType primitiveType)
-        {
-            return null;
-        }
-    
-        return primitiveType.Type;
+        return new FunctionSignature(declaration.Type, declaration.Parameters.Select(x => x.Type));
     }
 
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        _functionTypeStack.SetValue(functionDeclaration.Identifier, GetTypeFromFunctionType(functionDeclaration.Type));
+        var signature = GetTypeFromFunctionDeclaration(functionDeclaration);
+        _functionTypeStack.SetValue(functionDeclaration.Identifier, signature);
     
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, PrimitiveVariableTypeEnum>();
@@ -165,8 +162,8 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     
         var wasInFunction = _isInFunction;
         _isInFunction = true;
-        var previousFunctionType = _currentFunctionType;
-        _currentFunctionType = GetTypeFromFunctionType(functionDeclaration.Type);
+        var previousFunctionType = _currentFunctionReturnType;
+        _currentFunctionReturnType = GetReturnType(signature);
     
         VisitScope(functionDeclaration.Scope);
         if (functionDeclaration.Type != null)
@@ -175,23 +172,48 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         }
     
         _variableTypeStack = originalTypeStack;
-        _currentFunctionType = previousFunctionType;
+        _currentFunctionReturnType = previousFunctionType;
     
         _isInFunction = wasInFunction;
 
         return functionDeclaration;
     }
 
+    private PrimitiveVariableTypeEnum? GetReturnType(FunctionSignature signature)
+    {
+        if (signature.ReturnType == null)
+        {
+            return null;
+        }
+        return ((PrimitiveVariableType)signature.ReturnType!).Type;
+    }
+
     protected override FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
+        functionInvocation = base.VisitFunctionInvocation(functionInvocation);
         // TODO: validate arguments match parameters
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             throw ErrorHelper.ShowErrorMessage($"Unknown function: {functionInvocation.Identifier}", functionInvocation.Span);
         }
 
-        var type = _functionTypeStack.GetValue(functionInvocation.Identifier);
-        if (type is { } returnType)
+        var signature = _functionTypeStack.GetValue(functionInvocation.Identifier);
+        var paramCount = signature.ParameterTypes.Count;
+        var argCount = functionInvocation.Arguments.Count;
+        if (argCount != paramCount)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Function '{functionInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", functionInvocation.Span);
+        }
+
+        foreach (var (argument, paramType) in functionInvocation.Arguments.Zip(signature.ParameterTypes))
+        {
+            if (!argument.Type.Equals(paramType))
+            {
+                throw ErrorHelper.ShowErrorMessage($"Argument of type {argument.Type} passed to function '{functionInvocation.Identifier}' does not match declared parameter type {paramType}", argument.Span);
+            }
+        }
+        
+        if (GetReturnType(signature) is { } returnType)
         {
             functionInvocation.Type = new PrimitiveVariableType(returnType);
         }
@@ -407,6 +429,11 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     
     private PrimitiveVariableTypeEnum GetExpressionType(IExpression expression)
     {
+        if (expression is FunctionInvocation { Type: null } inv)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot get value from void function {inv.Identifier}", inv.Span);
+        }
+        
         return ((PrimitiveVariableType)expression.Type!).Type;
     }
 
@@ -423,8 +450,8 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     }
     
     private ScopeTracker<string, PrimitiveVariableTypeEnum> _variableTypeStack = null!;
-    private ScopeTracker<string, PrimitiveVariableTypeEnum?> _functionTypeStack = null!;
-    private PrimitiveVariableTypeEnum? _currentFunctionType;
+    private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
+    private PrimitiveVariableTypeEnum? _currentFunctionReturnType;
     private bool _isInFunction;
     
     private void RecordVariableType(string identifier, PrimitiveVariableTypeEnum expressionType, SourceSpan span)
