@@ -177,12 +177,12 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return floatLiteral;
     }
 
-    protected IntLiteral VisitIntLiteral(IntLiteral intLiteral)
+    protected virtual IntLiteral VisitIntLiteral(IntLiteral intLiteral)
     {
         return intLiteral;
     }
 
-    protected BoolLiteral VisitBoolLiteral(BoolLiteral boolLiteral)
+    protected virtual BoolLiteral VisitBoolLiteral(BoolLiteral boolLiteral)
     {
         return boolLiteral;
     }

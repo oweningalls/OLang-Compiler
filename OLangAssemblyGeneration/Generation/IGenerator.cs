@@ -5,5 +5,5 @@ namespace AssemblyGeneration.Generation;
 
 public interface IGenerator
 {
-    public string GenerateProgram(Program program, IErrorHelper errorHelper);
+    public string GenerateProgram(Program program);
 }

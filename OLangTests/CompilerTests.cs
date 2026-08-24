@@ -529,7 +529,20 @@ public class CompilerTests
          }
          
          other();
-         """, 0)
+         """, 0),
+        ("""
+         let test = false;
+         void other() {
+         }
+         
+         if test {
+             exit 1;
+         }
+         test = true;
+         other();
+         exit 3;
+         
+         """, 3)
     ];
     
     [TestCaseSource(nameof(FunctionPrograms))]

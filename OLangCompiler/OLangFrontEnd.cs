@@ -25,7 +25,7 @@ public class OLangFrontEnd : IOLangFrontEnd
         var typeChecker = new TypeChecker(errorHelper);
         typeChecker.VisitProgram(ast);
         
-        var assembly = generator.GenerateProgram(ast, errorHelper);
+        var assembly = generator.GenerateProgram(ast);
 
         return assembly;
     }

@@ -39,7 +39,7 @@ public static class OLangCompiler
 
         var generator = target switch
         {
-            CompileTargets.X86 => new X86AssemblyGenerator(),
+            CompileTargets.X86 => new X86AssemblyGenerator(errorHelper),
             // CompileTargets.Cil => new CilGenerator(),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
