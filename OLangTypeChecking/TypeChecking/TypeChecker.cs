@@ -191,7 +191,6 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     protected override FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
         functionInvocation = base.VisitFunctionInvocation(functionInvocation);
-        // TODO: validate arguments match parameters
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             throw ErrorHelper.ShowErrorMessage($"Unknown function: {functionInvocation.Identifier}", functionInvocation.Span);

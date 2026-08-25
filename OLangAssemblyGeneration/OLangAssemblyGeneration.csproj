@@ -13,4 +13,13 @@
       <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Remove="Assets\runtimeconfigtemplate.json" />
+
+        <ContentWithTargetPath Include="Assets\runtimeconfigtemplate.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>Assets\runtimeconfigtemplate.json</TargetPath>
+        </ContentWithTargetPath>
+    </ItemGroup>
+
 </Project>

@@ -33,7 +33,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             WhileLoop whileStatement => VisitWhileLoop(whileStatement),
             ForLoop forStatement => VisitForLoop(forStatement),
             FunctionDeclaration functionDeclaration => VisitFunctionDeclaration(functionDeclaration),
-            FunctionInvocation invocation => VisitFunctionInvocation(invocation),
+            FunctionInvocation invocation => VisitFunctionInvocationStatement(invocation),
             Return returnStatement => VisitReturnStatement(returnStatement),
             _ => throw ErrorHelper.UnknownVariant("statement", statement.GetType())
         };
@@ -122,6 +122,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         functionDeclaration.Scope = VisitScope(functionDeclaration.Scope);
 
         return functionDeclaration;
+    }
+
+    protected virtual FunctionInvocation VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
+    {
+        return VisitFunctionInvocation(functionInvocation);
     }
     
     protected virtual FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)

@@ -11,7 +11,7 @@ namespace OLangCompiler;
 
 public class OLangFrontEnd : IOLangFrontEnd
 {
-    public string Compile(string program, IGenerator generator, IErrorHelper errorHelper)
+    public void Compile(string program, IGenerator generator, IErrorHelper errorHelper, string filePath, string fileName)
     {
         var tokenizer = new Tokenizer();
         var tokens = tokenizer.Tokenize(program, errorHelper);
@@ -25,8 +25,6 @@ public class OLangFrontEnd : IOLangFrontEnd
         var typeChecker = new TypeChecker(errorHelper);
         typeChecker.VisitProgram(ast);
         
-        var assembly = generator.GenerateProgram(ast);
-
-        return assembly;
+        generator.GenerateProgram(ast, filePath, fileName);
     }
 }

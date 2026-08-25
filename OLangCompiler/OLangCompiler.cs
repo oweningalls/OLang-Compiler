@@ -7,10 +7,10 @@ public static class OLangCompiler
 {
     public static void Main()
     {
-        CompileFile("test.ol", CompileTargets.X86);
+        CompileFile(".", "test.ol", CompileTargets.X86);
     }
     
-    public static void CompileFile(string fileName, CompileTargets target, string? outputFile = null)
+    public static void CompileFile(string filePath, string fileName, CompileTargets target, string? outputFile = null)
     {
         if (!fileName.EndsWith(".ol"))
         {
@@ -21,30 +21,29 @@ public static class OLangCompiler
         var extension = target switch
         {
             CompileTargets.X86 => "asm",
-            CompileTargets.Cil => "exe",
+            CompileTargets.Cil => "dll",
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
         
         outputFile ??= $"{baseName}.{extension}";
         var contents = File.ReadAllText(fileName);
 
-        var assembly = GenerateAssembly(contents, target);
-        File.WriteAllText(outputFile, assembly);
+        GenerateAssembly(contents, target, filePath, outputFile);
     }
 
-    public static string GenerateAssembly(string program, CompileTargets target)
+    public static void GenerateAssembly(string program, CompileTargets target, string filePath, string fileName)
     {
         var reader = new SourceReader(program);
         var errorHelper = new OLangHelpers.ErrorHelper(reader);
 
-        var generator = target switch
+        IGenerator generator = target switch
         {
             CompileTargets.X86 => new X86AssemblyGenerator(errorHelper),
-            // CompileTargets.Cil => new CilGenerator(),
+            CompileTargets.Cil => new CilGenerator(errorHelper),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
 
-        return new OLangFrontEnd().Compile(program, generator, errorHelper);
+        new OLangFrontEnd().Compile(program, generator, errorHelper, filePath, fileName);
     }
 
     public enum CompileTargets

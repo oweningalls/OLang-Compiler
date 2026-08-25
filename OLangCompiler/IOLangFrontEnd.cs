@@ -5,5 +5,5 @@ namespace OLangCompiler;
 
 public interface IOLangFrontEnd
 {
-    public string Compile(string program, IGenerator generator, IErrorHelper errorHelper);
+    public void Compile(string program, IGenerator generator, IErrorHelper errorHelper, string filePath, string fileName);
 }

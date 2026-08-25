@@ -10,7 +10,7 @@ namespace AssemblyGeneration.Generation;
 
 public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
 {
-    public string GenerateProgram(Program program)
+    public void GenerateProgram(Program program, string filePath, string fileName)
     {
         _output = new StringBuilder();
         _stackOffset = 0;
@@ -39,7 +39,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
             _output.Append('\n');
         }
 
-        return _output.ToString();
+        File.WriteAllText(Path.Combine(filePath, fileName), _output.ToString()); 
     }
 
     protected override ExitStatement VisitExitStatement(ExitStatement exitStatement)

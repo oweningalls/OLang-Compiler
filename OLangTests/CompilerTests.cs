@@ -1,9 +1,12 @@
 ﻿using System.Diagnostics;
+using NUnit.Framework.Internal;
 
 namespace OLangTests;
 
 public class CompilerTests
 {
+    private const OLangCompiler.OLangCompiler.CompileTargets TargetPlatform = OLangCompiler.OLangCompiler.CompileTargets.Cil;
+
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
@@ -863,7 +866,7 @@ public class CompilerTests
     // [TestCase("float a = 1.01.312;")] // float can only have one decimal point
     public void TestInvalidPrograms(string program)
     {
-        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, OLangCompiler.OLangCompiler.CompileTargets.X86));
+        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
@@ -929,20 +932,34 @@ public class CompilerTests
 
     private int CompileAndExecuteProgram(string program)
     {
-        var assembly = OLangCompiler.OLangCompiler.GenerateAssembly(program, OLangCompiler.OLangCompiler.CompileTargets.X86);
-        TestContext.Out.WriteLine(assembly);
-        
-        var outputFile = "test.asm";
-        File.WriteAllText(outputFile, assembly);
-
-        var psi = new ProcessStartInfo
+        var outputFile = TargetPlatform switch
         {
-            FileName = "wsl.exe",
-            Arguments = $"bash ./build_and_execute.sh {outputFile}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
+            OLangCompiler.OLangCompiler.CompileTargets.X86 => "test.asm",
+            OLangCompiler.OLangCompiler.CompileTargets.Cil => "test.dll"
+        };
+        
+        OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", outputFile);
+
+        var psi = TargetPlatform switch
+        {
+            OLangCompiler.OLangCompiler.CompileTargets.X86 => new ProcessStartInfo
+            {
+                FileName = "wsl.exe",
+                Arguments = $"bash ./build_and_execute.sh {outputFile}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            },
+            OLangCompiler.OLangCompiler.CompileTargets.Cil => new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = outputFile,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
         };
 
         using var process = new Process();
