@@ -8,6 +8,7 @@ $$
 &\mid [\mathrm{Stmt}] [\mathrm{StmtList}] \\
 [\mathrm{Stmt}]
 &\to \text{exit} [\mathrm{Expression}]; \\
+&\to \text{print} [\mathrm{Expression}]; \\
 &\mid \text{let ident} = [\mathrm{Expression}]; \\
 &\mid [\mathrm{Type}] \mathrm{ident} = [\mathrm{Expression}]; \\
 &\mid \mathrm{ident} [\mathrm{AssignmentOperator}] [\mathrm{Expression}]; \\
@@ -73,6 +74,7 @@ $$
 &\to \text{int\\_lit} \\
 &\mid \text{float\\_lit} \\
 &\mid \text{bool\\_lit} \\
+&\mid \text{string\\_lit} \\
 &\mid \text{ident} \\
 &\mid \text{(}[\mathrm{Expression}]\text{)} \\
 &\mid [\mathrm{FunctionInvocation}] \\
