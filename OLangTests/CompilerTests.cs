@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using NUnit.Framework.Internal;
 
 namespace OLangTests;
 
@@ -845,7 +844,13 @@ public class CompilerTests
          }
          
          print OIIA();
-         """, "OIIA")
+         """, "OIIA"),
+        ("""
+         if "a" == "a" { print "24"; }
+         """, "24"),
+        ("""
+         if "a" == "A" { print "12"; }
+         """, "")
     ];
     
     [TestCaseSource(nameof(StringPrograms))]
