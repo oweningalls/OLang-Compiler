@@ -810,6 +810,7 @@ public class CompilerTests
     
     public static readonly List<(string, string)> StringPrograms =
     [
+        ("let a = \"test\";", ""),
         ("""
          print "test";
          """, "test"),
@@ -828,7 +829,7 @@ public class CompilerTests
          print b;
          """, "foo\nbar"),
         ("""
-         string writeNums() {
+         void writeNums() {
              for i in 0..3 {
                  print "ab";
                  if i == 1 {
@@ -836,8 +837,15 @@ public class CompilerTests
                  }
              }
          }
+         writeNums();
          """, "abab\nab"),
-        ("let a = \"test\";", "")
+        ("""
+         string OIIA() {
+             return "OIIA";
+         }
+         
+         print OIIA();
+         """, "OIIA")
     ];
     
     [TestCaseSource(nameof(StringPrograms))]
@@ -859,7 +867,7 @@ public class CompilerTests
         var program = values.Item1;
         var expectedConsoleOutput = values.Item2;
         CompileAndExecuteProgram(program, out var actualConsoleOutput);
-        Assert.That(expectedConsoleOutput, Is.EqualTo(actualConsoleOutput));
+        Assert.That(actualConsoleOutput, Is.EqualTo(expectedConsoleOutput));
     }
     
 

@@ -115,15 +115,26 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return exitStatement;
     }
 
+    private static readonly MethodInfo _exitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
+    
     private void WriteExit(int? value = null)
     {
-        var exitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
         if (value is { } num)
         {
             _il.Emit(OpCodes.Ldc_I4, num);
         }
 
-        _il.Emit(OpCodes.Call, exitMethod);
+        _il.Emit(OpCodes.Call, _exitMethod);
+    }
+    
+    private static readonly MethodInfo _printMethod = typeof(Console).GetMethod(nameof(Console.Write), [typeof(string)])!;
+    
+    protected override PrintStatement VisitPrintStatement(PrintStatement printStatement)
+    {
+        printStatement = base.VisitPrintStatement(printStatement);
+        _il.Emit(OpCodes.Call, _printMethod);
+
+        return printStatement;
     }
 
     protected override VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)

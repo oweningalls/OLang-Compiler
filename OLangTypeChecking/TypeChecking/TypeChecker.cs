@@ -114,6 +114,18 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
 
         return exitStatement;
     }
+    
+    protected override PrintStatement VisitPrintStatement(PrintStatement printStatement)
+    {
+        printStatement = base.VisitPrintStatement(printStatement);
+        var expressionType = GetExpressionType(printStatement.Expression);
+        if (expressionType != PrimitiveVariableTypeEnum.String)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot print non-string value, was {expressionType}", printStatement.Expression.Span);
+        }
+
+        return printStatement;
+    }
 
     protected override Not VisitNotExpression(Not notExpression)
     {

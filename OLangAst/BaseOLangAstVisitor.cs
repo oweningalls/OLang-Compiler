@@ -27,6 +27,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         {
             VariableDeclarationStatement declarationStatement => VisitDeclarationStatement(declarationStatement),
             ExitStatement exitStatement => VisitExitStatement(exitStatement),
+            PrintStatement printStatement => VisitPrintStatement(printStatement),
             VariableAssignment assignmentStatement => VisitVariableAssignment(assignmentStatement),
             Scope scopeStatement => VisitScope(scopeStatement),
             IfStatement ifStatement => VisitIfStatement(ifStatement),
@@ -103,6 +104,13 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         exitStatement.Expression = VisitExpression(exitStatement.Expression);
 
         return exitStatement;
+    }
+    
+    protected virtual PrintStatement VisitPrintStatement(PrintStatement printStatement)
+    {
+        printStatement.Expression = VisitExpression(printStatement.Expression);
+
+        return printStatement;
     }
 
     protected virtual VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)

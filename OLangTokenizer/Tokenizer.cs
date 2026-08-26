@@ -189,12 +189,7 @@ public class Tokenizer
         var buffer = new StringBuilder();
         while (Consume() is var character && character != '\"')
         {
-            if (character == '\\')
-            {
-                buffer.Append(ValidateEscape(Consume()));
-            }
-            
-            buffer.Append(character);
+            buffer.Append(character == '\\' ? ValidateEscape(Consume()) : character);
         }
 
         return new StringLiteralToken(buffer.ToString());
@@ -262,6 +257,7 @@ public class Tokenizer
         { "int", () => new IntTypeToken() },
         { "float", () => new FloatTypeToken() },
         { "bool", () => new BoolTypeToken() },
+        { "string", () => new StringTypeToken() },
         { "true", () => new BoolLiteralToken(true) },
         { "false", () => new BoolLiteralToken(false) },
         { "if", () => new IfToken() },
@@ -271,6 +267,7 @@ public class Tokenizer
         { "in", () => new InToken() },
         { "void", () => new VoidToken() },
         { "return", () => new ReturnToken() },
+        { "print", () => new PrintToken() },
     };
 
     private BaseToken? TryParseOperator()
