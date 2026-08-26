@@ -1,4 +1,5 @@
-﻿using ErrorHelper;
+﻿using System.Text;
+using ErrorHelper;
 using Lexing;
 using OLangTokens.Tokens;
 
@@ -154,6 +155,11 @@ public class Tokenizer
             return MakeNumLiteralToken(buffer, sawDecimalPoint);
         }
 
+        if (Peek()!.Value == '\"')
+        {
+            return MakeStringLiteralToken();
+        }
+
         if (TryParseEqualsToken() is { } token)
         {
             return token;
@@ -175,6 +181,34 @@ public class Tokenizer
         }
 
         return new IntLiteralToken(int.Parse(buffer));
+    }
+
+    private StringLiteralToken MakeStringLiteralToken()
+    {
+        _ = Consume();
+        var buffer = new StringBuilder();
+        while (Consume() is var character && character != '\"')
+        {
+            if (character == '\\')
+            {
+                buffer.Append(ValidateEscape(Consume()));
+            }
+            
+            buffer.Append(character);
+        }
+
+        return new StringLiteralToken(buffer.ToString());
+    }
+
+    private char ValidateEscape(char escapedChar)
+    {
+        return escapedChar switch
+        {
+            'n' => '\n',
+            '\\' => '\\',
+            '"' => '"',
+            _ => throw new Exception($"Invalid escape sequence: \\{escapedChar}")
+        };
     }
 
     private BaseToken? TryParseEqualsToken()

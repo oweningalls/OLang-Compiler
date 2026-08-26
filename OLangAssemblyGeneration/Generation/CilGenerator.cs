@@ -288,6 +288,14 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return boolLiteral;
     }
 
+    protected override StringLiteral VisitStringLiteral(StringLiteral stringLiteral)
+    {
+        _il.Emit(OpCodes.Ldstr, stringLiteral.Value);
+        
+        return stringLiteral;
+    }
+
+
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
         variableAccess = base.VisitVariableAccess(variableAccess);
@@ -471,5 +479,6 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         { PrimitiveVariableTypeEnum.Int, typeof(int) },
         { PrimitiveVariableTypeEnum.Bool, typeof(bool) },
         { PrimitiveVariableTypeEnum.Float, typeof(float) },
+        { PrimitiveVariableTypeEnum.String, typeof(string) },
     };
 }

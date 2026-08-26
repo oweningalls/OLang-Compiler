@@ -164,6 +164,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             BoolLiteral boolLiteral => VisitBoolLiteral(boolLiteral),
             IntLiteral intLiteral => VisitIntLiteral(intLiteral),
             FloatLiteral floatLiteral => VisitFloatLiteral(floatLiteral),
+            StringLiteral stringLiteral => VisitStringLiteral(stringLiteral),
             FunctionInvocation invocation => VisitFunctionInvocation(invocation),
             Negate negate => VisitNegate(negate),
             _ => throw ErrorHelper.UnknownVariant("binary expression", expression.GetType())
@@ -191,6 +192,12 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     {
         return boolLiteral;
     }
+    
+    protected virtual StringLiteral VisitStringLiteral(StringLiteral stringLiteral)
+    {
+        return stringLiteral;
+    }
+
 
     protected virtual VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {

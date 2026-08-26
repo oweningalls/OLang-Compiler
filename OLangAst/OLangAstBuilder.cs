@@ -33,6 +33,7 @@ using Not = OLangAst.Expressions.Not;
 using NotEqual = OLangAst.Expressions.NotEqual;
 using Parameter = OLangAst.Miscellaneous.Parameter;
 using Return = OLangAst.Statements.Return;
+using StringLiteral = OLangAst.Expressions.StringLiteral;
 
 namespace OLangAst;
 
@@ -204,6 +205,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             OLangGrammar.ParseTree.Term.BoolLiteral boolLiteral => new BoolLiteral(boolLiteral.Value.Value) { Span = boolLiteral.Span },
             OLangGrammar.ParseTree.Term.IntLiteral intLiteral => new IntLiteral(intLiteral.Value.Value) { Span = intLiteral.Span },
             OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral(floatLiteral.Value.Value) { Span = floatLiteral.Span },
+            OLangGrammar.ParseTree.Term.StringLiteral stringLiteral => new StringLiteral(stringLiteral.Value.Value) { Span = stringLiteral.Span },
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),

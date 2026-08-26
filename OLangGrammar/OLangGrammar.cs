@@ -112,6 +112,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IntLiteralToken intLit) => new IntLiteral(intLit)),
         GrammarRule.Create((FloatLiteralToken floatLit) => new FloatLiteral(floatLit)),
         GrammarRule.Create((BoolLiteralToken boolLit) => new BoolLiteral(boolLit)),
+        GrammarRule.Create((StringLiteralToken stringLit) => new StringLiteral(stringLit)),
         GrammarRule.Create((IdentifierToken ident) => new IdentifierTerm(ident)),
         GrammarRule.Create((LeftParenToken _, IExpression expression, RightParenToken _) => new Paren(expression)),
         GrammarRule.Create((IFunctionInvocation ident) => new FunctionInvocationTerm(ident)),

@@ -807,15 +807,61 @@ public class CompilerTests
     {
         TestProgramExitCode(values);
     }
+    
+    public static readonly List<(string, string)> StringPrograms =
+    [
+        ("""
+         print "test";
+         """, "test"),
+        ("""
+         print "\"quoted\"";
+         """, "\"quoted\""),
+        ("""
+         string a = "";
+         print a;
+         """, ""),
+        ("""
+         let a = "foo";
+         let b = "bar";
+         print a;
+         print "\n";
+         print b;
+         """, "foo\nbar"),
+        ("""
+         string writeNums() {
+             for i in 0..3 {
+                 print "ab";
+                 if i == 1 {
+                     print "\n";
+                 }
+             }
+         }
+         """, "abab\nab"),
+        ("let a = \"test\";", "")
+    ];
+    
+    [TestCaseSource(nameof(StringPrograms))]
+    public void StringTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;
         var exitCode = values.Item2;
         
-        CompileAndExecuteProgram(program);
-        Assert.That(CompileAndExecuteProgram(program), Is.EqualTo(exitCode));
+        Assert.That(CompileAndExecuteProgram(program, out _), Is.EqualTo(exitCode));
     }
+    
+    private void TestProgramConsoleOutput((string, string) values)
+    {
+        var program = values.Item1;
+        var expectedConsoleOutput = values.Item2;
+        CompileAndExecuteProgram(program, out var actualConsoleOutput);
+        Assert.That(expectedConsoleOutput, Is.EqualTo(actualConsoleOutput));
+    }
+    
 
     [TestCase("let a = a;")] // a hasn't been declared yet
     [TestCase("exit 4")] // missing semicolon
@@ -890,7 +936,7 @@ public class CompilerTests
                                 }
                                 exit fn1;
                                 """;
-                var olFibNum = CompileAndExecuteProgram(program);
+                var olFibNum = CompileAndExecuteProgram(program, out _);
                 var trueFibNum = Fib(i);
 
                 Assert.That(olFibNum, Is.EqualTo(trueFibNum));
@@ -914,7 +960,7 @@ public class CompilerTests
                                 
                                 exit fib({{i}});
                                 """;
-                var olFibNum = CompileAndExecuteProgram(program);
+                var olFibNum = CompileAndExecuteProgram(program, out _);
                 var trueFibNum = Fib(i);
 
                 Assert.That(olFibNum, Is.EqualTo(trueFibNum));
@@ -930,7 +976,7 @@ public class CompilerTests
         return Fib(n - 1) + Fib(n - 2);
     }
 
-    private int CompileAndExecuteProgram(string program)
+    private int CompileAndExecuteProgram(string program, out string output)
     {
         var outputFile = TargetPlatform switch
         {
@@ -966,7 +1012,7 @@ public class CompilerTests
         process.StartInfo = psi;
         process.Start();
 
-        var output = process.StandardOutput.ReadToEnd();
+        output = process.StandardOutput.ReadToEnd();
         var errors = process.StandardError.ReadToEnd();
 
         process.WaitForExit();

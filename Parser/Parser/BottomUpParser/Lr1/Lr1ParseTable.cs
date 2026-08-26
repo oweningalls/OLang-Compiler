@@ -201,6 +201,10 @@ public class Lr1ParseTable : ILrParseTable
             return new Shift(newState2);
         }
 
+        if (next is EOI)
+        {
+            throw _errorHelper.ShowErrorMessageAtElement("Parsing error: unexpected end of input.", next);
+        }
         throw _errorHelper.ShowErrorMessageAtElement("Parsing error: unexpected token", next);
     }
 

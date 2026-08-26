@@ -22,5 +22,6 @@ public enum PrimitiveVariableTypeEnum
 {
     Int,
     Bool,
-    Float
+    Float,
+    String
 }
