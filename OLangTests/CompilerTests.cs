@@ -856,6 +856,11 @@ public class CompilerTests
          num = "2";
          print num;
          """, "2"),
+        ("""
+         let concat = "Hello, ";
+         concat += "world!";
+         print concat;
+         """, "Hello, world!")
     ];
     
     [TestCaseSource(nameof(StringPrograms))]

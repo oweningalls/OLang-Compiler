@@ -52,18 +52,18 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         forStatement.RangeEnd = VisitExpression(forStatement.RangeEnd);
         var startType = GetExpressionType(forStatement.RangeStart);
         
-        if (!startType.Equals(IntType))
+        if (!startType.Equals(PrimitiveVariableType.IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeStart.Span);
         }
 
         var endType = GetExpressionType(forStatement.RangeEnd);
-        if (!endType.Equals(IntType))
+        if (!endType.Equals(PrimitiveVariableType.IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeEnd.Span);
         }
 
-        RecordVariableType(forStatement.Identifier, IntType, forStatement.Span);
+        RecordVariableType(forStatement.Identifier, PrimitiveVariableType.IntType, forStatement.Span);
         forStatement.Body.Statements = VisitStatements(forStatement.Body.Statements);
         EndScope();
 
@@ -74,7 +74,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         ifStatement = base.VisitIfStatement(ifStatement);
         var conditionType = GetExpressionType(ifStatement.Predicate);
-        if (!conditionType.Equals(BoolType))
+        if (!conditionType.Equals(PrimitiveVariableType.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", ifStatement.Predicate.Span);
         }
@@ -86,7 +86,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         whileStatement = base.VisitWhileLoop(whileStatement);
         var whileConditionType = GetExpressionType(whileStatement.Predicate);
-        if (!whileConditionType.Equals(BoolType))
+        if (!whileConditionType.Equals(PrimitiveVariableType.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", whileStatement.Predicate.Span);
         }
@@ -111,7 +111,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         exitStatement = base.VisitExitStatement(exitStatement);
         var exitType = GetExpressionType(exitStatement.Expression);
-        if (!exitType.Equals(IntType))
+        if (!exitType.Equals(PrimitiveVariableType.IntType))
         {
             throw ErrorHelper.ShowErrorMessage($"Exit code has to be an integer, was {exitType}", exitStatement.Expression.Span);
         }
@@ -123,7 +123,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         printStatement = base.VisitPrintStatement(printStatement);
         var expressionType = GetExpressionType(printStatement.Expression);
-        if (!expressionType.Equals(StringType))
+        if (!expressionType.Equals(PrimitiveVariableType.StringType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot print non-string value, was {expressionType}", printStatement.Expression.Span);
         }
@@ -136,7 +136,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         notExpression = base.VisitNotExpression(notExpression);
         var expType = GetExpressionType(notExpression.Value);
 
-        if (!expType.Equals(BoolType))
+        if (!expType.Equals(PrimitiveVariableType.BoolType))
         {
             throw CannotApplyUnaryOperator("!", expType.ToString(), notExpression.Span);
         }
@@ -287,12 +287,12 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         negate = base.VisitNegate(negate);
         var expType = GetExpressionType(negate.Value);
 
-        if (!expType.Equals(IntType))
+        if (!expType.Equals(PrimitiveVariableType.IntType))
         {
             throw CannotApplyUnaryOperator("-", expType.ToString(), negate.Span);
         }
         
-        MarkExpressionType(negate, IntType);
+        MarkExpressionType(negate, PrimitiveVariableType.IntType);
 
         return negate;
     }
@@ -307,7 +307,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         var lhsType = GetExpressionType(booleanBinaryExpression.Lhs);
         var rhsType = GetExpressionType(booleanBinaryExpression.Rhs);
 
-        if (!lhsType.Equals(BoolType) || !rhsType.Equals(BoolType))
+        if (!lhsType.Equals(PrimitiveVariableType.BoolType) || !rhsType.Equals(PrimitiveVariableType.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage($"Both sides of expression must be {PrimitiveVariableTypeEnum.Bool} type, was {lhsType} and {rhsType}.", booleanBinaryExpression.Span);
         }
@@ -356,7 +356,14 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     protected override Add VisitAddExpression(Add addExpression)
     {
         addExpression = base.VisitAddExpression(addExpression);
-        CheckMathExpression(addExpression, "+");
+        if (addExpression.Lhs.Type.Equals(PrimitiveVariableType.StringType) && addExpression.Rhs.Type.Equals(PrimitiveVariableType.StringType))
+        {
+            MarkExpressionType(addExpression, PrimitiveVariableType.StringType);
+        }
+        else
+        {
+            CheckMathExpression(addExpression, "+");
+        }
 
         return addExpression;
     }
@@ -513,9 +520,5 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return variableAccess;
     }
 
-    private static readonly PrimitiveVariableType BoolType = new(PrimitiveVariableTypeEnum.Bool);
-    private static readonly PrimitiveVariableType IntType = new(PrimitiveVariableTypeEnum.Int);
-    private static readonly PrimitiveVariableType FloatType = new(PrimitiveVariableTypeEnum.Float);
-    private static readonly PrimitiveVariableType StringType = new(PrimitiveVariableTypeEnum.String);
-    private static readonly IVariableType[] MathTypes = [IntType, FloatType];
+    private static readonly IVariableType[] MathTypes = [PrimitiveVariableType.IntType, PrimitiveVariableType.FloatType];
 }

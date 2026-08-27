@@ -115,7 +115,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return exitStatement;
     }
 
-    private static readonly MethodInfo _exitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
+    private static readonly MethodInfo ExitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
     
     private void WriteExit(int? value = null)
     {
@@ -124,15 +124,15 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
             _il.Emit(OpCodes.Ldc_I4, num);
         }
 
-        _il.Emit(OpCodes.Call, _exitMethod);
+        _il.Emit(OpCodes.Call, ExitMethod);
     }
     
-    private static readonly MethodInfo _printMethod = typeof(Console).GetMethod(nameof(Console.Write), [typeof(string)])!;
+    private static readonly MethodInfo PrintMethod = typeof(Console).GetMethod(nameof(Console.Write), [typeof(string)])!;
     
     protected override PrintStatement VisitPrintStatement(PrintStatement printStatement)
     {
         printStatement = base.VisitPrintStatement(printStatement);
-        _il.Emit(OpCodes.Call, _printMethod);
+        _il.Emit(OpCodes.Call, PrintMethod);
 
         return printStatement;
     }
@@ -207,7 +207,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         VisitDeclarationStatement(declaration);
         var scope = @for.Body;
         var identifierExpression = new VariableAccess(@for.Identifier);
-        var addExpression = new Add(identifierExpression, new IntLiteral(1));
+        var addExpression = new Add(identifierExpression, new IntLiteral(1)) { Type = PrimitiveVariableType.IntType };
         var finalStmt = new VariableAssignment(@for.Identifier, addExpression);
 
         scope.Statements.Add(finalStmt);
@@ -318,9 +318,23 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
     protected override Add VisitAddExpression(Add addExpression)
     {
         addExpression = base.VisitAddExpression(addExpression);
-        _il.Emit(OpCodes.Add);
+        if (addExpression.Type.Equals(PrimitiveVariableType.StringType))
+        {
+            EmitConcat();
+        }
+        else
+        {
+            _il.Emit(OpCodes.Add);
+        }
 
         return addExpression;
+    }
+
+    private static readonly MethodInfo Concat = typeof(string).GetMethod(nameof(string.Concat), [typeof(string), typeof(string)])!;
+    
+    private void EmitConcat()
+    {
+        _il.Emit(OpCodes.Call, Concat);
     }
 
     protected override And VisitAndExpression(And andExpression)
