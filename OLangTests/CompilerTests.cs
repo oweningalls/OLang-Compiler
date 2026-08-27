@@ -850,7 +850,12 @@ public class CompilerTests
          """, "24"),
         ("""
          if "a" == "A" { print "12"; }
-         """, "")
+         """, ""),
+        ("""
+         let num = "1";
+         num = "2";
+         print num;
+         """, "2"),
     ];
     
     [TestCaseSource(nameof(StringPrograms))]
@@ -920,6 +925,7 @@ public class CompilerTests
     [TestCase("void a(int first, bool second) {} a(true, 1);")] // parameters have incorrect types
     [TestCase("void a() {} let b = a();")] // cannot assign return of void
     [TestCase("void a() {} int b = a();")] // cannot assign return of void
+    [TestCase("let a = true; let b = false; let c = a + b;")] // cannot add bools
     // TODO: uncomment once floats are implemented
     // [TestCase("int a = 1.1;")] // can't implicitly convert float to int
     // [TestCase("float a = 1.01.312;")] // float can only have one decimal point

@@ -16,6 +16,21 @@ public class PrimitiveVariableType(PrimitiveVariableTypeEnum type) : IVariableTy
 
         return primitiveVariableType.Type == Type;
     }
+
+    protected bool Equals(PrimitiveVariableType other)
+    {
+        return Type == other.Type;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)Type;
+    }
+
+    public override string ToString()
+    {
+        return Type.ToString();
+    }
 }
 
 public enum PrimitiveVariableTypeEnum
