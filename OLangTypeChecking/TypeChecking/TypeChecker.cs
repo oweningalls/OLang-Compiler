@@ -21,7 +21,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
 
     protected override Return VisitReturnStatement(Return returnStatement)
     {
-        if (_currentFunctionReturnType is null && returnStatement.Value != null)
+        if (_currentFunctionReturnType is null && returnStatement.Value is not null)
         {
             throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Value.Span);
         }
@@ -37,7 +37,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         }
 
         var expressionType = GetExpressionType(returnStatement.Value);
-        if (expressionType != _currentFunctionReturnType)
+        if (!expressionType.Equals(_currentFunctionReturnType))
         {
             throw ErrorHelper.ShowErrorMessage($"Function of type {_currentFunctionReturnType} cannot return expression of type {expressionType}.", returnStatement.Value.Span);
         }
@@ -52,13 +52,13 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         forStatement.RangeEnd = VisitExpression(forStatement.RangeEnd);
         var startType = GetExpressionType(forStatement.RangeStart);
         
-        if (!AreSameType(startType, PrimitiveVariableTypeEnum.Int))
+        if (!startType.Equals(IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeStart.Span);
         }
 
         var endType = GetExpressionType(forStatement.RangeEnd);
-        if (!AreSameType(endType, PrimitiveVariableTypeEnum.Int))
+        if (!endType.Equals(IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeEnd.Span);
         }
@@ -74,7 +74,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         ifStatement = base.VisitIfStatement(ifStatement);
         var conditionType = GetExpressionType(ifStatement.Predicate);
-        if (!AreSameType(conditionType, PrimitiveVariableTypeEnum.Bool))
+        if (!conditionType.Equals(BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", ifStatement.Predicate.Span);
         }
@@ -86,7 +86,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         whileStatement = base.VisitWhileLoop(whileStatement);
         var whileConditionType = GetExpressionType(whileStatement.Predicate);
-        if (!AreSameType(whileConditionType, PrimitiveVariableTypeEnum.Bool))
+        if (!whileConditionType.Equals(BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", whileStatement.Predicate.Span);
         }
@@ -99,7 +99,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         assignmentStatement = base.VisitVariableAssignment(assignmentStatement);
         var expressionType = GetExpressionType(assignmentStatement.Value);
         var variableType = GetVariableType(assignmentStatement.Identifier, assignmentStatement.Span);
-        if (!AreSameType(expressionType, variableType))
+        if (!expressionType.Equals(variableType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot assign expression of type {expressionType} to variable {assignmentStatement.Identifier} of type {variableType}", assignmentStatement.Span);
         }
@@ -111,7 +111,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         exitStatement = base.VisitExitStatement(exitStatement);
         var exitType = GetExpressionType(exitStatement.Expression);
-        if (!AreSameType(exitType, PrimitiveVariableTypeEnum.Int))
+        if (!exitType.Equals(IntType))
         {
             throw ErrorHelper.ShowErrorMessage($"Exit code has to be an integer, was {exitType}", exitStatement.Expression.Span);
         }
@@ -123,7 +123,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         printStatement = base.VisitPrintStatement(printStatement);
         var expressionType = GetExpressionType(printStatement.Expression);
-        if (!AreSameType(expressionType, PrimitiveVariableTypeEnum.String))
+        if (!expressionType.Equals(StringType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot print non-string value, was {expressionType}", printStatement.Expression.Span);
         }
@@ -136,7 +136,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         notExpression = base.VisitNotExpression(notExpression);
         var expType = GetExpressionType(notExpression.Value);
 
-        if (!AreSameType(expType, PrimitiveVariableTypeEnum.Bool))
+        if (!expType.Equals(BoolType))
         {
             throw CannotApplyUnaryOperator("!", expType.ToString(), notExpression.Span);
         }
@@ -148,7 +148,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         var type = GetExpressionType(declarationStatement.Value);
-        if (declarationStatement.Type is PrimitiveVariableType varType && !AreSameType(type, varType.Type))
+        if (declarationStatement.Type is PrimitiveVariableType varType && !type.Equals(varType))
         {
             throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {varType.Type}", declarationStatement.Value.Span);
         }
@@ -182,7 +182,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         _currentFunctionReturnType = GetReturnType(signature);
     
         VisitScope(functionDeclaration.Scope);
-        if (functionDeclaration.Type != null)
+        if (functionDeclaration.Type is not null)
         {
             CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
         }
@@ -250,7 +250,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         {
             if (statement is Return returnStatement)
             {
-                return returnStatement.Value != null;
+                return returnStatement.Value is not null;
             }
 
             if (statement is ExitStatement)
@@ -292,7 +292,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
             throw CannotApplyUnaryOperator("-", expType.ToString(), negate.Span);
         }
         
-        MarkExpressionType(negate, PrimitiveVariableTypeEnum.Int);
+        MarkExpressionType(negate, IntType);
 
         return negate;
     }
@@ -318,7 +318,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         var lhsType = GetExpressionType(binaryComparisonExpression.Lhs);
         var rhsType = GetExpressionType(binaryComparisonExpression.Rhs);
 
-        if (lhsType != rhsType)
+        if (!lhsType.Equals(rhsType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot compare expressions of type {lhsType} and {rhsType}", binaryComparisonExpression.Span);
         }
@@ -335,12 +335,12 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
             throw ErrorHelper.ShowErrorMessage($"Cannot apply operator `{oper}` to expressions of type {lhsType} and {rhsType}", mathExpression.Span);
         }
         
-        MarkExpressionType(mathExpression, PrimitiveVariableTypeEnum.String);
+        MarkExpressionType(mathExpression, addedType);
     }
 
     private IVariableType? ResultingTypeFromMath(IVariableType type1, IVariableType type2)
     {
-        if (!MathTypes.Any(x => x.Equals(type1)) || MathTypes.Any(x => x.Equals(type2)))
+        if (!MathTypes.Any(x => x.Equals(type1)) || !MathTypes.Any(x => x.Equals(type2)))
         {
             return null;
         }
@@ -449,13 +449,13 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return subtractExpression;
     }
     
-    private void MarkExpressionType(IExpression expression, PrimitiveVariableTypeEnum type)
+    private void MarkExpressionType(IExpression expression, IVariableType type)
     {
-        if (expression.Type != null)
+        if (expression.Type is not null)
         {
             throw ErrorHelper.ShowErrorMessage("Expression already had type marked.", expression.Span);
         }
-        expression.Type = new PrimitiveVariableType(type);
+        expression.Type = type;
     }
     
     private IVariableType? GetExpressionType(IExpression expression)
@@ -511,31 +511,6 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         variableAccess.Type = type;
 
         return variableAccess;
-    }
-
-    private bool AreSameType(IVariableType type1, IVariableType type2)
-    {
-        if (type1 is not PrimitiveVariableType primType1)
-        {
-            throw ErrorHelper.UnknownVariant("type", type1.GetType());
-        }
-        
-        if (type2 is not PrimitiveVariableType primType2)
-        {
-            throw ErrorHelper.UnknownVariant("type", type2.GetType());
-        }
-        
-        return primType1.Equals(primType2);
-    }
-    
-    private bool AreSameType(IVariableType type1, PrimitiveVariableTypeEnum type2)
-    {
-        if (type1 is not PrimitiveVariableType primType1)
-        {
-            throw ErrorHelper.UnknownVariant("type", type1.GetType());
-        }
-        
-        return primType1.Type.Equals(type2);
     }
 
     private static readonly PrimitiveVariableType BoolType = new(PrimitiveVariableTypeEnum.Bool);
