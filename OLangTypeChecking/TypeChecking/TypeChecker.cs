@@ -131,9 +131,9 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return printStatement;
     }
 
-    protected override Not VisitNotExpression(Not notExpression)
+    protected override IExpression VisitNotExpression(Not notExpression)
     {
-        notExpression = base.VisitNotExpression(notExpression);
+        notExpression = (Not)base.VisitNotExpression(notExpression);
         var expType = GetExpressionType(notExpression.Value);
 
         if (!expType.Equals(PrimitiveVariableType.BoolType))
@@ -284,9 +284,9 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return scopeNode;
     }
     
-    protected override Negate VisitNegate(Negate negate)
+    protected override IExpression VisitNegate(Negate negate)
     {
-        negate = base.VisitNegate(negate);
+        negate = (Negate)base.VisitNegate(negate);
         var expType = GetExpressionType(negate.Value);
 
         if (!IsMathType(expType))
@@ -388,9 +388,9 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return MathTypes[Math.Max(t1PrecedenceValue, t2PrecedenceValue)];
     }
 
-    protected override Add VisitAddExpression(Add addExpression)
+    protected override IExpression VisitAddExpression(Add addExpression)
     {
-        addExpression = base.VisitAddExpression(addExpression);
+        addExpression = (Add)base.VisitAddExpression(addExpression);
         if (addExpression.Lhs.Type.Equals(PrimitiveVariableType.StringType) && addExpression.Rhs.Type.Equals(PrimitiveVariableType.StringType))
         {
             MarkExpressionType(addExpression, PrimitiveVariableType.StringType);
@@ -403,92 +403,104 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return addExpression;
     }
     
-    protected override And VisitAndExpression(And andExpression)
+    protected override IExpression VisitAndExpression(And andExpression)
     {
-        andExpression = base.VisitAndExpression(andExpression);
+        andExpression = (And)base.VisitAndExpression(andExpression);
         CheckBooleanBinaryExpression(andExpression);
 
         return andExpression;
     }
     
-    protected override AreEqual VisitAreEqualExpression(AreEqual areEqualExpression)
+    protected override IExpression VisitAreEqualExpression(AreEqual areEqualExpression)
     {
-        areEqualExpression = base.VisitAreEqualExpression(areEqualExpression);
+        areEqualExpression = (AreEqual)base.VisitAreEqualExpression(areEqualExpression);
         CheckBinaryComparisonExpression(areEqualExpression);
 
         return areEqualExpression;
     }
 
-    protected override GreaterOrEqual VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
+    protected override IExpression VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
     {
-        greaterOrEqualExpression = base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
+        greaterOrEqualExpression = (GreaterOrEqual)base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
         CheckBinaryComparisonExpression(greaterOrEqualExpression);
 
         return greaterOrEqualExpression;
     }
 
-    protected override GreaterThan VisitGreaterThanExpression(GreaterThan greaterThanExpression)
+    protected override IExpression VisitGreaterThanExpression(GreaterThan greaterThanExpression)
     {
-        greaterThanExpression = base.VisitGreaterThanExpression(greaterThanExpression);
+        greaterThanExpression = (GreaterThan)base.VisitGreaterThanExpression(greaterThanExpression);
         CheckBinaryComparisonExpression(greaterThanExpression);
 
         return greaterThanExpression;
     }
 
-    protected override LessThan VisitLessThanExpression(LessThan lessThanExpression)
+    protected override IExpression VisitLessThanExpression(LessThan lessThanExpression)
     {
-        lessThanExpression = base.VisitLessThanExpression(lessThanExpression);
+        lessThanExpression = (LessThan)base.VisitLessThanExpression(lessThanExpression);
         CheckBinaryComparisonExpression(lessThanExpression);
 
         return lessThanExpression;
     }
 
-    protected override LessThanOrEqual VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
+    protected override IExpression VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
     {
-        lessThanOrEqualExpression = base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
+        lessThanOrEqualExpression = (LessThanOrEqual)base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
         CheckBinaryComparisonExpression(lessThanOrEqualExpression);
 
         return lessThanOrEqualExpression;
     }
 
-    protected override Multiply VisitMultiplyExpression(Multiply multiplyExpression)
+    protected override IExpression VisitMultiplyExpression(Multiply multiplyExpression)
     {
-        multiplyExpression = base.VisitMultiplyExpression(multiplyExpression);
+        multiplyExpression = (Multiply)base.VisitMultiplyExpression(multiplyExpression);
         CheckMathExpression(multiplyExpression, "*");
 
         return multiplyExpression;
     }
 
-    protected override Divide VisitDivideExpression(Divide divideExpression)
+    protected override IExpression VisitDivideExpression(Divide divideExpression)
     {
-        divideExpression = base.VisitDivideExpression(divideExpression);
+        divideExpression = (Divide)base.VisitDivideExpression(divideExpression);
         CheckMathExpression(divideExpression, "/");
 
         return divideExpression;
     }
 
-    protected override NotEqual VisitNotEqualExpression(NotEqual notEqualExpression)
+    protected override IExpression VisitNotEqualExpression(NotEqual notEqualExpression)
     {
-        notEqualExpression = base.VisitNotEqualExpression(notEqualExpression);
+        notEqualExpression = (NotEqual)base.VisitNotEqualExpression(notEqualExpression);
         CheckBinaryComparisonExpression(notEqualExpression);
 
         return notEqualExpression;
     }
 
-    protected override Or VisitOrExpression(Or orExpression)
+    protected override IExpression VisitOrExpression(Or orExpression)
     {
-        orExpression = base.VisitOrExpression(orExpression);
+        orExpression = (Or)base.VisitOrExpression(orExpression);
         CheckBooleanBinaryExpression(orExpression);
 
         return orExpression;
     }
 
-    protected override Subtract VisitSubtractExpression(Subtract subtractExpression)
+    protected override IExpression VisitSubtractExpression(Subtract subtractExpression)
     {
-        subtractExpression = base.VisitSubtractExpression(subtractExpression);
+        subtractExpression = (Subtract)base.VisitSubtractExpression(subtractExpression);
         CheckMathExpression(subtractExpression, "-");
 
         return subtractExpression;
+    }
+    
+    protected override IExpression VisitCast(Cast cast)
+    {
+        cast = (Cast)base.VisitCast(cast);
+        var expType = cast.Value.Type;
+        if (IsMathType(cast.TargetType) && IsMathType(expType) || cast.TargetType.Equals(expType))
+        {
+            return cast;
+        }
+        
+        throw ErrorHelper.ShowErrorMessage($"Cannot cast expression of type `{expType}` to `{cast.TargetType}`.", cast.Span);
     }
     
     private void MarkExpressionType(IExpression expression, IVariableType type)
@@ -547,18 +559,6 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return _variableTypeStack.GetValue(identifier);
     }
 
-    protected override Cast VisitCast(Cast cast)
-    {
-        cast = base.VisitCast(cast);
-        var expType = cast.Value.Type;
-        if (IsMathType(cast.TargetType) && IsMathType(expType) || cast.TargetType.Equals(expType))
-        {
-            return cast;
-        }
-        
-        throw ErrorHelper.ShowErrorMessage($"Cannot cast expression of type `{expType}` to `{cast.TargetType}`.", cast.Span);
-    }
-    
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
         var type = GetVariableType(variableAccess.Identifier, variableAccess.Span);

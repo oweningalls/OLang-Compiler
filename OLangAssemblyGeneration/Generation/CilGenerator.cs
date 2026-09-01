@@ -276,45 +276,45 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return returnStatement;
     }
 
-    protected override Not VisitNotExpression(Not notExpression)
+    protected override IExpression VisitNotExpression(Not notExpression)
     {
-        notExpression = base.VisitNotExpression(notExpression);
+        notExpression = (Not)base.VisitNotExpression(notExpression);
         _il.Emit(OpCodes.Ldc_I4_0);
         _il.Emit(OpCodes.Ceq);
 
         return notExpression;
     }
 
-    protected override IntLiteral VisitIntLiteral(IntLiteral intLiteral)
+    protected override IExpression VisitIntLiteral(IntLiteral intLiteral)
     {
         _il.Emit(OpCodes.Ldc_I4, intLiteral.Value);
         return intLiteral;
     }
 
-    protected override BoolLiteral VisitBoolLiteral(BoolLiteral boolLiteral)
+    protected override IExpression VisitBoolLiteral(BoolLiteral boolLiteral)
     {
         _il.Emit(boolLiteral.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
 
         return boolLiteral;
     }
 
-    protected override StringLiteral VisitStringLiteral(StringLiteral stringLiteral)
+    protected override IExpression VisitStringLiteral(StringLiteral stringLiteral)
     {
         _il.Emit(OpCodes.Ldstr, stringLiteral.Value);
         
         return stringLiteral;
     }
 
-    protected override FloatLiteral VisitFloatLiteral(FloatLiteral floatLiteral)
+    protected override IExpression VisitFloatLiteral(FloatLiteral floatLiteral)
     {
         _il.Emit(OpCodes.Ldc_R4, floatLiteral.Value);
 
         return floatLiteral;
     }
 
-    protected override Cast VisitCast(Cast cast)
+    protected override IExpression VisitCast(Cast cast)
     {
-        cast = base.VisitCast(cast);
+        cast = (Cast)base.VisitCast(cast);
         if (cast.TargetType.Equals(PrimitiveVariableType.IntType))
         {
             _il.Emit(OpCodes.Conv_I4);
@@ -335,7 +335,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
-        variableAccess = base.VisitVariableAccess(variableAccess);
+        variableAccess = (VariableAccess)base.VisitVariableAccess(variableAccess);
         EmitLocalAccess(variableAccess.Identifier);
 
         return variableAccess;
@@ -343,7 +343,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Add VisitAddExpression(Add addExpression)
     {
-        addExpression = base.VisitAddExpression(addExpression);
+        addExpression = (Add)base.VisitAddExpression(addExpression);
         if (addExpression.Type.Equals(PrimitiveVariableType.StringType))
         {
             EmitConcat();
@@ -365,7 +365,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override And VisitAndExpression(And andExpression)
     {
-        andExpression = base.VisitAndExpression(andExpression);
+        andExpression = (And)base.VisitAndExpression(andExpression);
         _il.Emit(OpCodes.And);
 
         return andExpression;
@@ -373,7 +373,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override AreEqual VisitAreEqualExpression(AreEqual areEqualExpression)
     {
-        areEqualExpression = base.VisitAreEqualExpression(areEqualExpression);
+        areEqualExpression = (AreEqual)base.VisitAreEqualExpression(areEqualExpression);
         _il.Emit(OpCodes.Ceq);
 
         return areEqualExpression;
@@ -381,7 +381,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override GreaterOrEqual VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
     {
-        greaterOrEqualExpression = base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
+        greaterOrEqualExpression = (GreaterOrEqual)base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
         _il.Emit(OpCodes.Clt);
         _il.Emit(OpCodes.Ldc_I4_0);
         _il.Emit(OpCodes.Ceq);
@@ -391,7 +391,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override GreaterThan VisitGreaterThanExpression(GreaterThan greaterThanExpression)
     {
-        greaterThanExpression = base.VisitGreaterThanExpression(greaterThanExpression);
+        greaterThanExpression = (GreaterThan)base.VisitGreaterThanExpression(greaterThanExpression);
         _il.Emit(OpCodes.Cgt);
 
         return greaterThanExpression;
@@ -399,7 +399,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override LessThan VisitLessThanExpression(LessThan lessThanExpression)
     {
-        lessThanExpression = base.VisitLessThanExpression(lessThanExpression);
+        lessThanExpression = (LessThan)base.VisitLessThanExpression(lessThanExpression);
         _il.Emit(OpCodes.Clt);
 
         return lessThanExpression;
@@ -407,7 +407,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override LessThanOrEqual VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
     {
-        lessThanOrEqualExpression = base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
+        lessThanOrEqualExpression = (LessThanOrEqual)base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
         _il.Emit(OpCodes.Cgt);
         _il.Emit(OpCodes.Ldc_I4_0);
         _il.Emit(OpCodes.Ceq);
@@ -417,7 +417,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Multiply VisitMultiplyExpression(Multiply multiplyExpression)
     {
-        multiplyExpression = base.VisitMultiplyExpression(multiplyExpression);
+        multiplyExpression = (Multiply)base.VisitMultiplyExpression(multiplyExpression);
         _il.Emit(OpCodes.Mul);
 
         return multiplyExpression;
@@ -425,7 +425,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Divide VisitDivideExpression(Divide divideExpression)
     {
-        divideExpression = base.VisitDivideExpression(divideExpression);
+        divideExpression = (Divide)base.VisitDivideExpression(divideExpression);
         _il.Emit(OpCodes.Div);
 
         return divideExpression;
@@ -433,7 +433,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override NotEqual VisitNotEqualExpression(NotEqual notEqualExpression)
     {
-        notEqualExpression = base.VisitNotEqualExpression(notEqualExpression);
+        notEqualExpression = (NotEqual)base.VisitNotEqualExpression(notEqualExpression);
         _il.Emit(OpCodes.Ceq);
         _il.Emit(OpCodes.Ldc_I4_1);
         _il.Emit(OpCodes.Xor);
@@ -443,7 +443,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Or VisitOrExpression(Or orExpression)
     {
-        orExpression = base.VisitOrExpression(orExpression);
+        orExpression = (Or)base.VisitOrExpression(orExpression);
         _il.Emit(OpCodes.Or);
 
         return orExpression;
@@ -451,7 +451,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Subtract VisitSubtractExpression(Subtract subtractExpression)
     {
-        subtractExpression = base.VisitSubtractExpression(subtractExpression);
+        subtractExpression = (Subtract)base.VisitSubtractExpression(subtractExpression);
         _il.Emit(OpCodes.Sub);
 
         return subtractExpression;
@@ -459,7 +459,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override Negate VisitNegate(Negate negate)
     {
-        negate = base.VisitNegate(negate);
+        negate = (Negate)base.VisitNegate(negate);
         _il.Emit(OpCodes.Neg);
 
         return negate;

@@ -180,34 +180,34 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         };
     }
 
-    protected virtual Negate VisitNegate(Negate negate)
+    protected virtual IExpression VisitNegate(Negate negate)
     {
         negate.Value = VisitExpression(negate.Value);
 
         return negate;
     }
 
-    protected virtual FloatLiteral VisitFloatLiteral(FloatLiteral floatLiteral)
+    protected virtual IExpression VisitFloatLiteral(FloatLiteral floatLiteral)
     {
         return floatLiteral;
     }
 
-    protected virtual IntLiteral VisitIntLiteral(IntLiteral intLiteral)
+    protected virtual IExpression VisitIntLiteral(IntLiteral intLiteral)
     {
         return intLiteral;
     }
 
-    protected virtual BoolLiteral VisitBoolLiteral(BoolLiteral boolLiteral)
+    protected virtual IExpression VisitBoolLiteral(BoolLiteral boolLiteral)
     {
         return boolLiteral;
     }
     
-    protected virtual StringLiteral VisitStringLiteral(StringLiteral stringLiteral)
+    protected virtual IExpression VisitStringLiteral(StringLiteral stringLiteral)
     {
         return stringLiteral;
     }
 
-    protected virtual Cast VisitCast(Cast cast)
+    protected virtual IExpression VisitCast(Cast cast)
     {
         cast.TargetType = VisitVariableType(cast.TargetType);
         cast.Value = VisitExpression(cast.Value);
@@ -215,74 +215,74 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return cast;
     }
 
-    protected virtual VariableAccess VisitVariableAccess(VariableAccess variableAccess)
+    protected virtual IExpression VisitVariableAccess(VariableAccess variableAccess)
     {
         return variableAccess;
     }
 
-    protected virtual Not VisitNotExpression(Not notExpression)
+    protected virtual IExpression VisitNotExpression(Not notExpression)
     {
         notExpression.Value = VisitExpression(notExpression.Value);
 
         return notExpression;
     }
     
-    protected virtual Add VisitAddExpression(Add addExpression)
+    protected virtual IExpression VisitAddExpression(Add addExpression)
     {
         return VisitBinaryExpression(addExpression);
     }
     
-    protected virtual And VisitAndExpression(And andExpression)
+    protected virtual IExpression VisitAndExpression(And andExpression)
     {
         return VisitBinaryExpression(andExpression);
     }
     
-    protected virtual AreEqual VisitAreEqualExpression(AreEqual areEqualExpression)
+    protected virtual IExpression VisitAreEqualExpression(AreEqual areEqualExpression)
     {
         return VisitBinaryExpression(areEqualExpression);
     }
 
-    protected virtual GreaterOrEqual VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
+    protected virtual IExpression VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
     {
         return VisitBinaryExpression(greaterOrEqualExpression);
     }
 
-    protected virtual GreaterThan VisitGreaterThanExpression(GreaterThan greaterThanExpression)
+    protected virtual IExpression VisitGreaterThanExpression(GreaterThan greaterThanExpression)
     {
         return VisitBinaryExpression(greaterThanExpression);
     }
 
-    protected virtual LessThan VisitLessThanExpression(LessThan lessThanExpression)
+    protected virtual IExpression VisitLessThanExpression(LessThan lessThanExpression)
     {
         return VisitBinaryExpression(lessThanExpression);
     }
 
-    protected virtual LessThanOrEqual VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
+    protected virtual IExpression VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
     {
         return VisitBinaryExpression(lessThanOrEqualExpression);
     }
 
-    protected virtual Divide VisitDivideExpression(Divide divideExpression)
+    protected virtual IExpression VisitDivideExpression(Divide divideExpression)
     {
         return VisitBinaryExpression(divideExpression);
     }
     
-    protected virtual Multiply VisitMultiplyExpression(Multiply multiplyExpression)
+    protected virtual IExpression VisitMultiplyExpression(Multiply multiplyExpression)
     {
         return VisitBinaryExpression(multiplyExpression);
     }
 
-    protected virtual NotEqual VisitNotEqualExpression(NotEqual notEqualExpression)
+    protected virtual IExpression VisitNotEqualExpression(NotEqual notEqualExpression)
     {
         return VisitBinaryExpression(notEqualExpression);
     }
 
-    protected virtual Or VisitOrExpression(Or orExpression)
+    protected virtual IExpression VisitOrExpression(Or orExpression)
     {
         return VisitBinaryExpression(orExpression);
     }
 
-    protected virtual Subtract VisitSubtractExpression(Subtract subtractExpression)
+    protected virtual IExpression VisitSubtractExpression(Subtract subtractExpression)
     {
         return VisitBinaryExpression(subtractExpression);
     }

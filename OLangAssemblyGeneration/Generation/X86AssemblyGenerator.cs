@@ -334,7 +334,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Not VisitNotExpression(Not notExpression)
     {
-        notExpression = base.VisitNotExpression(notExpression);
+        notExpression = (Not)base.VisitNotExpression(notExpression);
         WritePop("rdi");
         WriteInstruction("cmp rdi, 1");
         WriteInstruction("setne al");
@@ -360,7 +360,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
-        variableAccess = base.VisitVariableAccess(variableAccess);
+        variableAccess = (VariableAccess)base.VisitVariableAccess(variableAccess);
         WritePush($"QWORD {GetVariableLocation(variableAccess.Identifier)}");
 
         return variableAccess;
@@ -368,7 +368,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
     
     protected override Add VisitAddExpression(Add addExpression)
     {
-        addExpression = base.VisitAddExpression(addExpression);
+        addExpression = (Add)base.VisitAddExpression(addExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("add rax, rdi");
@@ -379,7 +379,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
     
     protected override And VisitAndExpression(And andExpression)
     {
-        andExpression = base.VisitAndExpression(andExpression);
+        andExpression = (And)base.VisitAndExpression(andExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("and rax, rdi");
@@ -390,7 +390,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override AreEqual VisitAreEqualExpression(AreEqual areEqualExpression)
     {
-        areEqualExpression = base.VisitAreEqualExpression(areEqualExpression);
+        areEqualExpression = (AreEqual)base.VisitAreEqualExpression(areEqualExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -403,7 +403,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override GreaterOrEqual VisitGreaterOrEqualExpression(GreaterOrEqual greaterOrEqualExpression)
     {
-        greaterOrEqualExpression = base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
+        greaterOrEqualExpression = (GreaterOrEqual)base.VisitGreaterOrEqualExpression(greaterOrEqualExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -416,7 +416,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override GreaterThan VisitGreaterThanExpression(GreaterThan greaterThanExpression)
     {
-        greaterThanExpression = base.VisitGreaterThanExpression(greaterThanExpression);
+        greaterThanExpression = (GreaterThan)base.VisitGreaterThanExpression(greaterThanExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -429,7 +429,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override LessThan VisitLessThanExpression(LessThan lessThanExpression)
     {
-        lessThanExpression = base.VisitLessThanExpression(lessThanExpression);
+        lessThanExpression = (LessThan)base.VisitLessThanExpression(lessThanExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -442,7 +442,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override LessThanOrEqual VisitLessThanOrEqualExpression(LessThanOrEqual lessThanOrEqualExpression)
     {
-        lessThanOrEqualExpression = base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
+        lessThanOrEqualExpression = (LessThanOrEqual)base.VisitLessThanOrEqualExpression(lessThanOrEqualExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -455,7 +455,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Multiply VisitMultiplyExpression(Multiply multiplyExpression)
     {
-        multiplyExpression = base.VisitMultiplyExpression(multiplyExpression);
+        multiplyExpression = (Multiply)base.VisitMultiplyExpression(multiplyExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("mul rdi");
@@ -466,7 +466,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Divide VisitDivideExpression(Divide divideExpression)
     {
-        divideExpression = base.VisitDivideExpression(divideExpression);
+        divideExpression = (Divide)base.VisitDivideExpression(divideExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cqo"); // extends RAX into RDX
@@ -478,7 +478,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override NotEqual VisitNotEqualExpression(NotEqual notEqualExpression)
     {
-        notEqualExpression = base.VisitNotEqualExpression(notEqualExpression);
+        notEqualExpression = (NotEqual)base.VisitNotEqualExpression(notEqualExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("cmp rax, rdi");
@@ -491,7 +491,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Or VisitOrExpression(Or orExpression)
     {
-        orExpression = base.VisitOrExpression(orExpression);
+        orExpression = (Or)base.VisitOrExpression(orExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("or rax, rdi");
@@ -502,7 +502,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Subtract VisitSubtractExpression(Subtract subtractExpression)
     {
-        subtractExpression = base.VisitSubtractExpression(subtractExpression);
+        subtractExpression = (Subtract)base.VisitSubtractExpression(subtractExpression);
         WritePop("rdi");
         WritePop("rax");
         WriteInstruction("sub rax, rdi");
@@ -513,7 +513,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 
     protected override Negate VisitNegate(Negate negate)
     {
-        negate = base.VisitNegate(negate);
+        negate = (Negate)base.VisitNegate(negate);
         var reg = "rax";
         WritePop(reg);
         WriteInstruction($"neg {reg}");
