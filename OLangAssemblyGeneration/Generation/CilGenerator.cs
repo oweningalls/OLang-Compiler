@@ -15,7 +15,6 @@ namespace AssemblyGeneration.Generation;
 
 public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
 {
-    private IErrorHelper _errorHelper;
     private ILGenerator _il;
     private TypeBuilder _type;
 
@@ -139,7 +138,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)
     {
-        var local = _il.DeclareLocal(GetCsType(declarationStatement.Value.Type!));
+        var local = _il.DeclareLocal(GetCsType(declarationStatement.Type!));
         _variableTracker.SetValue(declarationStatement.Identifier, local);
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         EmitLocalSet(declarationStatement.Identifier);
@@ -306,6 +305,33 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return stringLiteral;
     }
 
+    protected override FloatLiteral VisitFloatLiteral(FloatLiteral floatLiteral)
+    {
+        _il.Emit(OpCodes.Ldc_R4, floatLiteral.Value);
+
+        return floatLiteral;
+    }
+
+    protected override Cast VisitCast(Cast cast)
+    {
+        cast = base.VisitCast(cast);
+        if (cast.TargetType.Equals(PrimitiveVariableType.IntType))
+        {
+            _il.Emit(OpCodes.Conv_I4);
+
+            return cast;
+        }
+
+        if (cast.TargetType.Equals(PrimitiveVariableType.FloatType))
+        {
+            _il.Emit(OpCodes.Conv_R4);
+
+            return cast;
+        }
+
+        // can only change type between int and float for now
+        throw ErrorHelper.ShowErrorMessage("Invalid cast.", cast.Span);
+    }
 
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {

@@ -148,12 +148,14 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     {
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         var type = GetExpressionType(declarationStatement.Value);
-        if (declarationStatement.Type is PrimitiveVariableType varType && !type.Equals(varType))
+        if (declarationStatement.Type != null && !CanImplicitlyConvertTo(declarationStatement.Type, type))
         {
-            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {varType.Type}", declarationStatement.Value.Span);
+            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.Type}", declarationStatement.Value.Span);
         }
     
-        RecordVariableType(declarationStatement.Identifier, type, declarationStatement.Span);
+        declarationStatement.Type ??= type;
+        declarationStatement.Value = MaybeImplicitCast(declarationStatement.Type, declarationStatement.Value);
+        RecordVariableType(declarationStatement.Identifier, declarationStatement.Type, declarationStatement.Span);
 
         return declarationStatement;
     }
@@ -287,12 +289,12 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         negate = base.VisitNegate(negate);
         var expType = GetExpressionType(negate.Value);
 
-        if (!expType.Equals(PrimitiveVariableType.IntType))
+        if (!IsMathType(expType))
         {
             throw CannotApplyUnaryOperator("-", expType.ToString(), negate.Span);
         }
         
-        MarkExpressionType(negate, PrimitiveVariableType.IntType);
+        MarkExpressionType(negate, expType);
 
         return negate;
     }
@@ -323,24 +325,57 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
             throw ErrorHelper.ShowErrorMessage($"Cannot compare expressions of type {lhsType} and {rhsType}", binaryComparisonExpression.Span);
         }
     }
+
+    private bool CanImplicitlyConvertTo(IVariableType expectedType, IVariableType actualType)
+    {
+        if (expectedType.Equals(actualType))
+        {
+            return true;
+        }
+        
+        var expectedPrecedence = GetMathTypePrecedence(expectedType);
+        var actualPrecedence = GetMathTypePrecedence(actualType);
+
+        if (expectedPrecedence == null || actualPrecedence == null)
+        {
+            return false;
+        }
+
+        return expectedPrecedence >= actualPrecedence;
+    }
     
     private void CheckMathExpression<T>(T mathExpression, string oper) where T : BaseBinaryExpression
     {
         var lhsType = GetExpressionType(mathExpression.Lhs);
         var rhsType = GetExpressionType(mathExpression.Rhs);
 
-        var addedType = ResultingTypeFromMath(lhsType, rhsType);
-        if (addedType is null)
+        var resultingType = ResultingTypeFromMath(lhsType, rhsType);
+        if (resultingType is null)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot apply operator `{oper}` to expressions of type {lhsType} and {rhsType}", mathExpression.Span);
         }
+
+        mathExpression.Lhs = MaybeImplicitCast(resultingType, mathExpression.Lhs);
+        mathExpression.Rhs = MaybeImplicitCast(resultingType, mathExpression.Rhs);
         
-        MarkExpressionType(mathExpression, addedType);
+        MarkExpressionType(mathExpression, resultingType);
+    }
+
+    private IExpression MaybeImplicitCast(IVariableType type, IExpression expression)
+    {
+        if (expression.Type.Equals(type))
+        {
+            return expression;
+        }
+
+        return new Cast(type, expression);
     }
 
     private IVariableType? ResultingTypeFromMath(IVariableType type1, IVariableType type2)
     {
-        if (!MathTypes.Any(x => x.Equals(type1)) || !MathTypes.Any(x => x.Equals(type2)))
+        var t1Precedence = GetMathTypePrecedence(type1);
+        var t2Precedence = GetMathTypePrecedence(type2);
+        if (t1Precedence is not {} t1PrecedenceValue || t2Precedence is not {} t2PrecedenceValue)
         {
             return null;
         }
@@ -350,7 +385,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
             return type1;
         }
 
-        return null;
+        return MathTypes[Math.Max(t1PrecedenceValue, t2PrecedenceValue)];
     }
 
     protected override Add VisitAddExpression(Add addExpression)
@@ -419,7 +454,7 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     protected override Multiply VisitMultiplyExpression(Multiply multiplyExpression)
     {
         multiplyExpression = base.VisitMultiplyExpression(multiplyExpression);
-        CheckMathExpression(multiplyExpression, "+");
+        CheckMathExpression(multiplyExpression, "*");
 
         return multiplyExpression;
     }
@@ -511,6 +546,18 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
     
         return _variableTypeStack.GetValue(identifier);
     }
+
+    protected override Cast VisitCast(Cast cast)
+    {
+        cast = base.VisitCast(cast);
+        var expType = cast.Value.Type;
+        if (IsMathType(cast.TargetType) && IsMathType(expType) || cast.TargetType.Equals(expType))
+        {
+            return cast;
+        }
+        
+        throw ErrorHelper.ShowErrorMessage($"Cannot cast expression of type `{expType}` to `{cast.TargetType}`.", cast.Span);
+    }
     
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
@@ -520,5 +567,21 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         return variableAccess;
     }
 
-    private static readonly IVariableType[] MathTypes = [PrimitiveVariableType.IntType, PrimitiveVariableType.FloatType];
+    private int? GetMathTypePrecedence(IVariableType type)
+    {
+        if (type is not PrimitiveVariableType prim)
+        {
+            throw ErrorHelper.UnknownVariant("math type", type.GetType());
+        }
+
+        var idx = MathTypes.IndexOf(prim);
+        return idx == -1 ? null : idx;
+    }
+
+    private bool IsMathType(IVariableType type)
+    {
+        return MathTypes.Contains(type);
+    }
+
+    private static readonly List<IVariableType> MathTypes = [PrimitiveVariableType.IntType, PrimitiveVariableType.FloatType];
 }

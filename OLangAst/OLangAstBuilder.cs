@@ -210,6 +210,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
+            CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }

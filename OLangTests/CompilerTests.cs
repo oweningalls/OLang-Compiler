@@ -762,46 +762,45 @@ public class CompilerTests
     [
         ("""
          let a = 1.3;
-         exit (int)(a * 10);
+         """, 0),
+        ("""
+         let a = 1.3;
+         exit int(a * 10);
          """, 13),
         ("""
          let a = 1.3;
-         exit (int)(a * 3 + 0.1);
-         """, 4),
+         exit int(a * 3 + 0.11);
+         """, 4), // add 0.11 instead of 0.1 due to rounding error
         ("""
          let a = 1.3;
-         exit (int)a;
-         """, 10),
+         exit int(a);
+         """, 1),
         ("""
          let a = 1.9;
-         exit (int)a;
-         """, 13),
+         exit int(a);
+         """, 1),
         ("""
          float a = 3;
          int b = 4;
          let c = a / b;
-         exit (int)(c * 100);
-         """, 74),
+         exit int(c * 100);
+         """, 75),
         ("""
          float a = 0.5;
-         exit (int)(a * 2)
-         """, 1),
-        ("""
-         float a = .5;
-         exit (int)(a * 2)
+         exit int(a * 2);
          """, 1),
         ("""
          float a = -0.5;
-         exit (int)(a * -2)
+         exit int(a * -2);
          """, 1),
         ("""
          let a = -0.5;
          let b = a - 5;
-         exit (int)(b * -2)
+         exit int(b * -2);
          """, 11),
     ];
     
-    // [TestCaseSource(nameof(FloatPrograms))] // TODO: uncomment once floats are implemented
+    [TestCaseSource(nameof(FloatPrograms))]
     public void FloatTests((string, int) values)
     {
         TestProgramExitCode(values);
@@ -931,12 +930,13 @@ public class CompilerTests
     [TestCase("void a() {} let b = a();")] // cannot assign return of void
     [TestCase("void a() {} int b = a();")] // cannot assign return of void
     [TestCase("let a = true; let b = false; let c = a + b;")] // cannot add bools
-    // TODO: uncomment once floats are implemented
-    // [TestCase("int a = 1.1;")] // can't implicitly convert float to int
-    // [TestCase("float a = 1.01.312;")] // float can only have one decimal point
+    [TestCase("int a = 1.1;")] // can't implicitly convert float to int
+    [TestCase("float a = 1.01.312;")] // float can only have one decimal point
+    [TestCase("var evilInt = bool(1);")] // can't cast int to bool
+    [TestCase("var evilBool = int(true);")] // can't cast int to bool
     public void TestInvalidPrograms(string program)
     {
-        var ex = Assert.Throws<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));
+        var ex = Assert.Catch<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);

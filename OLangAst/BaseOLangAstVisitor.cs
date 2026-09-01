@@ -175,6 +175,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             StringLiteral stringLiteral => VisitStringLiteral(stringLiteral),
             FunctionInvocation invocation => VisitFunctionInvocation(invocation),
             Negate negate => VisitNegate(negate),
+            Cast cast => VisitCast(cast),
             _ => throw ErrorHelper.UnknownVariant("binary expression", expression.GetType())
         };
     }
@@ -186,7 +187,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return negate;
     }
 
-    protected FloatLiteral VisitFloatLiteral(FloatLiteral floatLiteral)
+    protected virtual FloatLiteral VisitFloatLiteral(FloatLiteral floatLiteral)
     {
         return floatLiteral;
     }
@@ -206,6 +207,13 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return stringLiteral;
     }
 
+    protected virtual Cast VisitCast(Cast cast)
+    {
+        cast.TargetType = VisitVariableType(cast.TargetType);
+        cast.Value = VisitExpression(cast.Value);
+
+        return cast;
+    }
 
     protected virtual VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {

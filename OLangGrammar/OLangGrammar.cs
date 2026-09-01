@@ -118,6 +118,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken ident) => new IdentifierTerm(ident)),
         GrammarRule.Create((LeftParenToken _, IExpression expression, RightParenToken _) => new Paren(expression)),
         GrammarRule.Create((IFunctionInvocation ident) => new FunctionInvocationTerm(ident)),
+        GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

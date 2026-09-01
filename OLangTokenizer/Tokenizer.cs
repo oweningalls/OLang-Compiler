@@ -133,26 +133,7 @@ public class Tokenizer
 
         if (char.IsDigit(Peek()!.Value))
         {
-            var buffer = "";
-            buffer += Consume();
-            var sawDecimalPoint = false;
-            while (Peek() is { } c && char.IsDigit(c))
-            {
-                buffer += Consume();
-                // TODO: uncomment once floats are implemented
-                // if (Peek() == '.')
-                // {
-                //     if (sawDecimalPoint)
-                //     {
-                //         return MakeNumLiteralToken(buffer, sawDecimalPoint);
-                //     }
-                //
-                //     Consume();
-                //     sawDecimalPoint = true;
-                // }
-            }
-
-            return MakeNumLiteralToken(buffer, sawDecimalPoint);
+            return MakeNumToken();
         }
 
         if (Peek()!.Value == '\"')
@@ -171,6 +152,28 @@ public class Tokenizer
         }
 
         throw new Exception($"Unexpected character: `{Peek()}`");
+    }
+
+    private BaseToken? MakeNumToken()
+    {
+        var buffer = "";
+        buffer += Consume();
+        var sawDecimalPoint = false;
+        while (Peek() is { } c && (char.IsDigit(c) || c == '.'))
+        {
+            if (c == '.')
+            {
+                if (Peek(1) == '.')
+                {
+                    break;
+                }
+                
+                sawDecimalPoint = true;
+            }
+            buffer += Consume();
+        }
+
+        return MakeNumLiteralToken(buffer, sawDecimalPoint);
     }
 
     private BaseToken MakeNumLiteralToken(string buffer, bool sawDecimalPoint)
