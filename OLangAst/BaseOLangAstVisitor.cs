@@ -1,4 +1,5 @@
 ﻿using ErrorHelper;
+using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -11,14 +12,35 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     public virtual Program VisitProgram(Program program)
     {
-        program.Statements = VisitStatements(program.Statements);
+        program.ClassMembers = VisitClassMembers(program.ClassMembers);
 
         return program;
+    }
+    
+    protected List<IClassMember> VisitClassMembers(IEnumerable<IClassMember> stmtList)
+    {
+        return stmtList.Select(VisitClassMember).ToList();
     }
 
     protected List<IStatement> VisitStatements(IEnumerable<IStatement> stmtList)
     {
         return stmtList.Select(VisitStatement).ToList();
+    }
+
+    protected IClassMember VisitClassMember(IClassMember classMember)
+    {
+        return classMember switch
+        {
+            MethodDeclaration methodDeclaration => VisitMethodDeclaration(methodDeclaration),
+            _ => throw ErrorHelper.UnknownVariant("class member", classMember.GetType())
+        };
+    }
+
+    protected virtual IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
+    {
+        methodDeclaration.Scope = VisitScope(methodDeclaration.Scope);
+
+        return methodDeclaration;
     }
 
     protected IStatement VisitStatement(IStatement statement)

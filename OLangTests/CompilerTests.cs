@@ -1042,14 +1042,18 @@ public class CompilerTests
         return Fib(n - 1) + Fib(n - 2);
     }
 
-    private int CompileAndExecuteProgram(string program, out string output)
+    private int CompileAndExecuteProgram(string program, out string output, bool wrapWithMain = true)
     {
         var outputFile = TargetPlatform switch
         {
             OLangCompiler.OLangCompiler.CompileTargets.X86 => "test.asm",
             OLangCompiler.OLangCompiler.CompileTargets.Cil => "test.dll"
         };
-        
+
+        if (wrapWithMain)
+        {
+            program = $"class Program {{void Main() {{\n{program}\n}}}}";
+        }
         OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", outputFile);
 
         var psi = TargetPlatform switch

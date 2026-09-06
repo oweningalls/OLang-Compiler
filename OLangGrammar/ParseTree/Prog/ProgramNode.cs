@@ -3,8 +3,8 @@ using OLangGrammar.ParseTree.StmtList;
 
 namespace OLangGrammar.ParseTree.Prog;
 
-public class ProgramNode(IStmtListNode stmtList) : IProgramNode
+public class ProgramNode(IClassMemberListNode classMemberList) : IProgramNode
 {
-    public IStmtListNode StmtList = stmtList;
+    public IClassMemberListNode ClassMemberList = classMemberList;
     public SourceSpan Span { get; set; }
 }

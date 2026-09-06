@@ -255,6 +255,7 @@ public class Tokenizer
 
     private static readonly Dictionary<string, Func<BaseToken>> KeywordMap = new()
     {
+        { "class", () => new ClassToken() },
         { "exit", () => new ExitToken() },
         { "let", () => new LetToken() },
         { "int", () => new IntTypeToken() },

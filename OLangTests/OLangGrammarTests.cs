@@ -1,11 +1,12 @@
 ﻿using Lexing;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
+using OLangGrammar.ParseTree.ClassMember;
+using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.GreaterExpression;
 using OLangGrammar.ParseTree.MultExpression;
-using OLangGrammar.ParseTree.Prog;
 using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
@@ -18,15 +19,15 @@ namespace OLangTests;
 public class OLangGrammarTests
 {
     [Test]
-    public void ReduceProgramNode()
+    public void ReduceMethodDeclaration()
     {
-        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(IProgramNode));
-        var stmtList = new SingleStatementStmtList(null);
-        var program = rule.ReduceRule([stmtList]);
+        var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(IClassMemberListNode) && x.GetRhsTypes().Count == 1);
+        var classMember = new MethodDeclaration(null, null, null);
+        var parsedClassMemberList = rule.ReduceRule([classMember]);
 
-        var programNode = program as ProgramNode;
-        Assert.That(programNode, Is.Not.Null);
-        Assert.That(programNode.StmtList, Is.EqualTo(stmtList));
+        var classMemberList = parsedClassMemberList as SingleMemberClassMemberList;
+        Assert.That(classMemberList, Is.Not.Null);
+        Assert.That(classMemberList.ClassMember, Is.EqualTo(classMember));
     }
     
     [Test]

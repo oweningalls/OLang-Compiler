@@ -6,6 +6,7 @@ using System.Reflection.PortableExecutable;
 using AstHelpers;
 using ErrorHelper;
 using OLangAst;
+using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -34,11 +35,21 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var module = assembly.DefineDynamicModule("OLangProgram");
         _type = module.DefineType("Program");
 
-        program.Statements.Add(new ExitStatement(new IntLiteral(0)));
-        var main = GenerateMethod("Main", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [], program.Statements);
+        VisitProgram(program);
 
+        if (!_functions.TryGetValue("Main", out var main))
+        {
+            throw ErrorHelper.ShowErrorMessage("Program must contain a method named 'Main'", program.Span);
+        }
         GenerateAssemblyFile(filePath, fileName, assembly, main);
         WriteRuntimeConfigFile(filePath, Path.GetFileNameWithoutExtension(fileName));
+    }
+
+    protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
+    {
+        GenerateMethod(methodDeclaration.Identifier, MethodAttributes.Private | MethodAttributes.Static, methodDeclaration.Type == null ? typeof(void) : typeHelper.GetCsType(methodDeclaration.Type), methodDeclaration.Parameters, methodDeclaration.Scope.Statements);
+
+        return methodDeclaration;
     }
 
     private void GenerateAssemblyFile(string filePath, string fileName, PersistedAssemblyBuilder assembly, MethodBuilder main)

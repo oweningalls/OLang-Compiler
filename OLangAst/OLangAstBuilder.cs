@@ -7,6 +7,8 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ClassMember;
+using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -36,6 +38,8 @@ using Parameter = OLangAst.Miscellaneous.Parameter;
 using Return = OLangAst.Statements.Return;
 using StringLiteral = OLangAst.Expressions.StringLiteral;
 using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
+using IClassMember = OLangAst.ClassMembers.IClassMember;
+using MethodDeclaration = OLangAst.ClassMembers.MethodDeclaration;
 
 namespace OLangAst;
 
@@ -43,34 +47,58 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 {
     public Program ParseProgram(ProgramNode programNode)
     {
-        var statements = ParseStatementList(programNode.StmtList);
+        var statements = ParseList(
+            programNode.ClassMemberList,
+            x => x switch
+            {
+                SingleMemberClassMemberList member => (member.ClassMember, null),
+                ClassMemberListWithClassMember list => (list.ClassMember, list.ClassMemberList),
+                _ => throw errorHelper.UnknownVariant("class member list", x.GetType())
+            },
+            ParseClassMember
+        );
         return new Program(statements) { Span = SourceSpan.CombineSpans(statements.Select(x => x.Span).ToArray()) };
+    }
+
+    private List<TTarget> ParseList<TList, TData, TTarget>(TList first, Func<TList, (TData, TList?)> getValueAndNext, Func<TData, TTarget> parseValue)
+    {
+        var (value, next) = getValueAndNext(first);
+        var list = new List<TTarget> { parseValue(value) };
+        while (next != null)
+        {
+            (value, next) = getValueAndNext(next);
+            list.Add(parseValue(value));
+        }
+
+        return list;
     }
 
     protected List<IStatement> ParseStatementList(IStmtListNode statementList)
     {
-        switch (statementList)
-        {
-            case SingleStatementStmtList statement:
-                return [ParseStatement(statement.Statement)];
-            case StmtListWithStatement statement:
-                var statements = new List<IStatement>();
-                IStmtListNode currentStatement = statement;
-
-                while (currentStatement is StmtListWithStatement nextStatement)
-                {
-                    statements.Add(ParseStatement(nextStatement.Statement));
-                    currentStatement = nextStatement.StmtList;
-                }
-                
-                statements.Add(ParseStatement(((SingleStatementStmtList)currentStatement).Statement));
-                
-                return statements;
-            default:
-                throw errorHelper.UnknownVariant("statement type", statementList.GetType());
-        }
+        return ParseList(
+            statementList,
+            x => x switch
+            {
+                SingleStatementStmtList value => (value.Statement, null),
+                StmtListWithStatement list => (list.Statement, list.StmtList),
+                _ => throw errorHelper.UnknownVariant("statement list", x.GetType())
+            },
+            ParseStatement
+        );
     }
 
+    protected IClassMember ParseClassMember(OLangGrammar.ParseTree.ClassMember.IClassMember classMember)
+    {
+        return classMember switch
+        {
+            OLangGrammar.ParseTree.ClassMember.MethodDeclaration methodDeclaration => new MethodDeclaration(ParseType(methodDeclaration.Type), ParseIdentifier(methodDeclaration.Identifier), [], ParseScope(methodDeclaration.Scope)),
+            MethodDeclarationWithParameters methodDeclarationWithParameters => new MethodDeclaration(ParseType(methodDeclarationWithParameters.Type), ParseIdentifier(methodDeclarationWithParameters.Identifier), ParseParameterList(methodDeclarationWithParameters.Parameters), ParseScope(methodDeclarationWithParameters.Scope)),
+            VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)),
+            VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)),
+            _ => throw errorHelper.UnknownVariant("class member", classMember.GetType())
+        };
+    }
+    
     protected IStatement ParseStatement(OLangGrammar.ParseTree.Stmt.IStatement statement)
     {
         return statement switch
@@ -238,28 +266,16 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     protected List<Parameter> ParseParameterList(IParameterListNode parameterList)
     {
-        if (parameterList is EmptyParameterList)
-        {
-            return [];
-        }
-
-        var parameters = new List<Parameter>();
-        while (parameterList is ContinuedParameterList continued)
-        {
-            parameters.Add(ParseParameter(continued));
-            parameterList = continued.ParameterList;
-        }
-
-        if (parameterList is OLangGrammar.ParseTree.ParameterList.Parameter singleParameter)
-        {
-            parameters.Add(ParseParameter(singleParameter));
-        }
-        else
-        {
-            throw errorHelper.UnknownVariant("parameter", parameterList.GetType());
-        }
-
-        return parameters;
+        return ParseList<IParameterListNode, OLangGrammar.ParseTree.ParameterList.Parameter, Parameter>(
+            parameterList,
+            x => x switch
+            {
+                ContinuedParameterList value => (value, value.ParameterList),
+                OLangGrammar.ParseTree.ParameterList.Parameter parameter => (parameter, null),
+                _ => throw errorHelper.UnknownVariant("parameter list", x.GetType())
+            },
+            ParseParameter
+        );
     }
 
     protected Parameter ParseParameter(OLangGrammar.ParseTree.ParameterList.Parameter parameter)
@@ -314,27 +330,15 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     
     protected List<IExpression> ParseArgumentList(IArgumentList argumentList)
     {
-        if (argumentList is EmptyArgumentList)
-        {
-            return [];
-        }
-
-        var parameters = new List<IExpression>();
-        while (argumentList is ContinuedArgumentList continued)
-        {
-            parameters.Add(ParseExpression(continued.Expression));
-            argumentList = continued.ArgumentList;
-        }
-
-        if (argumentList is ExpressionArgumentList singleParameter)
-        {
-            parameters.Add(ParseExpression(singleParameter.Expression));
-        }
-        else
-        {
-            throw errorHelper.UnknownVariant("argument list", argumentList.GetType());
-        }
-
-        return parameters;
+        return ParseList(
+            argumentList,
+            x => x switch
+            {
+                ContinuedArgumentList value => (value.Expression, value.ArgumentList),
+                ExpressionArgumentList parameter => (parameter.Expression, null),
+                _ => throw errorHelper.UnknownVariant("parameter list", x.GetType())
+            },
+            ParseExpression
+        );
     }
 }

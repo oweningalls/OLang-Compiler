@@ -1,8 +1,16 @@
 $$
 \begin{aligned} \\
 [\mathrm{Prog}]
-&\to [\mathrm{StmtList}] \\
+&\to \text{class} \{ [\mathrm{ClassMemberList}] \} \\
 \\
+[\mathrm{ClassMemberList}]
+&\to [\mathrm{ClassMember}] \\
+&\mid [\mathrm{ClassMember}] [\mathrm{ClassMemberList}] \\
+[\mathrm{ClassMember}]
+&\to [\mathrm{Type}]\ \mathrm{ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
+&\mid \text{void ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
+&\mid [\mathrm{Type}]\ \mathrm{ident}\text{()}\ [\mathrm{Scope}] \\
+&\mid \text{void ident}\text{()}\ [\mathrm{Scope}] \\
 [\mathrm{StmtList}]
 &\to [\mathrm{Stmt}] \\
 &\mid [\mathrm{Stmt}] [\mathrm{StmtList}] \\
@@ -45,6 +53,7 @@ $$
 &\to \text{int} \\
 &\mid \text{bool} \\
 &\mid \text{float} \\
+&\mid \text{string} \\
 [\mathrm{Expression}]
 &\to [\mathrm{Expression}] \text{||} [\mathrm{AndExpression}] \\
 &\mid [\mathrm{AndExpression}] \\

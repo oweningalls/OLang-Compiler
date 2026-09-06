@@ -12,34 +12,34 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
 {
     public void GenerateProgram(Program program, string filePath, string fileName)
     {
-        _output = new StringBuilder();
-        _stackOffset = 0;
-        _labelCount = 0;
-        _variableStackOffsets = new ScopeTracker<string, int>();
-        _functionTracker = new ScopeTracker<string, string>();
-        _functions = new List<StringBuilder>();
-
-        var start = "_start";
-
-        _output.Append("""
-                       global _start
-
-                       section .text
-
-                       """);
-        WriteLabel(start);
-
-        VisitStatements(program.Statements);
-
-        WriteExit(0);
-
-        foreach (var function in _functions)
-        {
-            _output.Append(function);
-            _output.Append('\n');
-        }
-
-        File.WriteAllText(Path.Combine(filePath, fileName), _output.ToString()); 
+//         _output = new StringBuilder();
+//         _stackOffset = 0;
+//         _labelCount = 0;
+//         _variableStackOffsets = new ScopeTracker<string, int>();
+//         _functionTracker = new ScopeTracker<string, string>();
+//         _functions = new List<StringBuilder>();
+//
+//         var start = "_start";
+//
+//         _output.Append("""
+//                        global _start
+//
+//                        section .text
+//
+//                        """);
+//         WriteLabel(start);
+//
+//         VisitStatements(program.ClassMembers);
+//
+//         WriteExit(0);
+//
+//         foreach (var function in _functions)
+//         {
+//             _output.Append(function);
+//             _output.Append('\n');
+//         }
+//
+//         File.WriteAllText(Path.Combine(filePath, fileName), _output.ToString()); 
     }
 
     protected override ExitStatement VisitExitStatement(ExitStatement exitStatement)

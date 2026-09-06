@@ -3,6 +3,8 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ClassMember;
+using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -26,7 +28,17 @@ public class OLangGrammar : IGrammar
     private List<BaseGrammarRule> _rules =
     [
         // Prog
-        GrammarRule.Create((IStmtListNode stmtList) => new ProgramNode(stmtList)),
+        GrammarRule.Create((ClassToken _, IdentifierToken _, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ProgramNode(stmtList)),
+        
+        // ClassMemberList
+        GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),
+        GrammarRule.Create((IClassMember statement, IClassMemberListNode statementList) => new ClassMemberListWithClassMember(statement, statementList)),
+        
+        // ClassMember
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidMethodDeclarationWithParameters(identifier, parameterList, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope)),
 
         // StmtList
         GrammarRule.Create((IStatement statement) => new SingleStatementStmtList(statement)),
