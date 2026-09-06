@@ -131,7 +131,7 @@ public class Tokenizer
             return TokenizeLetter();
         }
 
-        if (char.IsDigit(Peek()!.Value))
+        if (char.IsDigit(Peek()!.Value) || Peek() == '-' && Peek(1) is {} c && char.IsDigit(c))
         {
             return MakeNumToken();
         }

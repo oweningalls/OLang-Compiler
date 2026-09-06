@@ -898,6 +898,8 @@ public class CompilerTests
         ("print false.ToString();", "False"),
         ("print \"some string\".ToString();", "some string"),
         ("2.ToString();", ""),
+        ("print -3.ToString();", "-3"),
+        ("print -4.5.ToString();", "-4.5"),
     ];
     
     [TestCaseSource(nameof(ToStringPrograms))]
