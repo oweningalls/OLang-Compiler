@@ -7,6 +7,7 @@ using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.MethodInvocation;
 using OLangGrammar.ParseTree.MultExpression;
 using OLangGrammar.ParseTree.ParameterList;
 using OLangGrammar.ParseTree.Prog;
@@ -47,6 +48,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, scope)),
         GrammarRule.Create((IFunctionInvocation invocation, SemicolonToken _) => new Invocation(invocation)),
+        GrammarRule.Create((IMethodInvocation invocation, SemicolonToken _) => new MethodInvocationStatement(invocation)),
         GrammarRule.Create((ReturnToken _, SemicolonToken _) => new Return()),
         GrammarRule.Create((ReturnToken _, IExpression expression, SemicolonToken _) => new ReturnValue(expression)),
 
@@ -117,12 +119,17 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((StringLiteralToken stringLit) => new StringLiteral(stringLit)),
         GrammarRule.Create((IdentifierToken ident) => new IdentifierTerm(ident)),
         GrammarRule.Create((LeftParenToken _, IExpression expression, RightParenToken _) => new Paren(expression)),
-        GrammarRule.Create((IFunctionInvocation ident) => new FunctionInvocationTerm(ident)),
+        GrammarRule.Create((IFunctionInvocation functionInvocation) => new FunctionInvocationTerm(functionInvocation)),
+        GrammarRule.Create((IMethodInvocation methodInvocation) => new MethodInvocationTerm(methodInvocation)),
         GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, RightParenToken _) => new FunctionInvocation(ident)),
+        
+        // MethodInvocation
+        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new MethodInvocationWithArguments(expression, ident, argumentList)),
+        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new MethodInvocation(expression, ident)),
     ];
 
     public Type GetStartSymbol()

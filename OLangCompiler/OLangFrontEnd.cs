@@ -1,4 +1,5 @@
 ﻿using AssemblyGeneration.Generation;
+using AstHelpers;
 using ErrorHelper;
 using OLangAst;
 using OLangGrammar.ParseTree.Prog;
@@ -11,7 +12,7 @@ namespace OLangCompiler;
 
 public class OLangFrontEnd : IOLangFrontEnd
 {
-    public void Compile(string program, IGenerator generator, IErrorHelper errorHelper, string filePath, string fileName)
+    public void Compile(string program, IGenerator generator, IErrorHelper errorHelper, TypeHelper typeHelper, string filePath, string fileName)
     {
         var tokenizer = new Tokenizer();
         var tokens = tokenizer.Tokenize(program, errorHelper);
@@ -22,7 +23,7 @@ public class OLangFrontEnd : IOLangFrontEnd
 
         var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
 
-        var typeChecker = new TypeChecker(errorHelper);
+        var typeChecker = new TypeChecker(errorHelper, typeHelper);
         typeChecker.VisitProgram(ast);
         
         generator.GenerateProgram(ast, filePath, fileName);

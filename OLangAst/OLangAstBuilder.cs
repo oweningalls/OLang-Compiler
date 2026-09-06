@@ -11,6 +11,7 @@ using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.MethodInvocation;
 using OLangGrammar.ParseTree.MultExpression;
 using OLangGrammar.ParseTree.ParameterList;
 using OLangGrammar.ParseTree.Prog;
@@ -24,7 +25,7 @@ using OLangTokens.Tokens;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
 using FunctionDeclaration = OLangAst.Statements.FunctionDeclaration;
-using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
+using MethodInvocation = OLangAst.Statements.MethodInvocation;
 using GreaterOrEqual = OLangAst.Expressions.GreaterOrEqual;
 using IExpression = OLangAst.Expressions.IExpression;
 using IntLiteral = OLangAst.Expressions.IntLiteral;
@@ -34,6 +35,7 @@ using NotEqual = OLangAst.Expressions.NotEqual;
 using Parameter = OLangAst.Miscellaneous.Parameter;
 using Return = OLangAst.Statements.Return;
 using StringLiteral = OLangAst.Expressions.StringLiteral;
+using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
 
 namespace OLangAst;
 
@@ -87,6 +89,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             If ifStatement => new IfStatement(ParseExpression(ifStatement.Condition), ParseScope(ifStatement.Scope), null) { Span = ifStatement.Span },
             IfWithElse ifStatementWithElse => new IfStatement(ParseExpression(ifStatementWithElse.Condition), ParseScope(ifStatementWithElse.Scope), ParseScope(ifStatementWithElse.ElseBlock)) { Span = ifStatementWithElse.Span },
             Invocation invocation => ParseFunctionInvocation(invocation.InvocationNode),
+            MethodInvocationStatement methodInvocation => ParseMethodInvocation(methodInvocation.InvocationNode),
             OLangGrammar.ParseTree.Stmt.Return returnStatement => new Return(null) { Span = returnStatement.Span },
             ReturnValue returnValueStatement => new Return(ParseExpression(returnValueStatement.Expression)) { Span = returnValueStatement.Span },
             ScopeStatement scopeStatement => ParseScope(scopeStatement.Scope),
@@ -208,6 +211,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             OLangGrammar.ParseTree.Term.FloatLiteral floatLiteral => new FloatLiteral(floatLiteral.Value.Value) { Span = floatLiteral.Span },
             OLangGrammar.ParseTree.Term.StringLiteral stringLiteral => new StringLiteral(stringLiteral.Value.Value) { Span = stringLiteral.Span },
             FunctionInvocationTerm functionInvocationTerm => ParseFunctionInvocation(functionInvocationTerm.InvocationNode),
+            MethodInvocationTerm methodInvocationTerm => ParseMethodInvocation(methodInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
@@ -282,6 +286,30 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         }
 
         return new FunctionInvocation(ParseIdentifier(identifier), arguments) { Span = functionInvocation.Span };
+    }
+    
+    protected MethodInvocation ParseMethodInvocation(IMethodInvocation methodInvocation)
+    {
+        IExpression obj;
+        List<IExpression> arguments;
+        IdentifierToken identifier;
+        switch (methodInvocation)
+        {
+            case OLangGrammar.ParseTree.MethodInvocation.MethodInvocation invocation:
+                obj = ParseTerm(invocation.Term);
+                arguments = new List<IExpression>();
+                identifier = invocation.Identifier;
+                break;
+            case MethodInvocationWithArguments invocationWithArguments:
+                obj = ParseTerm(invocationWithArguments.Term);
+                arguments = ParseArgumentList(invocationWithArguments.Arguments);
+                identifier = invocationWithArguments.Identifier;
+                break;
+            default:
+                throw errorHelper.UnknownVariant("function invocation", methodInvocation.GetType());
+        }
+
+        return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
     }
     
     protected List<IExpression> ParseArgumentList(IArgumentList argumentList)

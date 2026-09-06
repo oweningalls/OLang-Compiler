@@ -35,6 +35,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             ForLoop forStatement => VisitForLoop(forStatement),
             FunctionDeclaration functionDeclaration => VisitFunctionDeclaration(functionDeclaration),
             FunctionInvocation invocation => VisitFunctionInvocationStatement(invocation),
+            MethodInvocation invocation => VisitMethodInvocationStatement(invocation),
             Return returnStatement => VisitReturnStatement(returnStatement),
             _ => throw ErrorHelper.UnknownVariant("statement", statement.GetType())
         };
@@ -137,11 +138,25 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return VisitFunctionInvocation(functionInvocation);
     }
     
+    protected virtual MethodInvocation VisitMethodInvocationStatement(MethodInvocation methodInvocation)
+    {
+        return VisitMethodInvocation(methodInvocation);
+    }
+    
+    
     protected virtual FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
         functionInvocation.Arguments = functionInvocation.Arguments.Select(VisitExpression).ToList();
 
         return functionInvocation;
+    }
+    
+    protected virtual MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
+    {
+        VisitExpression(methodInvocation.Expression);
+        methodInvocation.Arguments = methodInvocation.Arguments.Select(VisitExpression).ToList();
+        
+        return methodInvocation;
     }
 
     protected virtual Scope VisitScope(Scope scopeNode)
@@ -176,7 +191,8 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             FunctionInvocation invocation => VisitFunctionInvocation(invocation),
             Negate negate => VisitNegate(negate),
             Cast cast => VisitCast(cast),
-            _ => throw ErrorHelper.UnknownVariant("binary expression", expression.GetType())
+            MethodInvocation methodInvocation => VisitMethodInvocation(methodInvocation),
+            _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }
 

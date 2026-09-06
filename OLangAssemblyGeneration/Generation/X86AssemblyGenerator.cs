@@ -4,7 +4,7 @@ using OLangAst;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
-using OLangCompiler.Utility;
+using OLangHelpers;
 
 namespace AssemblyGeneration.Generation;
 

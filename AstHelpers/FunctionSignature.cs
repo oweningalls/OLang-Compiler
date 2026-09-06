@@ -1,6 +1,6 @@
 ﻿using OLangAst.Miscellaneous;
 
-namespace OLangTypeChecking.TypeChecking.Types;
+namespace AstHelpers;
 
 public class FunctionSignature(IVariableType? returnType, IEnumerable<IVariableType> parameterTypes)
 {

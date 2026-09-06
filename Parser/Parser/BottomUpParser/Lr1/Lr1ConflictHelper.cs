@@ -11,10 +11,10 @@ public static class Lr1ConflictHelper
         // there aren't any conflicts if there aren't any reduces
         if (reduceLookaheadGroups.Count == 0) return;
 
-        if (reduceLookaheadGroups.Any(x => x.Count() > 1))
+        if (reduceLookaheadGroups.FirstOrDefault(x => x.Count() > 1) is {} group)
         {
-            var firstReduce = state.First(x => x.IsReduce());
-            var secondReduce = state.Last(x => x.IsReduce());
+            var firstReduce = group.First();
+            var secondReduce = group.Last();
             
             throw new Exception($"Reduce/reduce conflict: `{firstReduce}`, `{secondReduce}`");
         }

@@ -867,6 +867,44 @@ public class CompilerTests
     {
         TestProgramConsoleOutput(values);
     }
+    
+    public static readonly List<(string, string)> ToStringPrograms =
+    [
+        ("""
+         print 1.ToString();
+         """, "1"),
+        ("""
+         print "test" + 1.ToString();
+         """, "test1"),
+        ("""
+         print "test" + 1.5.ToString();
+         """, "test1.5"),
+        ("""
+         print "test" + 1.5.ToString() + 0.500.ToString();
+         """, "test1.50.5"),
+        ("""
+         void writeNums() {
+             let nums = "";
+             for i in 8..12 {
+                 nums += i.ToString();
+             }
+             
+             print nums;
+         }
+         
+         writeNums();
+         """, "891011"),
+        ("print true.ToString();", "True"),
+        ("print false.ToString();", "False"),
+        ("print \"some string\".ToString();", "some string"),
+        ("2.ToString();", ""),
+    ];
+    
+    [TestCaseSource(nameof(ToStringPrograms))]
+    public void ToStringTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
@@ -934,6 +972,8 @@ public class CompilerTests
     [TestCase("float a = 1.01.312;")] // float can only have one decimal point
     [TestCase("var evilInt = bool(1);")] // can't cast int to bool
     [TestCase("var evilBool = int(true);")] // can't cast int to bool
+    [TestCase("1.FakeMethodName();")] // non-existent method
+    [TestCase("1.ToString(1, 2, 3, 4, 5);")] // incompatible arguments
     public void TestInvalidPrograms(string program)
     {
         var ex = Assert.Catch<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));

@@ -21,7 +21,10 @@ $$
 &\mid \text{void ident}\text{(}[\mathrm{ParameterList}]\text{)}\ [\mathrm{Scope}] \\
 &\mid [\mathrm{Type}]\ \mathrm{ident}\text{()}\ [\mathrm{Scope}] \\
 &\mid \text{void ident}\text{()}\ [\mathrm{Scope}] \\
+&\mid [\mathrm{Expression}].\mathrm{ident}\text{(}[\mathrm{ArgumentList}]\text{)} \\
+&\mid [\mathrm{Expression}].\mathrm{ident}\text{(}\text{)} \\
 &\mid [\mathrm{FunctionInvocation}]; \\
+&\mid [\mathrm{MethodInvocation}]; \\
 &\mid \text{return}; \\
 &\mid \text{return}\ [\mathrm{Expression}]; \\
 [\mathrm{ParameterList}]
@@ -78,8 +81,12 @@ $$
 &\mid \text{ident} \\
 &\mid \text{(}[\mathrm{Expression}]\text{)} \\
 &\mid [\mathrm{FunctionInvocation}] \\
+&\mid [\mathrm{MethodInvocation}] \\
 [\mathrm{FunctionInvocation}]
 &\to \mathrm{ident}\text{(}[\mathrm{ArgumentList}]\text{)} \\
-&\mid \mathrm{ident}\text{()}
+&\mid \mathrm{ident}\text{()} \\
+[\mathrm{MethodInvocation}]
+&\to [\mathrm{Term}].\mathrm{ident}\text{(}[\mathrm{ArgumentList}]\text{)} \\
+&\mid [\mathrm{Term}].\mathrm{ident}\text{(}\text{)} \\
 \end{aligned}
 $$

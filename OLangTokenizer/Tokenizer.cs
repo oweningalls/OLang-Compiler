@@ -163,7 +163,7 @@ public class Tokenizer
         {
             if (c == '.')
             {
-                if (Peek(1) == '.')
+                if (Peek(1) is {} c2 && !char.IsAsciiDigit(c2))
                 {
                     break;
                 }
@@ -275,11 +275,6 @@ public class Tokenizer
 
     private BaseToken? TryParseOperator()
     {
-        if (OperatorMap.ContainsKey(Peek()!.Value.ToString()))
-        {
-            return OperatorMap[Consume().ToString()].Invoke();
-        }
-
         if (Peek(1) != null)
         {
             var nextTwoChars = Peek()!.Value.ToString() + Peek(1)!.Value;
@@ -289,6 +284,11 @@ public class Tokenizer
                 Consume();
                 return value.Invoke();
             }
+        }
+        
+        if (OperatorMap.ContainsKey(Peek()!.Value.ToString()))
+        {
+            return OperatorMap[Consume().ToString()].Invoke();
         }
 
         return null;
@@ -302,6 +302,7 @@ public class Tokenizer
         { "{", () => new LeftCurlyToken() },
         { "}", () => new RightCurlyToken() },
         { ",", () => new CommaToken() },
+        { ".", () => new DotToken() },
         { "..", () => new RangeToken() },
         { "&&", () => new BooleanAndToken() },
         { "||", () => new BooleanOrToken() },

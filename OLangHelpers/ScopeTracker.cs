@@ -1,4 +1,4 @@
-﻿namespace OLangCompiler.Utility;
+﻿namespace OLangHelpers;
 
 public class ScopeTracker<TKey, TValue> where TKey : notnull
 {

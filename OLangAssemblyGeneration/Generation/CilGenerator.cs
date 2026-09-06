@@ -3,17 +3,18 @@ using System.Reflection.Emit;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using AstHelpers;
 using ErrorHelper;
 using OLangAst;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
-using OLangCompiler.Utility;
+using OLangHelpers;
 using Parameter = OLangAst.Miscellaneous.Parameter;
 
 namespace AssemblyGeneration.Generation;
 
-public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
+public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
 {
     private ILGenerator _il;
     private TypeBuilder _type;
@@ -85,7 +86,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     private MethodBuilder GenerateMethod(string name, MethodAttributes attributes, Type? retType, List<Parameter> parameters, List<IStatement> statements)
     {
-        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => GetCsType(x.Type)).ToArray());
+        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => typeHelper.GetCsType(x.Type)).ToArray());
         _functions[name] = method;
         
         var originalIl = _il;
@@ -138,7 +139,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
 
     protected override VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)
     {
-        var local = _il.DeclareLocal(GetCsType(declarationStatement.Type!));
+        var local = _il.DeclareLocal(typeHelper.GetCsType(declarationStatement.Type!));
         _variableTracker.SetValue(declarationStatement.Identifier, local);
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         EmitLocalSet(declarationStatement.Identifier);
@@ -220,18 +221,51 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
         return @for;
     }
 
-    // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)
-    // return values in rax and rdx (if needed)
-    // preserve rbx, rbp, r12, r13, r14, and r15
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
         GenerateMethod(functionDeclaration.Identifier,
             MethodAttributes.Public | MethodAttributes.Static,
-            functionDeclaration.Type == null ? typeof(void) : GetCsType(functionDeclaration.Type!),
+            functionDeclaration.Type == null ? typeof(void) : typeHelper.GetCsType(functionDeclaration.Type!),
             functionDeclaration.Parameters,
             functionDeclaration.Scope.Statements);
 
         return functionDeclaration;
+    }
+    
+    protected override MethodInvocation VisitMethodInvocationStatement(MethodInvocation methodInvocation)
+    {
+        methodInvocation = base.VisitMethodInvocationStatement(methodInvocation);
+
+        var returnType = typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()).ReturnType;
+        if (returnType != typeof(void))
+        {
+            _il.Emit(OpCodes.Pop);
+        }
+        
+        return methodInvocation;
+    }
+    protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
+    {
+        methodInvocation = base.VisitMethodInvocation(methodInvocation);
+
+        if (typeHelper.GetCsType(methodInvocation.Expression.Type).IsValueType)
+        {
+            GetReferenceToStackValue(methodInvocation.Expression);
+        }
+
+        _il.Emit(OpCodes.Call, typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()));
+
+        return methodInvocation;
+    }
+
+    private void GetReferenceToStackValue(IExpression expression)
+    {
+        var local = _il.DeclareLocal(typeHelper.GetCsType(expression.Type));
+        var name = GeneratedVariableCounter++.ToString();
+        _variableTracker.SetValue(name, local);
+        EmitLocalSet(name);
+        
+        _il.Emit(OpCodes.Ldloca, local);
     }
 
     protected override FunctionInvocation VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
@@ -248,10 +282,7 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
     }
     protected override FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
-        for (var i = 0; i < functionInvocation.Arguments.Count; i++)
-        {
-            functionInvocation.Arguments[i] = VisitExpression(functionInvocation.Arguments[i]);
-        }
+        functionInvocation = base.VisitFunctionInvocation(functionInvocation);
 
         _il.Emit(OpCodes.Call, _functions[functionInvocation.Identifier]);
 
@@ -514,22 +545,6 @@ public class CilGenerator(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorH
     {
         _il.MarkLabel(label);
     }
-
-    private Type GetCsType(IVariableType type)
-    {
-        if (type is not PrimitiveVariableType primitiveVariableType)
-        {
-            throw ErrorHelper.UnknownVariant("type", type.GetType());
-        }
-
-        return PrimitiveTypeMap[primitiveVariableType.Type];
-    }
-
-    private static readonly Dictionary<PrimitiveVariableTypeEnum, Type> PrimitiveTypeMap = new()
-    {
-        { PrimitiveVariableTypeEnum.Int, typeof(int) },
-        { PrimitiveVariableTypeEnum.Bool, typeof(bool) },
-        { PrimitiveVariableTypeEnum.Float, typeof(float) },
-        { PrimitiveVariableTypeEnum.String, typeof(string) },
-    };
+    
+    private int GeneratedVariableCounter = 0;
 }

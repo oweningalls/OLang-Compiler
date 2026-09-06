@@ -1,4 +1,5 @@
 ﻿using AssemblyGeneration.Generation;
+using AstHelpers;
 using OLangLexing;
 
 namespace OLangCompiler;
@@ -36,14 +37,15 @@ public static class OLangCompiler
         var reader = new SourceReader(program);
         var errorHelper = new OLangHelpers.ErrorHelper(reader);
 
+        var typeHelper = new TypeHelper(errorHelper);
         IGenerator generator = target switch
         {
             CompileTargets.X86 => new X86AssemblyGenerator(errorHelper),
-            CompileTargets.Cil => new CilGenerator(errorHelper),
+            CompileTargets.Cil => new CilGenerator(errorHelper, typeHelper),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
 
-        new OLangFrontEnd().Compile(program, generator, errorHelper, filePath, fileName);
+        new OLangFrontEnd().Compile(program, generator, errorHelper, typeHelper, filePath, fileName);
     }
 
     public enum CompileTargets

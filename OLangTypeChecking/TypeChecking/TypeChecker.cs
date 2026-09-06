@@ -1,16 +1,18 @@
-﻿using ErrorHelper;
+﻿using AstHelpers;
+using ErrorHelper;
 using Lexing;
 using OLangAst;
 using OLangAst.Expressions;
 using OLangAst.Statements;
 using OLangAst.Miscellaneous;
-using OLangCompiler.Utility;
-using OLangTypeChecking.TypeChecking.Types;
+using OLangHelpers;
 
 namespace OLangTypeChecking.TypeChecking;
 
-public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHelper)
+public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
+    private readonly TypeHelper _typeHelper = typeHelper;
+
     public override Program VisitProgram(Program program)
     {
         _variableTypeStack = new ScopeTracker<string, IVariableType>();
@@ -236,6 +238,35 @@ public class TypeChecker(IErrorHelper errorHelper) : BaseOLangAstVisitor(errorHe
         }
 
         return functionInvocation;
+    }
+    
+    protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
+    {
+        methodInvocation = base.VisitMethodInvocation(methodInvocation);
+        var methodInfo = _typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
+                         ?? throw ErrorHelper.ShowErrorMessage($"Cannot resolve method `{methodInvocation.Identifier}`", methodInvocation.Span);
+
+        var paramCount = methodInfo.GetParameters().Length;
+        var argCount = methodInvocation.Arguments.Count;
+        if (argCount != paramCount)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Function '{methodInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", methodInvocation.Span);
+        }
+
+        foreach (var (argument, paramType) in methodInvocation.Arguments.Zip(methodInfo.GetParameters().Select(x => x.ParameterType)))
+        {
+            if (_typeHelper.GetCsType(argument.Type) != paramType)
+            {
+                throw ErrorHelper.ShowErrorMessage($"Argument of type {argument.Type} passed to function '{methodInvocation.Identifier}' does not match declared parameter type {paramType}", argument.Span);
+            }
+        }
+
+        if (methodInfo.ReturnType != typeof(void))
+        {
+            methodInvocation.Type = _typeHelper.GetLocalType(methodInfo.ReturnType);
+        }
+
+        return methodInvocation;
     }
     
     private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclaration declaration)
