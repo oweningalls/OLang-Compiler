@@ -3,6 +3,8 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ClassDeclaration;
+using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -25,10 +27,17 @@ namespace OLangGrammar;
 
 public class OLangGrammar : IGrammar
 {
-    private List<BaseGrammarRule> _rules =
+    private static readonly List<BaseGrammarRule> Rules =
     [
         // Prog
-        GrammarRule.Create((ClassToken _, IdentifierToken _, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ProgramNode(stmtList)),
+        GrammarRule.Create((IClassDeclarationListNode list) => new ProgramNode(list)),
+        
+        // ClassDeclarationList
+        GrammarRule.Create((IClassDeclaration classDeclaration) => new SingleClassClassList(classDeclaration)),
+        GrammarRule.Create((IClassDeclaration classDeclaration, IClassDeclarationListNode classDeclarationList) => new ClassDeclarationListWithClass(classDeclaration, classDeclarationList)),
+        
+        // ClassDeclaration
+        GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
         
         // ClassMemberList
         GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),
@@ -151,6 +160,6 @@ public class OLangGrammar : IGrammar
 
     public List<BaseGrammarRule> GetRules()
     {
-        return _rules;
+        return Rules;
     }
 }

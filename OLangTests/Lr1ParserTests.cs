@@ -1,6 +1,9 @@
 ﻿using Lexing;
+using OLangGrammar.ParseTree;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
+using OLangGrammar.ParseTree.ClassDeclaration;
+using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -97,7 +100,9 @@ public class Lr1ParserTests
 
         var method = new VoidMethodDeclaration(new IdentifierToken("Main"), new ScopeNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new SingleStatementStmtList(exitStatement)))));
 
-        var expectedProgram = new ProgramNode(new SingleMemberClassMemberList(method));
+        var classDeclaration = new ClassDeclaration(new IdentifierToken("Program"), new SingleMemberClassMemberList(method));
+
+        var expectedProgram = new ProgramNode(new SingleClassClassList(classDeclaration));
 
         var errorHelper = new OLangHelpers.ErrorHelper(new SourceReader(code));
         var tokens = new Tokenizer().Tokenize(code, errorHelper);

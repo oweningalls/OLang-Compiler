@@ -1,11 +1,9 @@
 ﻿using Lexing;
-using OLangAst.ClassMembers;
-using OLangAst.Statements;
 
 namespace OLangAst;
 
-public class Program(List<IClassMember> classMembers) : IAstNode
+public class Program(List<ClassDeclaration> classDeclarations) : IAstNode
 {
-    public List<IClassMember> ClassMembers = classMembers;
+    public List<ClassDeclaration> ClassDeclarations = classDeclarations;
     public SourceSpan Span { get; set; }
 }

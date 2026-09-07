@@ -2,6 +2,7 @@
 
 namespace OLangTests;
 
+[Parallelizable(ParallelScope.Children)]
 public class CompilerTests
 {
     private const OLangCompiler.OLangCompiler.CompileTargets TargetPlatform = OLangCompiler.OLangCompiler.CompileTargets.Cil;
@@ -10,7 +11,21 @@ public class CompilerTests
     public void OneTimeSetUp()
     {
         var projectRoot = TestPathHelper.GetProjectRoot();
-        Directory.SetCurrentDirectory($"{projectRoot}/../OLangCompiler");
+        Directory.SetCurrentDirectory($"{projectRoot}/../OLangTests/my_obj");
+        CleanUpGeneratedFiles();
+    }
+    
+    private void CleanUpGeneratedFiles()
+    {
+        if (!Directory.GetCurrentDirectory().EndsWith("my_obj"))
+        {
+            return;
+        }
+        
+        foreach (var filePath in Directory.EnumerateFiles("."))
+        {
+            File.Delete(filePath);
+        }
     }
 
     public static readonly List<(string, int)> AddPrograms =
@@ -1044,10 +1059,12 @@ public class CompilerTests
 
     private int CompileAndExecuteProgram(string program, out string output, bool wrapWithMain = true)
     {
+        var guidString = Guid.NewGuid().ToString();
         var outputFile = TargetPlatform switch
         {
-            OLangCompiler.OLangCompiler.CompileTargets.X86 => "test.asm",
-            OLangCompiler.OLangCompiler.CompileTargets.Cil => "test.dll"
+            OLangCompiler.OLangCompiler.CompileTargets.X86 => $"{guidString}.asm",
+            OLangCompiler.OLangCompiler.CompileTargets.Cil => $"{guidString}.dll",
+            _ => throw new ArgumentOutOfRangeException()
         };
 
         if (wrapWithMain)

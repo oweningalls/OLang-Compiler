@@ -1,12 +1,14 @@
 ﻿using ErrorHelper;
-using Lexing;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
+using OLangGrammar.ParseTree;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
+using OLangGrammar.ParseTree.ClassDeclaration;
+using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -47,19 +49,22 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 {
     public Program ParseProgram(ProgramNode programNode)
     {
-        var statements = ParseList(
-            programNode.ClassMemberList,
-            x => x switch
-            {
-                SingleMemberClassMemberList member => (member.ClassMember, null),
-                ClassMemberListWithClassMember list => (list.ClassMember, list.ClassMemberList),
-                _ => throw errorHelper.UnknownVariant("class member list", x.GetType())
-            },
-            ParseClassMember
-        );
-        return new Program(statements) { Span = SourceSpan.CombineSpans(statements.Select(x => x.Span).ToArray()) };
+        return new Program(ParseClassDeclarations(programNode.ClassDeclarationList)) { Span = programNode.Span};
     }
 
+    private List<ClassDeclaration> ParseClassDeclarations(IClassDeclarationListNode classDeclarationList)
+    {
+        return ParseList(classDeclarationList,
+            x => x switch
+            {
+                ClassDeclarationListWithClass classDeclarationListWithClass => (classDeclarationListWithClass.ClassDeclaration, classDeclarationListWithClass.ClassDeclarationList),
+                SingleClassClassList singleClassClassList => (singleClassClassList.ClassDeclaration, null),
+                _ => throw errorHelper.UnknownVariant("class list", x.GetType())
+            },
+            ParseClassDeclaration
+        );
+    }
+    
     private List<TTarget> ParseList<TList, TData, TTarget>(TList first, Func<TList, (TData, TList?)> getValueAndNext, Func<TData, TTarget> parseValue)
     {
         var (value, next) = getValueAndNext(first);
@@ -71,6 +76,33 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         }
 
         return list;
+    }
+
+    private ClassDeclaration ParseClassDeclaration(IClassDeclaration classDeclaration)
+    {
+        if (classDeclaration is not OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration)
+        {
+            throw errorHelper.UnknownVariant("class declaration", classDeclaration.GetType());
+        }
+        
+        var classMembers = ParseClassMembers(concreteClassDeclaration);
+        
+        return new ClassDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken), classMembers) { Span = classDeclaration.Span };
+    }
+
+    private List<IClassMember> ParseClassMembers(OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration)
+    {
+        var classMembers = ParseList(
+            concreteClassDeclaration.ClassMemberList,
+            x => x switch
+            {
+                SingleMemberClassMemberList member => (member.ClassMember, null),
+                ClassMemberListWithClassMember list => (list.ClassMember, list.ClassMemberList),
+                _ => throw errorHelper.UnknownVariant("class member list", x.GetType())
+            },
+            ParseClassMember
+        );
+        return classMembers;
     }
 
     protected List<IStatement> ParseStatementList(IStmtListNode statementList)

@@ -1,10 +1,11 @@
 ﻿using Lexing;
+using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.StmtList;
 
 namespace OLangGrammar.ParseTree.Prog;
 
-public class ProgramNode(IClassMemberListNode classMemberList) : IProgramNode
+public class ProgramNode(IClassDeclarationListNode classDeclarationList) : IProgramNode
 {
-    public IClassMemberListNode ClassMemberList = classMemberList;
+    public IClassDeclarationListNode ClassDeclarationList = classDeclarationList;
     public SourceSpan Span { get; set; }
 }

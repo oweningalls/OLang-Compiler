@@ -1,8 +1,13 @@
 $$
 \begin{aligned} \\
 [\mathrm{Prog}]
-&\to \text{class} \{ [\mathrm{ClassMemberList}] \} \\
+&\to [\mathrm{ClassDeclarationList}] \\
 \\
+[\mathrm{ClassDeclarationList}]
+&\to [\mathrm{ClassDeclaration}] \\
+&\mid [\mathrm{ClassDeclaration}] [\mathrm{ClassDeclarationList}] \\
+[\mathrm{ClassDeclaration}]
+&\to \text{class ident} \{ [\mathrm{ClassMemberList}] \} \\
 [\mathrm{ClassMemberList}]
 &\to [\mathrm{ClassMember}] \\
 &\mid [\mathrm{ClassMember}] [\mathrm{ClassMemberList}] \\

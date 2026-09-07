@@ -25,4 +25,8 @@
       <ProjectReference Include="..\OLangCompiler\OLangCompiler.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="my_obj\" />
+    </ItemGroup>
+
 </Project>
