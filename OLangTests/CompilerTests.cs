@@ -957,9 +957,9 @@ public class CompilerTests
     [TestCase("for i in i..5 {}")] // i not yet declared
     [TestCase("let a = 0; a = a > 2;")] // greater returns bool
     [TestCase("let a = 0; a = a >= 2;")] // setting int to bool
-    [TestCase("let a = 4 * true;")] // setting int to bool
+    [TestCase("let a = 4 * true;")] // multiplying int by bool
     [TestCase("void function() { return 1;}")] // void cannot have return value
-    [TestCase("int function() { return; }")] // void cannot have return value
+    [TestCase("int function() { return; }")] // non-void must have return value
     [TestCase("""
               int f() {
                   if (true) {
@@ -1000,53 +1000,42 @@ public class CompilerTests
     }
 
     [Test]
-    public void TestFibonacci()
+    public void TestFibonacci([Range(1, 13)] int num)
     {
-        Assert.Multiple(() =>
-        {
-            for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
-            {
-                var program = $$"""
-                                let fn = 0;
-                                let fn1 = 1;
+        var program = $$"""
+                        let fn = 0;
+                        let fn1 = 1;
 
-                                for i in 1..{{i}} {
-                                    let temp = fn1;
-                                    fn1 += fn;
-                                    fn = temp;
-                                }
-                                exit fn1;
-                                """;
-                var olFibNum = CompileAndExecuteProgram(program, out _);
-                var trueFibNum = Fib(i);
-
-                Assert.That(olFibNum, Is.EqualTo(trueFibNum));
-            }
-        });
+                        for i in 1..{{num}} {
+                            let temp = fn1;
+                            fn1 += fn;
+                            fn = temp;
+                        }
+                        exit fn1;
+                        """;
+        var olFibNum = CompileAndExecuteProgram(program, out _);
+        var trueFibNum = Fib(num);
+        
+        Assert.That(olFibNum, Is.EqualTo(trueFibNum));
     }
     
-    [Test]
-    public void TestRecursiveFibonacci()
-    {
-        Assert.Multiple(() =>
-        {
-            for (var i = 1; i <= 13; i++) // 13 is the greatest fib number less than 255
-            {
-                var program = $$"""
-                                int fib(int n) {
-                                    if n == 0 { return 0; }
-                                    if n == 1 { return 1; }
-                                    return fib(n - 1) + fib(n - 2);
-                                }
-                                
-                                exit fib({{i}});
-                                """;
-                var olFibNum = CompileAndExecuteProgram(program, out _);
-                var trueFibNum = Fib(i);
 
-                Assert.That(olFibNum, Is.EqualTo(trueFibNum));
-            }
-        });
+    [Test]
+    public void TestRecursiveFibonacci([Range(1, 13)] int num)
+    {
+        var program = $$"""
+                        int fib(int n) {
+                            if n == 0 { return 0; }
+                            if n == 1 { return 1; }
+                            return fib(n - 1) + fib(n - 2);
+                        }
+                        
+                        exit fib({{num}});
+                        """;
+        var olFibNum = CompileAndExecuteProgram(program, out _);
+        var trueFibNum = Fib(num);
+        
+        Assert.That(olFibNum, Is.EqualTo(trueFibNum));
     }
 
     private int Fib(int n)
