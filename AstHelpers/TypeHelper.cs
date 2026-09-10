@@ -47,7 +47,7 @@ public class TypeHelper
 
     public void CreateCustomMethod(CustomClass customClass, MethodDeclaration methodDeclaration)
     {
-        var attributes = MethodAttributes.Private | MethodAttributes.Static;
+        var attributes = MethodAttributes.Public | MethodAttributes.Static;
         // arguments for instance method
         // new List<IVariableType> { customClass }.Concat(methodDeclaration.Parameters.Select(x => x.Type)).Select(GetCsType).ToArray()
         var method = customClass.DefinedType.DefineMethod(methodDeclaration.Identifier, attributes, methodDeclaration.Type == null ? typeof(void) : GetCsType(methodDeclaration.Type), methodDeclaration.Parameters.Select(x => x.Type).Select(GetCsType).ToArray());
@@ -68,7 +68,7 @@ public class TypeHelper
         }
         
         var classDef = ModuleBuilder.DefineType(name, classAttributes);
-        var userDefined = new CustomClass(classDef);
+        var userDefined = new CustomClass(classDef, isStatic);
         CsCustomClasses.Add(name, userDefined);
         
         return userDefined;

@@ -296,8 +296,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
     {
+        if (methodInvocation.Expression is VariableAccess variableAccess && !_variableTypeStack.ContainsKey(variableAccess.Identifier))
+        {
+            if (typeHelper.GetCustomClass(variableAccess.Identifier) is not { } declaredClass)
+            {
+                throw ErrorHelper.ShowErrorMessage($"Unrecognized member: `{variableAccess.Identifier}`", variableAccess.Span);
+            }
+
+            if (!declaredClass.IsStatic)
+            {
+                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.DefinedType.Name}`", variableAccess.Span);
+            }
+
+            methodInvocation.SourceType = declaredClass;
+            methodInvocation.Expression = null;
+        }
+        
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var methodInfo = typeHelper.GetMethod(methodInvocation.Expression?.Type ?? _currentClass, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
+        var methodInfo = typeHelper.GetMethod(methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _currentClass, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
                          ?? throw ErrorHelper.ShowErrorMessage($"Cannot resolve method `{methodInvocation.Identifier}`", methodInvocation.Span);
 
         var paramCount = methodInfo.GetParameters().Length;

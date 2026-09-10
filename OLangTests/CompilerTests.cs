@@ -987,18 +987,98 @@ public class CompilerTests
              }
          }
          """, "Finished Recursing"),
-        // ("""
-        //  static class Helper {
-        //      string TestString() {
-        //          return "TestString";
-        //      }
-        //  }
-        //  static class Program {
-        //      void Main() {
-        //          print Helper.TestString();
-        //      }
-        //  }
-        //  """, "TestString"),
+        ("""
+         static class Program {
+             void Main() {
+                 print Helper.TestString();
+             }
+         }
+         
+         static class Helper {
+             string TestString() {
+                 return "TestString";
+             }
+         }
+         """, "TestString"),
+        ("""
+         static class Program {
+             void Main() {
+                 print Helper.TestString();
+             }
+         }
+         
+         static class Helper {
+             string TestString() {
+                 return "TestString";
+             }
+         }
+         """, "TestString"),
+        ("""
+         static class Class2 {
+             string Corecursive() {
+                 return Class1.Corecursive(0);
+             }
+         }
+         
+         static class Class1 {
+             void Main() {
+                 print Corecursive(3);
+             }
+             
+             string Corecursive(int num){
+                 if num == 0 {return "done";}
+                 return Class2.Corecursive();
+             }
+         }
+         """, "done"),
+        ("""
+         static class ReverseCorecursiveClasses {
+             void Main() {
+                 print Corecursive(3);
+             }
+             
+             string Corecursive(int num){
+                 if num == 0 {return "done";}
+                 return Class2.Corecursive();
+             }
+         }
+         
+         static class Class2 {
+             string Corecursive() {
+                 return ReverseCorecursiveClasses.Corecursive(0);
+             }
+         }
+         """, "done"),
+        ("""
+         static class Program {
+             void Main() {
+                 string ShadowedMethod() {
+                     return "Function";
+                 }
+                 
+                 print ShadowedMethod();
+             }
+             
+             string ShadowedMethod() {
+                 return "Method";
+             }
+         }
+         """, "Function"),
+        ("""
+         static class Program {
+             string ShadowedMethod() {
+                 return "Method";
+             }
+             
+             void Main() {
+                 string ShadowedMethod() {
+                     return "Function";
+                 }
+                 
+                 print ShadowedMethod();
+             }
+         }
+         """, "Function"),
     ];
     
     [TestCaseSource(nameof(MethodCallPrograms))]
@@ -1130,13 +1210,24 @@ public class CompilerTests
         return Fib(n - 1) + Fib(n - 2);
     }
 
+    private int _counter = 1;
+
+    private readonly Lock _lockObject = new();
+    private string GetName()
+    {
+        lock (_lockObject)
+        {
+            return $"test{_counter++.ToString()}";
+        }
+    }
+
     private int CompileAndExecuteProgram(string program, out string output, bool wrapWithMain = true)
     {
-        var guidString = Guid.NewGuid().ToString();
+        var name = GetName();
         var outputFile = TargetPlatform switch
         {
-            OLangCompiler.OLangCompiler.CompileTargets.X86 => $"{guidString}.asm",
-            OLangCompiler.OLangCompiler.CompileTargets.Cil => $"{guidString}.dll",
+            OLangCompiler.OLangCompiler.CompileTargets.X86 => $"{name}.asm",
+            OLangCompiler.OLangCompiler.CompileTargets.Cil => $"{name}.dll",
             _ => throw new ArgumentOutOfRangeException()
         };
 

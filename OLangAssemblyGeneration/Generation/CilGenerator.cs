@@ -291,7 +291,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
 
-        var expressionType = methodInvocation.Expression?.Type ?? _type;
+        var expressionType = methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _type;
 
         if (typeHelper.GetCsType(expressionType).IsValueType)
         {
