@@ -23,8 +23,8 @@ public class OLangFrontEnd : IOLangFrontEnd
 
         var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
 
-        var typeChecker = new TypeChecker(errorHelper, typeHelper);
-        typeChecker.VisitProgram(ast);
+        new TypeRegisterer(errorHelper, typeHelper).VisitProgram(ast);
+        new TypeChecker(errorHelper, typeHelper).VisitProgram(ast);
         
         generator.GenerateProgram(ast, filePath, fileName);
     }

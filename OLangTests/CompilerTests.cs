@@ -959,6 +959,34 @@ public class CompilerTests
              }
          }
          """, "TestString"),
+        ("""
+         static class Program {
+             void Main() {
+                 print BackwardsMethodOrder();
+             }
+             
+             string BackwardsMethodOrder() {
+                 return "Reversed";
+             }
+         }
+         """, "Reversed"),
+        ("""
+         static class Program {
+             void Main() {
+                 print MutualRecursion1(1);
+             }
+             
+             string MutualRecursion1(int num) {
+                 if num == 0 {return "Finished Recursing";}
+                 
+                 return MutualRecursion2();
+             }
+             
+             string MutualRecursion2() {
+                 return MutualRecursion1(0);
+             }
+         }
+         """, "Finished Recursing"),
         // ("""
         //  static class Helper {
         //      string TestString() {

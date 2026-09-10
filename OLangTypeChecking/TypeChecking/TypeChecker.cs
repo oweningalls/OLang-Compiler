@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using System.Reflection.Emit;
-using AstHelpers;
+﻿using AstHelpers;
 using ErrorHelper;
 using Lexing;
 using OLangAst;
@@ -30,12 +28,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        if (typeHelper.GetCustomClass(classDeclaration.Identifier) != null)
-        {
-            throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` has already been defined", classDeclaration.Span);
-        }
-        
-        _currentClass = typeHelper.CreateCustomClass(classDeclaration.Identifier, classDeclaration.Static);
+        _currentClass = typeHelper.GetCustomClass(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);;
 
         return base.VisitClassDeclaration(classDeclaration);
     }
@@ -188,7 +181,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override MethodDeclaration VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        typeHelper.CreateCustomMethod(_currentClass!, methodDeclaration);
+        typeHelper.GetMethod(_currentClass!, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => x.Type).ToList());
     
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, IVariableType>();
