@@ -1,7 +1,10 @@
-﻿using AstHelpers;
+﻿using System.Reflection;
+using System.Reflection.Emit;
+using AstHelpers;
 using ErrorHelper;
 using Lexing;
 using OLangAst;
+using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Statements;
 using OLangAst.Miscellaneous;
@@ -11,14 +14,30 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private readonly TypeHelper _typeHelper = typeHelper;
-
+    private ScopeTracker<string, IVariableType> _variableTypeStack = null!;
+    private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
+    private IVariableType? _currentFunctionReturnType;
+    private CustomClass? _currentClass;
+    private bool _isInFunction;
+    
     public override Program VisitProgram(Program program)
     {
         _variableTypeStack = new ScopeTracker<string, IVariableType>();
         _functionTypeStack = new ScopeTracker<string, FunctionSignature>();
 
         return base.VisitProgram(program);
+    }
+
+    protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    {
+        if (typeHelper.GetCustomClass(classDeclaration.Identifier) != null)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` has already been defined", classDeclaration.Span);
+        }
+        
+        _currentClass = typeHelper.CreateCustomClass(classDeclaration.Identifier, classDeclaration.Static);
+
+        return base.VisitClassDeclaration(classDeclaration);
     }
 
     protected override Return VisitReturnStatement(Return returnStatement)
@@ -167,6 +186,37 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return new FunctionSignature(declaration.Type, declaration.Parameters.Select(x => x.Type));
     }
 
+    protected override MethodDeclaration VisitMethodDeclaration(MethodDeclaration methodDeclaration)
+    {
+        typeHelper.CreateCustomMethod(_currentClass!, methodDeclaration);
+    
+        var originalTypeStack = _variableTypeStack;
+        _variableTypeStack = new ScopeTracker<string, IVariableType>();
+    
+        foreach (var param in methodDeclaration.Parameters)
+        {
+            _variableTypeStack.SetValue(param.Identifier, param.Type);
+        }
+    
+        var wasInFunction = _isInFunction;
+        _isInFunction = true;
+        var previousFunctionType = _currentFunctionReturnType;
+        _currentFunctionReturnType = methodDeclaration.Type;
+    
+        VisitScope(methodDeclaration.Scope);
+        if (methodDeclaration.Type is not null)
+        {
+            CheckAllPathsReturnCorrectType(methodDeclaration.Scope);
+        }
+    
+        _variableTypeStack = originalTypeStack;
+        _currentFunctionReturnType = previousFunctionType;
+    
+        _isInFunction = wasInFunction;
+    
+        return methodDeclaration;
+    }
+    
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
         var signature = GetTypeFromFunctionDeclaration(functionDeclaration);
@@ -188,7 +238,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         VisitScope(functionDeclaration.Scope);
         if (functionDeclaration.Type is not null)
         {
-            CheckAllFunctionPathsReturnCorrectType(functionDeclaration);
+            CheckAllPathsReturnCorrectType(functionDeclaration.Scope);
         }
     
         _variableTypeStack = originalTypeStack;
@@ -208,9 +258,20 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return signature.ReturnType!;
     }
 
-    protected override FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
+    protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
-        functionInvocation = base.VisitFunctionInvocation(functionInvocation);
+        if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
+        {
+            typeHelper.GetMethod(_currentClass, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type).ToList()); // just to throw if the method doesn't exist
+
+            var methodInvocation = new MethodInvocation(null, functionInvocation.Identifier, functionInvocation.Arguments);
+            
+            VisitMethodInvocationStatement(methodInvocation);
+
+            return methodInvocation;
+        }
+        
+        functionInvocation = (FunctionInvocation)base.VisitFunctionInvocation(functionInvocation);
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             throw ErrorHelper.ShowErrorMessage($"Unknown function: {functionInvocation.Identifier}", functionInvocation.Span);
@@ -243,7 +304,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
     {
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var methodInfo = _typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
+        var methodInfo = typeHelper.GetMethod(methodInvocation.Expression?.Type ?? _currentClass, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
                          ?? throw ErrorHelper.ShowErrorMessage($"Cannot resolve method `{methodInvocation.Identifier}`", methodInvocation.Span);
 
         var paramCount = methodInfo.GetParameters().Length;
@@ -255,7 +316,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         foreach (var (argument, paramType) in methodInvocation.Arguments.Zip(methodInfo.GetParameters().Select(x => x.ParameterType)))
         {
-            if (_typeHelper.GetCsType(argument.Type) != paramType)
+            if (typeHelper.GetCsType(argument.Type) != paramType)
             {
                 throw ErrorHelper.ShowErrorMessage($"Argument of type {argument.Type} passed to function '{methodInvocation.Identifier}' does not match declared parameter type {paramType}", argument.Span);
             }
@@ -263,17 +324,17 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         if (methodInfo.ReturnType != typeof(void))
         {
-            methodInvocation.Type = _typeHelper.GetLocalType(methodInfo.ReturnType);
+            methodInvocation.Type = typeHelper.GetLocalType(methodInfo.ReturnType);
         }
 
         return methodInvocation;
     }
     
-    private void CheckAllFunctionPathsReturnCorrectType(FunctionDeclaration declaration)
+    private void CheckAllPathsReturnCorrectType(Scope scope)
     {
-        if (!DoesScopeAlwaysReturn(declaration.Scope))
+        if (!DoesScopeAlwaysReturn(scope))
         {
-            throw ErrorHelper.ShowErrorMessage("Not all function paths return a value", declaration.Span);
+            throw ErrorHelper.ShowErrorMessage("Not all function paths return a value", scope.Span);
         }
     }
     
@@ -342,7 +403,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         if (!lhsType.Equals(PrimitiveVariableType.BoolType) || !rhsType.Equals(PrimitiveVariableType.BoolType))
         {
-            throw ErrorHelper.ShowErrorMessage($"Both sides of expression must be {PrimitiveVariableTypeEnum.Bool} type, was {lhsType} and {rhsType}.", booleanBinaryExpression.Span);
+            throw ErrorHelper.ShowErrorMessage($"Both sides of expression must be of type {PrimitiveVariableTypeEnum.Bool}, was {lhsType} and {rhsType}.", booleanBinaryExpression.Span);
         }
     }
     
@@ -564,11 +625,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _variableTypeStack.EndScope();
         _functionTypeStack.EndScope();
     }
-    
-    private ScopeTracker<string, IVariableType> _variableTypeStack = null!;
-    private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
-    private IVariableType? _currentFunctionReturnType;
-    private bool _isInFunction;
     
     private void RecordVariableType(string identifier, IVariableType expressionType, SourceSpan span)
     {

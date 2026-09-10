@@ -16,7 +16,13 @@ public class GrammarRule : BaseGrammarRule
     public static GrammarRule Create<TNode>(Func<TNode> reduce)
         where TNode : INode
     {
-        return new GrammarRule(_ => reduce(), GetInterface(typeof(TNode)));
+        return new GrammarRule(_ =>
+        {
+            var node = reduce();
+            node.Span = new SourceSpan(-1, 0);
+
+            return node;
+        }, GetInterface(typeof(TNode)));
     }
 
     public static GrammarRule Create<TNode, T1>(Func<T1, TNode> reduce)

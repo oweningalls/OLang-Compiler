@@ -922,6 +922,62 @@ public class CompilerTests
     {
         TestProgramConsoleOutput(values);
     }
+    
+    public static readonly List<(string, string)> ClassDeclarationPrograms =
+    [
+        ("""
+         class Helper {
+             string TestString() {
+                 return "TestString";
+             }
+         }
+         
+         static class Program {
+             void Main() {
+                 print "Main";
+             }
+         }
+         """, "Main"),
+    ];
+    
+    [TestCaseSource(nameof(ClassDeclarationPrograms))]
+    public void ClassDeclarationTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
+    public static readonly List<(string, string)> MethodCallPrograms =
+    [
+        ("""
+         static class Program {
+             string TestString() {
+                 return "TestString";
+             }
+             
+             void Main() {
+                 print TestString();
+             }
+         }
+         """, "TestString"),
+        // ("""
+        //  static class Helper {
+        //      string TestString() {
+        //          return "TestString";
+        //      }
+        //  }
+        //  static class Program {
+        //      void Main() {
+        //          print Helper.TestString();
+        //      }
+        //  }
+        //  """, "TestString"),
+    ];
+    
+    [TestCaseSource(nameof(MethodCallPrograms))]
+    public void MethodCallTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
         
     private void TestProgramExitCode((string, int) values)
     {
@@ -931,11 +987,11 @@ public class CompilerTests
         Assert.That(CompileAndExecuteProgram(program, out _), Is.EqualTo(exitCode));
     }
     
-    private void TestProgramConsoleOutput((string, string) values)
+    private void TestProgramConsoleOutput((string, string) values, bool wrapWithMain = true)
     {
         var program = values.Item1;
         var expectedConsoleOutput = values.Item2;
-        CompileAndExecuteProgram(program, out var actualConsoleOutput);
+        CompileAndExecuteProgram(program, out var actualConsoleOutput, wrapWithMain);
         Assert.That(actualConsoleOutput, Is.EqualTo(expectedConsoleOutput));
     }
     
@@ -1058,7 +1114,7 @@ public class CompilerTests
 
         if (wrapWithMain)
         {
-            program = $"class Program {{void Main() {{\n{program}\n}}}}";
+            program = $"static class Program {{void Main() {{\n{program}\n}}}}";
         }
         OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", outputFile);
 

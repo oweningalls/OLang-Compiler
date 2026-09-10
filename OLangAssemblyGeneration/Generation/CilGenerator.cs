@@ -17,8 +17,9 @@ namespace AssemblyGeneration.Generation;
 
 public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
 {
+    private CustomClass _type;
+    private ModuleBuilder _moduleBuilder;
     private ILGenerator _il;
-    private TypeBuilder _type;
 
     private Dictionary<string, MethodBuilder> _functions;
     private ScopeTracker<string, LocalBuilder> _variableTracker = null!;
@@ -31,9 +32,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _parameterTracker = new ScopeTracker<string, int>();
         _functions = [];
         
-        var assembly = new PersistedAssemblyBuilder(new AssemblyName(fileName), typeof(object).Assembly);
-        var module = assembly.DefineDynamicModule("OLangProgram");
-        _type = module.DefineType("Program");
+        var assembly = typeHelper.AssemblyBuilder;
+        _moduleBuilder = typeHelper.ModuleBuilder;
 
         VisitProgram(program);
 
@@ -45,16 +45,25 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         WriteRuntimeConfigFile(filePath, Path.GetFileNameWithoutExtension(fileName));
     }
 
+    protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    {
+        _type = typeHelper.GetCustomClass(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage("Type not noted during type checking", classDeclaration.Span);
+        classDeclaration = base.VisitClassDeclaration(classDeclaration);
+        
+        _type.DefinedType.CreateType();
+
+        return classDeclaration;
+    }
+
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        GenerateMethod(methodDeclaration.Identifier, MethodAttributes.Private | MethodAttributes.Static, methodDeclaration.Type == null ? typeof(void) : typeHelper.GetCsType(methodDeclaration.Type), methodDeclaration.Parameters, methodDeclaration.Scope.Statements);
+        GenerateMethod(methodDeclaration.Identifier, methodDeclaration.Parameters, methodDeclaration.Scope.Statements);
 
         return methodDeclaration;
     }
 
     private void GenerateAssemblyFile(string filePath, string fileName, PersistedAssemblyBuilder assembly, MethodBuilder main)
     {
-        _type.CreateType();
         var metadata = assembly.GenerateMetadata(out var ilStream, out var fieldData);
         var peHeader = new PEHeaderBuilder(
             imageCharacteristics: Characteristics.ExecutableImage | Characteristics.LargeAddressAware
@@ -94,10 +103,33 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         
         return Path.Combine(assemblyDir, RuntimeConfigTemplate);
     }
-
-    private MethodBuilder GenerateMethod(string name, MethodAttributes attributes, Type? retType, List<Parameter> parameters, List<IStatement> statements)
+    
+    private MethodBuilder GenerateMethod(string name, List<Parameter> parameters, List<IStatement> statements)
     {
-        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => typeHelper.GetCsType(x.Type)).ToArray());
+        var method = (MethodBuilder)typeHelper.GetMethod(_type, name, parameters.Select(x => x.Type).ToList());
+        _functions[name] = method;
+        
+        var originalIl = _il;
+        _il = method.GetILGenerator();
+
+        BeginScope();
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            SaveParameter(parameters[i], i);
+        }
+
+        VisitStatements(statements);
+        _il.Emit(OpCodes.Ret);
+
+        EndScope();
+        _il = originalIl;
+
+        return method;
+    }
+
+    private MethodBuilder GenerateFunction(string name, MethodAttributes attributes, Type? retType, List<Parameter> parameters, List<IStatement> statements)
+    {
+        var method = ((TypeBuilder)typeHelper.GetCsType(_type)).DefineMethod(name, attributes, retType, parameters.Select(x => typeHelper.GetCsType(x.Type)).ToArray());
         _functions[name] = method;
         
         var originalIl = _il;
@@ -234,7 +266,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        GenerateMethod(functionDeclaration.Identifier,
+        GenerateFunction(functionDeclaration.Identifier,
             MethodAttributes.Public | MethodAttributes.Static,
             functionDeclaration.Type == null ? typeof(void) : typeHelper.GetCsType(functionDeclaration.Type!),
             functionDeclaration.Parameters,
@@ -259,12 +291,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
 
-        if (typeHelper.GetCsType(methodInvocation.Expression.Type).IsValueType)
+        var expressionType = methodInvocation.Expression?.Type ?? _type;
+
+        if (typeHelper.GetCsType(expressionType).IsValueType)
         {
             GetReferenceToStackValue(methodInvocation.Expression);
         }
 
-        _il.Emit(OpCodes.Call, typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()));
+        _il.Emit(OpCodes.Call, typeHelper.GetMethod(expressionType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()));
 
         return methodInvocation;
     }
@@ -279,9 +313,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il.Emit(OpCodes.Ldloca, local);
     }
 
-    protected override FunctionInvocation VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
+    protected override IStatement VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
     {
-        functionInvocation = base.VisitFunctionInvocationStatement(functionInvocation);
+        functionInvocation = (FunctionInvocation)base.VisitFunctionInvocationStatement(functionInvocation);
 
         var returnType = _functions[functionInvocation.Identifier].ReturnType;
         if (returnType != typeof(void))
@@ -291,9 +325,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         
         return functionInvocation;
     }
-    protected override FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
+    protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
-        functionInvocation = base.VisitFunctionInvocation(functionInvocation);
+        functionInvocation = (FunctionInvocation)base.VisitFunctionInvocation(functionInvocation);
 
         _il.Emit(OpCodes.Call, _functions[functionInvocation.Identifier]);
 

@@ -2,7 +2,6 @@
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
-using OLangGrammar.ParseTree;
 using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
@@ -80,20 +79,18 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     private ClassDeclaration ParseClassDeclaration(IClassDeclaration classDeclaration)
     {
-        if (classDeclaration is not OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration)
+        return classDeclaration switch
         {
-            throw errorHelper.UnknownVariant("class declaration", classDeclaration.GetType());
-        }
-        
-        var classMembers = ParseClassMembers(concreteClassDeclaration);
-        
-        return new ClassDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken), classMembers) { Span = classDeclaration.Span };
+            OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(false, ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = classDeclaration.Span },
+            StaticClassDeclaration staticClassDeclaration => new ClassDeclaration(true, ParseIdentifier(staticClassDeclaration.IdentifierToken), ParseClassMembers(staticClassDeclaration.ClassMemberList)) { Span = classDeclaration.Span },
+            _ => throw errorHelper.UnknownVariant("class declaration", classDeclaration.GetType())
+        };
     }
 
-    private List<IClassMember> ParseClassMembers(OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration)
+    private List<IClassMember> ParseClassMembers(IClassMemberListNode classMemberList)
     {
         var classMembers = ParseList(
-            concreteClassDeclaration.ClassMemberList,
+            classMemberList,
             x => x switch
             {
                 SingleMemberClassMemberList member => (member.ClassMember, null),

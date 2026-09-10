@@ -8,6 +8,7 @@ $$
 &\mid [\mathrm{ClassDeclaration}] [\mathrm{ClassDeclarationList}] \\
 [\mathrm{ClassDeclaration}]
 &\to \text{class ident} \{ [\mathrm{ClassMemberList}] \} \\
+&\mid \text{static class ident} \{ [\mathrm{ClassMemberList}] \} \\
 [\mathrm{ClassMemberList}]
 &\to [\mathrm{ClassMember}] \\
 &\mid [\mathrm{ClassMember}] [\mathrm{ClassMemberList}] \\

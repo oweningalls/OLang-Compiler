@@ -22,7 +22,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return stmtList.Select(VisitClassDeclaration).ToList();
     }
     
-    protected ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    protected virtual ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         classDeclaration.ClassMembers = classDeclaration.ClassMembers.Select(VisitClassMember).ToList();
 
@@ -162,9 +162,9 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return functionDeclaration;
     }
 
-    protected virtual FunctionInvocation VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
+    protected virtual IStatement VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
     {
-        return VisitFunctionInvocation(functionInvocation);
+        return (FunctionInvocation)VisitFunctionInvocation(functionInvocation);
     }
     
     protected virtual MethodInvocation VisitMethodInvocationStatement(MethodInvocation methodInvocation)
@@ -173,7 +173,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     }
     
     
-    protected virtual FunctionInvocation VisitFunctionInvocation(FunctionInvocation functionInvocation)
+    protected virtual IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
         functionInvocation.Arguments = functionInvocation.Arguments.Select(VisitExpression).ToList();
 
@@ -182,7 +182,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     
     protected virtual MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
     {
-        VisitExpression(methodInvocation.Expression);
+        if (methodInvocation.Expression != null)
+        {
+            methodInvocation.Expression = VisitExpression(methodInvocation.Expression);
+        }
+        
         methodInvocation.Arguments = methodInvocation.Arguments.Select(VisitExpression).ToList();
         
         return methodInvocation;

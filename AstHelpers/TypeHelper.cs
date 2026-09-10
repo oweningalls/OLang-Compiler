@@ -1,21 +1,25 @@
 ﻿using System.Reflection;
+using System.Reflection.Emit;
 using ErrorHelper;
+using OLangAst.ClassMembers;
 using OLangAst.Miscellaneous;
 
 namespace AstHelpers;
 
-public class TypeHelper(IErrorHelper errorHelper)
+public class TypeHelper
 {
-    private IErrorHelper _errorHelper = errorHelper;
+    private IErrorHelper _errorHelper;
+    public PersistedAssemblyBuilder AssemblyBuilder;
+    public ModuleBuilder ModuleBuilder;
     
     public Type GetCsType(IVariableType type)
     {
-        if (type is not PrimitiveVariableType primitiveVariableType)
+        return type switch
         {
-            throw _errorHelper.UnknownVariant("type", type.GetType());
-        }
-
-        return PrimitiveTypeMap[primitiveVariableType];
+            CustomClass userDefinedClass => userDefinedClass.DefinedType,
+            PrimitiveVariableType primitiveVariableType => PrimitiveTypeMap[primitiveVariableType],
+            _ => throw _errorHelper.UnknownVariant("type", type.GetType())
+        };
     }
 
     public IVariableType GetLocalType(Type type)
@@ -25,6 +29,10 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public MethodInfo GetMethod(IVariableType type, string name, List<IVariableType> argumentTypes)
     {
+        if (type is CustomClass customClass)
+        {
+            return GetCustomMethod(customClass, name);
+        }
         var csType = GetCsType(type);
         var matchingMethods = csType.GetMethods().Where(x => x.Name == name && x.GetParameters().Index().All(y => TypeMatches(y.Item.ParameterType, argumentTypes, y.Index))).ToList();
 
@@ -36,6 +44,42 @@ public class TypeHelper(IErrorHelper errorHelper)
         };
     }
 
+    public void CreateCustomMethod(CustomClass customClass, MethodDeclaration methodDeclaration)
+    {
+        var attributes = MethodAttributes.Private | MethodAttributes.Static;
+        // arguments for instance method
+        // new List<IVariableType> { customClass }.Concat(methodDeclaration.Parameters.Select(x => x.Type)).Select(GetCsType).ToArray()
+        var method = customClass.DefinedType.DefineMethod(methodDeclaration.Identifier, attributes, methodDeclaration.Type == null ? typeof(void) : GetCsType(methodDeclaration.Type), methodDeclaration.Parameters.Select(x => x.Type).Select(GetCsType).ToArray());
+        _customMethods.Add((customClass, methodDeclaration.Identifier), method);
+    }
+
+    private Dictionary<(CustomClass, string), MethodBuilder> _customMethods = new();
+
+    private MethodInfo? GetCustomMethod(CustomClass customClass, string name)
+    {
+        return _customMethods.GetValueOrDefault((customClass, name));
+    }
+
+    public CustomClass CreateCustomClass(string name, bool isStatic)
+    {
+        var classAttributes = TypeAttributes.Public;
+        if (isStatic)
+        {
+            classAttributes = classAttributes | TypeAttributes.Abstract | TypeAttributes.Sealed;
+        }
+        
+        var classDef = ModuleBuilder.DefineType(name, classAttributes);
+        var userDefined = new CustomClass(classDef);
+        CsCustomClasses.Add(name, userDefined);
+        
+        return userDefined;
+    }
+
+    public CustomClass? GetCustomClass(string name)
+    {
+        return CsCustomClasses.GetValueOrDefault(name);
+    }
+
     private bool TypeMatches(Type type, List<IVariableType> argumentTypes, int index)
     {
         if (index >= argumentTypes.Count)
@@ -44,6 +88,15 @@ public class TypeHelper(IErrorHelper errorHelper)
         }
 
         return GetCsType(argumentTypes[index]) == type;
+    }
+
+    private Dictionary<string, CustomClass> CsCustomClasses = new();
+
+    public TypeHelper(IErrorHelper errorHelper)
+    {
+        _errorHelper = errorHelper;
+        AssemblyBuilder = new(new AssemblyName("AssemblyName"), typeof(object).Assembly);
+        ModuleBuilder = AssemblyBuilder.DefineDynamicModule("OLangProgram");
     }
 
     private static readonly Dictionary<PrimitiveVariableType, Type> PrimitiveTypeMap = new()

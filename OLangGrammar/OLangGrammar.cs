@@ -38,6 +38,7 @@ public class OLangGrammar : IGrammar
         
         // ClassDeclaration
         GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
+        GrammarRule.Create((StaticToken _, ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new StaticClassDeclaration(identifierToken, stmtList)),
         
         // ClassMemberList
         GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),
