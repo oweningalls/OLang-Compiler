@@ -33,6 +33,7 @@ public class TypeHelper
         {
             return GetCustomMethod(customClass, name);
         }
+        
         var csType = GetCsType(type);
         var matchingMethods = csType.GetMethods().Where(x => x.Name == name && x.GetParameters().Index().All(y => TypeMatches(y.Item.ParameterType, argumentTypes, y.Index))).ToList();
 
@@ -50,14 +51,12 @@ public class TypeHelper
         // arguments for instance method
         // new List<IVariableType> { customClass }.Concat(methodDeclaration.Parameters.Select(x => x.Type)).Select(GetCsType).ToArray()
         var method = customClass.DefinedType.DefineMethod(methodDeclaration.Identifier, attributes, methodDeclaration.Type == null ? typeof(void) : GetCsType(methodDeclaration.Type), methodDeclaration.Parameters.Select(x => x.Type).Select(GetCsType).ToArray());
-        _customMethods.Add((customClass, methodDeclaration.Identifier), method);
+        customClass.Methods.Add(method);
     }
-
-    private Dictionary<(CustomClass, string), MethodBuilder> _customMethods = new();
 
     private MethodInfo? GetCustomMethod(CustomClass customClass, string name)
     {
-        return _customMethods.GetValueOrDefault((customClass, name));
+        return customClass.Methods.SingleOrDefault(x => x.Name == name);
     }
 
     public CustomClass CreateCustomClass(string name, bool isStatic)
