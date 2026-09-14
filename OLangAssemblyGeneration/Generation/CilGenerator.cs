@@ -10,14 +10,15 @@ using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
+using OLangAst.TypeSystem;
 using OLangHelpers;
-using Parameter = OLangAst.Miscellaneous.Parameter;
 
 namespace AssemblyGeneration.Generation;
 
 public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper), IGenerator
 {
-    private CustomClass _type;
+    private PersistedAssemblyBuilder _assemblyBuilder;
+    private TypeBuilder _type;
     private ModuleBuilder _moduleBuilder;
     private ILGenerator _il;
 
@@ -31,33 +32,53 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _variableTracker = new ScopeTracker<string, LocalBuilder>();
         _parameterTracker = new ScopeTracker<string, int>();
         _functions = [];
-        
-        var assembly = typeHelper.AssemblyBuilder;
-        _moduleBuilder = typeHelper.ModuleBuilder;
+        _assemblyBuilder = new PersistedAssemblyBuilder(new AssemblyName("AssemblyName"), typeof(object).Assembly);
+        _moduleBuilder = _assemblyBuilder.DefineDynamicModule("OLangProgram");
 
+        var classes = typeHelper.GetDefinedClasses();
+        var types = DefineTypes(classes);
+        DefineMethods(classes, types);
+        
         VisitProgram(program);
 
         if (!_functions.TryGetValue("Main", out var main))
         {
             throw ErrorHelper.ShowErrorMessage("Program must contain a method named 'Main'", program.Span);
         }
-        GenerateAssemblyFile(filePath, fileName, assembly, main);
+        GenerateAssemblyFile(filePath, fileName, _assemblyBuilder, main);
         WriteRuntimeConfigFile(filePath, Path.GetFileNameWithoutExtension(fileName));
     }
 
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _type = typeHelper.GetCustomClass(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage("Type not noted during type checking", classDeclaration.Span);
+        _type = _definedTypes[classDeclaration.Type!.Value];
         classDeclaration = base.VisitClassDeclaration(classDeclaration);
         
-        _type.DefinedType.CreateType();
+        _type.CreateType();
 
         return classDeclaration;
     }
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        GenerateMethod(methodDeclaration.Identifier, methodDeclaration.Parameters, methodDeclaration.Scope.Statements);
+        var attributes = MethodAttributes.Public | MethodAttributes.Static;
+        var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!.Value)));// _type.DefineMethod(methodDeclaration.Identifier, attributes, GetCsType(typeHelper.GetMethodType(methodDeclaration.DeclaredType)), methodDeclaration.Parameters.Select(x => GetCsType(typeHelper.GetLocalType(x.DeclaredType))).ToArray());
+        _functions[methodDeclaration.Identifier] = method;
+        
+        var originalIl = _il;
+        _il = method.GetILGenerator();
+
+        BeginScope();
+        for (var i = 0; i < methodDeclaration.Parameters.Count; i++)
+        {
+            SaveParameter(methodDeclaration.Parameters[i], i);
+        }
+
+        VisitStatements(methodDeclaration.Scope.Statements);
+        _il.Emit(OpCodes.Ret);
+
+        EndScope();
+        _il = originalIl;
 
         return methodDeclaration;
     }
@@ -104,9 +125,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return Path.Combine(assemblyDir, RuntimeConfigTemplate);
     }
     
-    private MethodBuilder GenerateMethod(string name, List<Parameter> parameters, List<IStatement> statements)
+    private void GenerateFunction(string name, MethodAttributes attributes, Type? retType, List<ParameterNode> parameters, List<IStatement> statements)
     {
-        var method = (MethodBuilder)typeHelper.GetMethod(_type, name, parameters.Select(x => x.Type).ToList());
+        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => GetCsType(x.Type!.Value)).ToArray());
         _functions[name] = method;
         
         var originalIl = _il;
@@ -123,31 +144,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         EndScope();
         _il = originalIl;
-
-        return method;
-    }
-
-    private MethodBuilder GenerateFunction(string name, MethodAttributes attributes, Type? retType, List<Parameter> parameters, List<IStatement> statements)
-    {
-        var method = ((TypeBuilder)typeHelper.GetCsType(_type)).DefineMethod(name, attributes, retType, parameters.Select(x => typeHelper.GetCsType(x.Type)).ToArray());
-        _functions[name] = method;
-        
-        var originalIl = _il;
-        _il = method.GetILGenerator();
-
-        BeginScope();
-        for (var i = 0; i < parameters.Count; i++)
-        {
-            SaveParameter(parameters[i], i);
-        }
-
-        VisitStatements(statements);
-        _il.Emit(OpCodes.Ret);
-
-        EndScope();
-        _il = originalIl;
-
-        return method;
     }
 
     protected override ExitStatement VisitExitStatement(ExitStatement exitStatement)
@@ -182,7 +178,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)
     {
-        var local = _il.DeclareLocal(typeHelper.GetCsType(declarationStatement.Type!));
+        var local = _il.DeclareLocal(GetCsType(declarationStatement.VariableType!.Value));
         _variableTracker.SetValue(declarationStatement.Identifier, local);
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         EmitLocalSet(declarationStatement.Identifier);
@@ -246,11 +242,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         BeginScope();
 
-        var declaration = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int), @for.Identifier, @for.RangeStart);
+        var declaration = new VariableDeclarationStatement(null, @for.Identifier, @for.RangeStart) { VariableType = PrimitiveTypes.IntType };
         VisitDeclarationStatement(declaration);
         var scope = @for.Body;
         var identifierExpression = new VariableAccess(@for.Identifier);
-        var addExpression = new Add(identifierExpression, new IntLiteral(1)) { Type = PrimitiveVariableType.IntType };
+        var addExpression = new Add(identifierExpression, new IntLiteral(1)) { Type = PrimitiveTypes.IntType };
         var finalStmt = new VariableAssignment(@for.Identifier, addExpression);
 
         scope.Statements.Add(finalStmt);
@@ -268,7 +264,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         GenerateFunction(functionDeclaration.Identifier,
             MethodAttributes.Public | MethodAttributes.Static,
-            functionDeclaration.Type == null ? typeof(void) : typeHelper.GetCsType(functionDeclaration.Type!),
+            functionDeclaration.DeclaredType == null ? null : GetCsType(typeHelper.GetMethodType(functionDeclaration.DeclaredType)),
             functionDeclaration.Parameters,
             functionDeclaration.Scope.Statements);
 
@@ -279,7 +275,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocationStatement(methodInvocation);
 
-        var returnType = typeHelper.GetMethod(methodInvocation.Expression.Type, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()).ReturnType;
+        var returnType = GetCsType(typeHelper.GetMethod(methodInvocation.Expression!.Type!.Value,
+                methodInvocation.Identifier,
+                methodInvocation.Arguments.Select(x => x.Type!.Value)
+                    .ToList(), methodInvocation.Span)
+            .ReturnType);
         if (returnType != typeof(void))
         {
             _il.Emit(OpCodes.Pop);
@@ -291,22 +291,23 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
 
-        var expressionType = methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _type;
+        var expressionType = methodInvocation.SourceType ?? methodInvocation.Expression?.Type;
+        var targetType = expressionType == null ? _type : GetCsType(expressionType.Value);
 
-        if (typeHelper.GetCsType(expressionType).IsValueType)
+        if (expressionType != null && targetType.IsValueType)
         {
             GetReferenceToStackValue(methodInvocation.Expression);
         }
 
-        _il.Emit(OpCodes.Call, typeHelper.GetMethod(expressionType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList()));
+        _il.Emit(OpCodes.Call, GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => GetCsType(x.Type!.Value))));
 
         return methodInvocation;
     }
 
     private void GetReferenceToStackValue(IExpression expression)
     {
-        var local = _il.DeclareLocal(typeHelper.GetCsType(expression.Type));
-        var name = GeneratedVariableCounter++.ToString();
+        var local = _il.DeclareLocal(GetCsType(expression.Type!.Value));
+        var name = _generatedVariableCounter++.ToString();
         _variableTracker.SetValue(name, local);
         EmitLocalSet(name);
         
@@ -391,14 +392,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitCast(Cast cast)
     {
         cast = (Cast)base.VisitCast(cast);
-        if (cast.TargetType.Equals(PrimitiveVariableType.IntType))
+        if (cast.Type.Equals(PrimitiveTypes.IntType))
         {
             _il.Emit(OpCodes.Conv_I4);
 
             return cast;
         }
 
-        if (cast.TargetType.Equals(PrimitiveVariableType.FloatType))
+        if (cast.Type.Equals(PrimitiveTypes.FloatType))
         {
             _il.Emit(OpCodes.Conv_R4);
 
@@ -420,7 +421,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override Add VisitAddExpression(Add addExpression)
     {
         addExpression = (Add)base.VisitAddExpression(addExpression);
-        if (addExpression.Type.Equals(PrimitiveVariableType.StringType))
+        if (addExpression.Type.Equals(PrimitiveTypes.StringType))
         {
             EmitConcat();
         }
@@ -541,9 +542,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return negate;
     }
 
-    private void SaveParameter(Parameter parameter, int index)
+    private void SaveParameter(ParameterNode parameterNode, int index)
     {
-        _parameterTracker.SetValue(parameter.Identifier, index);
+        _parameterTracker.SetValue(parameterNode.Identifier, index);
     }
 
     private void EmitLocalAccess(string variableName)
@@ -591,5 +592,75 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il.MarkLabel(label);
     }
     
-    private int GeneratedVariableCounter = 0;
+    private int _generatedVariableCounter;
+    
+    public Type GetCsType(DefinedType type)
+    {
+        if (type.Equals(PrimitiveTypes.FloatType))
+        {
+            return typeof(float);
+        }
+        if (type.Equals(PrimitiveTypes.IntType))
+        {
+            return typeof(int);
+        }
+        if (type.Equals(PrimitiveTypes.BoolType))
+        {
+            return typeof(bool);
+        }
+        if (type.Equals(PrimitiveTypes.StringType))
+        {
+            return typeof(string);
+        }
+
+        return _definedTypes[type];
+    }
+    
+    private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
+    private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
+
+    private List<TypeBuilder> DefineTypes(List<DefinedType> classes)
+    {
+        return classes.Select(DefineClass).ToList();
+    }
+
+    private TypeBuilder DefineClass(DefinedType type)
+    {
+        var attributes = TypeAttributes.Public;
+        if (type.IsStatic)
+        {
+            attributes |= TypeAttributes.Abstract | TypeAttributes.Sealed;
+        }
+        
+        var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
+        _definedTypes[type] = typeBuilder;
+        
+        return typeBuilder;
+    }
+
+    private void DefineMethods(List<DefinedType> classes, List<TypeBuilder> types)
+    {
+        classes.Zip(types).SelectMany(x => x.First.Methods.Select(method => (x.Second, method))).ToList().ForEach(x => DefineMethod(x.Second, x.method));
+    }
+
+    private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
+    {
+        var attributes = MethodAttributes.Public | MethodAttributes.Static;
+        var method = type.DefineMethod(definition.Name, attributes, definition.ReturnType.Equals(PrimitiveTypes.VoidType) ? null : GetCsType(definition.ReturnType), definition.Parameters.Select(x => GetCsType(x.Type)).ToArray());
+        if (!_definedMethods.ContainsKey(type))
+        {
+            _definedMethods[type] = new Dictionary<string, MethodBuilder>(1);
+        }
+        
+        _definedMethods[type][definition.Name] = method;
+    }
+
+    private MethodInfo GetMethod(Type type, string name, IEnumerable<Type> argumentTypes)
+    {
+        if (type is TypeBuilder builder && _definedMethods.GetValueOrDefault(builder) is {} value)
+        {
+            return value[name];
+        }
+        return type.GetMethod(name, argumentTypes.ToArray()) ?? throw new Exception();
+    }
 }

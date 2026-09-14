@@ -6,21 +6,22 @@ using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Statements;
 using OLangAst.Miscellaneous;
+using OLangAst.TypeSystem;
 using OLangHelpers;
 
 namespace OLangTypeChecking.TypeChecking;
 
 public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private ScopeTracker<string, IVariableType> _variableTypeStack = null!;
+    private ScopeTracker<string, DefinedType> _variableTypeStack = null!;
     private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
-    private IVariableType? _currentFunctionReturnType;
-    private CustomClass? _currentClass;
+    private DefinedType _currentFunctionReturnType;
+    private DefinedType? _currentClass;
     private bool _isInFunction;
     
     public override Program VisitProgram(Program program)
     {
-        _variableTypeStack = new ScopeTracker<string, IVariableType>();
+        _variableTypeStack = new ScopeTracker<string, DefinedType>();
         _functionTypeStack = new ScopeTracker<string, FunctionSignature>();
 
         return base.VisitProgram(program);
@@ -28,14 +29,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _currentClass = typeHelper.GetCustomClass(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);;
+        _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
 
         return base.VisitClassDeclaration(classDeclaration);
     }
 
     protected override Return VisitReturnStatement(Return returnStatement)
     {
-        if (_currentFunctionReturnType is null && returnStatement.Value is not null)
+        if (_currentFunctionReturnType.Equals(PrimitiveTypes.VoidType) && returnStatement.Value is not null)
         {
             throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Value.Span);
         }
@@ -66,18 +67,18 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         forStatement.RangeEnd = VisitExpression(forStatement.RangeEnd);
         var startType = GetExpressionType(forStatement.RangeStart);
         
-        if (!startType.Equals(PrimitiveVariableType.IntType))
+        if (!startType.Equals(PrimitiveTypes.IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeStart.Span);
         }
 
         var endType = GetExpressionType(forStatement.RangeEnd);
-        if (!endType.Equals(PrimitiveVariableType.IntType))
+        if (!endType.Equals(PrimitiveTypes.IntType))
         {
             throw ErrorHelper.ShowErrorMessage("Bounds of range must be integers", forStatement.RangeEnd.Span);
         }
 
-        RecordVariableType(forStatement.Identifier, PrimitiveVariableType.IntType, forStatement.Span);
+        RecordVariableType(forStatement.Identifier, PrimitiveTypes.IntType, forStatement.Span);
         forStatement.Body.Statements = VisitStatements(forStatement.Body.Statements);
         EndScope();
 
@@ -88,7 +89,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         ifStatement = base.VisitIfStatement(ifStatement);
         var conditionType = GetExpressionType(ifStatement.Predicate);
-        if (!conditionType.Equals(PrimitiveVariableType.BoolType))
+        if (!conditionType.Equals(PrimitiveTypes.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", ifStatement.Predicate.Span);
         }
@@ -100,7 +101,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         whileStatement = base.VisitWhileLoop(whileStatement);
         var whileConditionType = GetExpressionType(whileStatement.Predicate);
-        if (!whileConditionType.Equals(PrimitiveVariableType.BoolType))
+        if (!whileConditionType.Equals(PrimitiveTypes.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage("If predicate must be a boolean", whileStatement.Predicate.Span);
         }
@@ -125,7 +126,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         exitStatement = base.VisitExitStatement(exitStatement);
         var exitType = GetExpressionType(exitStatement.Expression);
-        if (!exitType.Equals(PrimitiveVariableType.IntType))
+        if (!exitType.Equals(PrimitiveTypes.IntType))
         {
             throw ErrorHelper.ShowErrorMessage($"Exit code has to be an integer, was {exitType}", exitStatement.Expression.Span);
         }
@@ -137,7 +138,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         printStatement = base.VisitPrintStatement(printStatement);
         var expressionType = GetExpressionType(printStatement.Expression);
-        if (!expressionType.Equals(PrimitiveVariableType.StringType))
+        if (!expressionType.Equals(PrimitiveTypes.StringType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot print non-string value, was {expressionType}", printStatement.Expression.Span);
         }
@@ -150,7 +151,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         notExpression = (Not)base.VisitNotExpression(notExpression);
         var expType = GetExpressionType(notExpression.Value);
 
-        if (!expType.Equals(PrimitiveVariableType.BoolType))
+        if (!expType.Equals(PrimitiveTypes.BoolType))
         {
             throw CannotApplyUnaryOperator("!", expType.ToString(), notExpression.Span);
         }
@@ -162,42 +163,44 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         var type = GetExpressionType(declarationStatement.Value);
-        if (declarationStatement.Type != null && !CanImplicitlyConvertTo(declarationStatement.Type, type))
+        if (declarationStatement.DeclaredType is {} declaredType && !CanImplicitlyConvertTo(typeHelper.GetLocalType(declaredType), type))
         {
-            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.Type}", declarationStatement.Value.Span);
+            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.DeclaredType}", declarationStatement.Value.Span);
         }
     
-        declarationStatement.Type ??= type;
-        declarationStatement.Value = MaybeImplicitCast(declarationStatement.Type, declarationStatement.Value);
-        RecordVariableType(declarationStatement.Identifier, declarationStatement.Type, declarationStatement.Span);
+        declarationStatement.VariableType = typeHelper.TryGetLocalType(declarationStatement.DeclaredType!) ?? type;
+        declarationStatement.Value = MaybeImplicitCast(declarationStatement.VariableType!.Value, declarationStatement.Value);
+        RecordVariableType(declarationStatement.Identifier, declarationStatement.VariableType!.Value, declarationStatement.Span);
 
         return declarationStatement;
     }
 
-    private static FunctionSignature GetTypeFromFunctionDeclaration(FunctionDeclaration declaration)
+    private FunctionSignature GetSignatureFromFunctionDeclaration(FunctionDeclaration declaration)
     {
-        return new FunctionSignature(declaration.Type, declaration.Parameters.Select(x => x.Type));
+        return new FunctionSignature(typeHelper.GetMethodType(declaration.DeclaredType), declaration.Parameters.Select(x => typeHelper.GetLocalType(x.DeclaredType)));
     }
 
     protected override MethodDeclaration VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        typeHelper.GetMethod(_currentClass!, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => x.Type).ToList());
+        var typedParameters = methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, typeHelper.GetLocalType(x.DeclaredType))).ToList();
+        methodDeclaration.Parameters.ForEach(x => x.Type = typeHelper.GetLocalType(x.DeclaredType));
+        typeHelper.GetMethod(_currentClass!.Value, methodDeclaration.Identifier, typedParameters.Select(x => x.Type).ToList(), methodDeclaration.Span);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, IVariableType>();
+        _variableTypeStack = new ScopeTracker<string, DefinedType>();
     
-        foreach (var param in methodDeclaration.Parameters)
+        foreach (var param in typedParameters)
         {
-            _variableTypeStack.SetValue(param.Identifier, param.Type);
+            _variableTypeStack.SetValue(param.Name, param.Type);
         }
     
         var wasInFunction = _isInFunction;
         _isInFunction = true;
         var previousFunctionType = _currentFunctionReturnType;
-        _currentFunctionReturnType = methodDeclaration.Type;
+        _currentFunctionReturnType = typeHelper.GetMethodType(methodDeclaration.DeclaredType);
     
         VisitScope(methodDeclaration.Scope);
-        if (methodDeclaration.Type is not null)
+        if (methodDeclaration.DeclaredType is not null)
         {
             CheckAllPathsReturnCorrectType(methodDeclaration.Scope);
         }
@@ -212,15 +215,15 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        var signature = GetTypeFromFunctionDeclaration(functionDeclaration);
+        var signature = GetSignatureFromFunctionDeclaration(functionDeclaration);
         _functionTypeStack.SetValue(functionDeclaration.Identifier, signature);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, IVariableType>();
+        _variableTypeStack = new ScopeTracker<string, DefinedType>();
     
         foreach (var param in functionDeclaration.Parameters)
         {
-            _variableTypeStack.SetValue(param.Identifier, param.Type);
+            _variableTypeStack.SetValue(param.Identifier, typeHelper.GetLocalType(param.DeclaredType));
         }
     
         var wasInFunction = _isInFunction;
@@ -229,7 +232,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _currentFunctionReturnType = GetReturnType(signature);
     
         VisitScope(functionDeclaration.Scope);
-        if (functionDeclaration.Type is not null)
+        if (functionDeclaration.DeclaredType is not null)
         {
             CheckAllPathsReturnCorrectType(functionDeclaration.Scope);
         }
@@ -242,22 +245,22 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return functionDeclaration;
     }
 
-    private IVariableType? GetReturnType(FunctionSignature signature)
+    private DefinedType GetReturnType(FunctionSignature signature)
     {
         if (signature.ReturnType == null)
         {
-            return null;
+            return PrimitiveTypes.VoidType;
         }
-        return signature.ReturnType!;
+        return signature.ReturnType!.Value;
     }
 
     protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
-            typeHelper.GetMethod(_currentClass, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type).ToList()); // just to throw if the method doesn't exist
+            var method = typeHelper.GetMethod(_currentClass!.Value, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!.Value).ToList(), functionInvocation.Span);
 
-            var methodInvocation = new MethodInvocation(null, functionInvocation.Identifier, functionInvocation.Arguments);
+            var methodInvocation = new MethodInvocation(null, functionInvocation.Identifier, functionInvocation.Arguments) { Type = method.ReturnType };
             
             VisitMethodInvocationStatement(methodInvocation);
 
@@ -298,14 +301,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         if (methodInvocation.Expression is VariableAccess variableAccess && !_variableTypeStack.ContainsKey(variableAccess.Identifier))
         {
-            if (typeHelper.GetCustomClass(variableAccess.Identifier) is not { } declaredClass)
+            if (typeHelper.GetDefinedType(variableAccess.Identifier) is not { } declaredClass)
             {
                 throw ErrorHelper.ShowErrorMessage($"Unrecognized member: `{variableAccess.Identifier}`", variableAccess.Span);
             }
 
             if (!declaredClass.IsStatic)
             {
-                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.DefinedType.Name}`", variableAccess.Span);
+                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.Name}`", variableAccess.Span);
             }
 
             methodInvocation.SourceType = declaredClass;
@@ -313,28 +316,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
         
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var methodInfo = typeHelper.GetMethod(methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _currentClass, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type).ToList())
-                         ?? throw ErrorHelper.ShowErrorMessage($"Cannot resolve method `{methodInvocation.Identifier}`", methodInvocation.Span);
+        var functionDefinition = typeHelper.GetMethod(methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _currentClass!.Value, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!.Value).ToList(), methodInvocation.Span);
 
-        var paramCount = methodInfo.GetParameters().Length;
+        var paramCount = functionDefinition.Parameters.Count;
         var argCount = methodInvocation.Arguments.Count;
         if (argCount != paramCount)
         {
             throw ErrorHelper.ShowErrorMessage($"Function '{methodInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", methodInvocation.Span);
         }
 
-        foreach (var (argument, paramType) in methodInvocation.Arguments.Zip(methodInfo.GetParameters().Select(x => x.ParameterType)))
+        foreach (var (argument, paramType) in methodInvocation.Arguments.Zip(functionDefinition.Parameters.Select(x => x.Type)))
         {
-            if (typeHelper.GetCsType(argument.Type) != paramType)
+            if (!argument.Type.Equals(paramType))
             {
-                throw ErrorHelper.ShowErrorMessage($"Argument of type {argument.Type} passed to function '{methodInvocation.Identifier}' does not match declared parameter type {paramType}", argument.Span);
+                throw ErrorHelper.ShowErrorMessage($"Argument of type `{argument.Type}` passed to function `{methodInvocation.Identifier}` does not match declared parameter type `{paramType}`", argument.Span);
             }
         }
 
-        if (methodInfo.ReturnType != typeof(void))
-        {
-            methodInvocation.Type = typeHelper.GetLocalType(methodInfo.ReturnType);
-        }
+        methodInvocation.Type = functionDefinition.ReturnType;
 
         return methodInvocation;
     }
@@ -410,7 +409,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var lhsType = GetExpressionType(booleanBinaryExpression.Lhs);
         var rhsType = GetExpressionType(booleanBinaryExpression.Rhs);
 
-        if (!lhsType.Equals(PrimitiveVariableType.BoolType) || !rhsType.Equals(PrimitiveVariableType.BoolType))
+        if (!lhsType.Equals(PrimitiveTypes.BoolType) || !rhsType.Equals(PrimitiveTypes.BoolType))
         {
             throw ErrorHelper.ShowErrorMessage($"Both sides of expression must be of type {PrimitiveVariableTypeEnum.Bool}, was {lhsType} and {rhsType}.", booleanBinaryExpression.Span);
         }
@@ -427,7 +426,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
     }
 
-    private bool CanImplicitlyConvertTo(IVariableType expectedType, IVariableType actualType)
+    private bool CanImplicitlyConvertTo(DefinedType expectedType, DefinedType actualType)
     {
         if (expectedType.Equals(actualType))
         {
@@ -451,28 +450,28 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var rhsType = GetExpressionType(mathExpression.Rhs);
 
         var resultingType = ResultingTypeFromMath(lhsType, rhsType);
-        if (resultingType is null)
+        if (resultingType is not {} definedType)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot apply operator `{oper}` to expressions of type {lhsType} and {rhsType}", mathExpression.Span);
         }
 
-        mathExpression.Lhs = MaybeImplicitCast(resultingType, mathExpression.Lhs);
-        mathExpression.Rhs = MaybeImplicitCast(resultingType, mathExpression.Rhs);
+        mathExpression.Lhs = MaybeImplicitCast(definedType, mathExpression.Lhs);
+        mathExpression.Rhs = MaybeImplicitCast(definedType, mathExpression.Rhs);
         
-        MarkExpressionType(mathExpression, resultingType);
+        MarkExpressionType(mathExpression, definedType);
     }
 
-    private IExpression MaybeImplicitCast(IVariableType type, IExpression expression)
+    private IExpression MaybeImplicitCast(DefinedType type, IExpression expression)
     {
         if (expression.Type.Equals(type))
         {
             return expression;
         }
 
-        return new Cast(type, expression);
+        return new Cast(new InternalDefinedType(type), expression) { Type = type };
     }
 
-    private IVariableType? ResultingTypeFromMath(IVariableType type1, IVariableType type2)
+    private DefinedType? ResultingTypeFromMath(DefinedType type1, DefinedType type2)
     {
         var t1Precedence = GetMathTypePrecedence(type1);
         var t2Precedence = GetMathTypePrecedence(type2);
@@ -492,9 +491,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitAddExpression(Add addExpression)
     {
         addExpression = (Add)base.VisitAddExpression(addExpression);
-        if (addExpression.Lhs.Type.Equals(PrimitiveVariableType.StringType) && addExpression.Rhs.Type.Equals(PrimitiveVariableType.StringType))
+        if (addExpression.Lhs.Type.Equals(PrimitiveTypes.StringType) && addExpression.Rhs.Type.Equals(PrimitiveTypes.StringType))
         {
-            MarkExpressionType(addExpression, PrimitiveVariableType.StringType);
+            MarkExpressionType(addExpression, PrimitiveTypes.StringType);
         }
         else
         {
@@ -596,15 +595,16 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         cast = (Cast)base.VisitCast(cast);
         var expType = cast.Value.Type;
-        if (IsMathType(cast.TargetType) && IsMathType(expType) || cast.TargetType.Equals(expType))
+        if ((IsMathType(typeHelper.GetLocalType(cast.TargetType)) && IsMathType(expType!.Value)) || cast.Type.Equals(expType))
         {
+            cast.Type = typeHelper.GetLocalType(cast.TargetType);
             return cast;
         }
         
         throw ErrorHelper.ShowErrorMessage($"Cannot cast expression of type `{expType}` to `{cast.TargetType}`.", cast.Span);
     }
     
-    private void MarkExpressionType(IExpression expression, IVariableType type)
+    private void MarkExpressionType(IExpression expression, DefinedType type)
     {
         if (expression.Type is not null)
         {
@@ -613,14 +613,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         expression.Type = type;
     }
     
-    private IVariableType? GetExpressionType(IExpression expression)
+    private DefinedType GetExpressionType(IExpression expression)
     {
         if (expression is FunctionInvocation { Type: null } inv)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot get value from void function {inv.Identifier}", inv.Span);
         }
 
-        return expression.Type;
+        return expression.Type!.Value;
     }
 
     private void BeginScope()
@@ -635,7 +635,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _functionTypeStack.EndScope();
     }
     
-    private void RecordVariableType(string identifier, IVariableType expressionType, SourceSpan span)
+    private void RecordVariableType(string identifier, DefinedType expressionType, SourceSpan span)
     {
         if (_variableTypeStack.ContainsKey(identifier))
         {
@@ -645,7 +645,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _variableTypeStack.SetValue(identifier, expressionType);
     }
     
-    private IVariableType GetVariableType(string identifier, SourceSpan span)
+    private DefinedType GetVariableType(string identifier, SourceSpan span)
     {
         if (!_variableTypeStack.ContainsKey(identifier))
         {
@@ -663,21 +663,21 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return variableAccess;
     }
 
-    private int? GetMathTypePrecedence(IVariableType type)
+    private int? GetMathTypePrecedence(DefinedType type)
     {
-        if (type is not PrimitiveVariableType prim)
+        if (!MathTypes.Contains(type))
         {
             throw ErrorHelper.UnknownVariant("math type", type.GetType());
         }
 
-        var idx = MathTypes.IndexOf(prim);
+        var idx = MathTypes.IndexOf(type);
         return idx == -1 ? null : idx;
     }
 
-    private bool IsMathType(IVariableType type)
+    private bool IsMathType(DefinedType type)
     {
         return MathTypes.Contains(type);
     }
 
-    private static readonly List<IVariableType> MathTypes = [PrimitiveVariableType.IntType, PrimitiveVariableType.FloatType];
+    private static readonly List<DefinedType> MathTypes = [PrimitiveTypes.IntType, PrimitiveTypes.FloatType];
 }

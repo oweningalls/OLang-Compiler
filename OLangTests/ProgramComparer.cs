@@ -78,7 +78,7 @@ public static class ProgramComparer
                 return false;
             }
         }
-        else if (!firstValue.Equals(secondValue))
+        else if (!(firstValue == null && secondValue == null) && !firstValue.Equals(secondValue))
         {
             return false;
         }

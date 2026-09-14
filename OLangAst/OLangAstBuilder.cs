@@ -35,7 +35,6 @@ using IntLiteral = OLangAst.Expressions.IntLiteral;
 using IStatement = OLangAst.Statements.IStatement;
 using Not = OLangAst.Expressions.Not;
 using NotEqual = OLangAst.Expressions.NotEqual;
-using Parameter = OLangAst.Miscellaneous.Parameter;
 using Return = OLangAst.Statements.Return;
 using StringLiteral = OLangAst.Expressions.StringLiteral;
 using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
@@ -293,9 +292,9 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return identifier.Identifier;
     }
 
-    protected List<Parameter> ParseParameterList(IParameterListNode parameterList)
+    protected List<ParameterNode> ParseParameterList(IParameterListNode parameterList)
     {
-        return ParseList<IParameterListNode, OLangGrammar.ParseTree.ParameterList.Parameter, Parameter>(
+        return ParseList<IParameterListNode, OLangGrammar.ParseTree.ParameterList.Parameter, ParameterNode>(
             parameterList,
             x => x switch
             {
@@ -307,9 +306,9 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         );
     }
 
-    protected Parameter ParseParameter(OLangGrammar.ParseTree.ParameterList.Parameter parameter)
+    protected ParameterNode ParseParameter(OLangGrammar.ParseTree.ParameterList.Parameter parameter)
     {
-        return new Parameter(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type)) { Span = parameter.Span };
+        return new ParameterNode(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type)) { Span = parameter.Span };
     }
 
     protected FunctionInvocation ParseFunctionInvocation(IFunctionInvocation functionInvocation)

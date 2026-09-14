@@ -1,110 +1,96 @@
-﻿using System.Reflection;
-using System.Reflection.Emit;
-using ErrorHelper;
+﻿using ErrorHelper;
+using Lexing;
 using OLangAst.ClassMembers;
 using OLangAst.Miscellaneous;
+using OLangAst.TypeSystem;
 
 namespace AstHelpers;
 
-public class TypeHelper
+public class TypeHelper(IErrorHelper errorHelper)
 {
-    private IErrorHelper _errorHelper;
-    public PersistedAssemblyBuilder AssemblyBuilder;
-    public ModuleBuilder ModuleBuilder;
-    
-    public Type GetCsType(IVariableType type)
+    public DefinedType GetMethodType(IVariableType? type)
+    {
+        if (type == null)
+        {
+            return PrimitiveTypes.VoidType;
+        }
+
+        return GetLocalType(type);
+    }
+
+    public DefinedType? TryGetLocalType(IVariableType? type)
+    {
+        if (type == null)
+        {
+            return null;
+        }
+
+        return GetLocalType(type);
+    }
+    public DefinedType GetLocalType(IVariableType type)
     {
         return type switch
         {
-            CustomClass userDefinedClass => userDefinedClass.DefinedType,
-            PrimitiveVariableType primitiveVariableType => PrimitiveTypeMap[primitiveVariableType],
-            _ => throw _errorHelper.UnknownVariant("type", type.GetType())
+            CustomType userDefinedClass => GetDefinedType(userDefinedClass.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}", type.Span),
+            PrimitiveVariableType primitiveVariableType => PrimitiveTypeMap[primitiveVariableType.Type],
+            _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }
-
-    public IVariableType GetLocalType(Type type)
+    
+    public FunctionDefinition GetMethod(DefinedType type, string name, List<DefinedType> argumentTypes, SourceSpan span)
     {
-        return ReversePrimitiveTypeMap.TryGetValue(type, out var value) ? value : throw _errorHelper.UnknownVariant("type", type);
-    }
-
-    public MethodInfo GetMethod(IVariableType type, string name, List<IVariableType> argumentTypes)
-    {
-        if (type is CustomClass customClass)
-        {
-            return GetCustomMethod(customClass, name);
-        }
-        
-        var csType = GetCsType(type);
-        var matchingMethods = csType.GetMethods().Where(x => x.Name == name && x.GetParameters().Index().All(y => TypeMatches(y.Item.ParameterType, argumentTypes, y.Index))).ToList();
+        var matchingMethods = type.Methods.Where(x => x.Name == name && x.Parameters.Index().All(y => TypeMatches(y.Item.Type, argumentTypes, y.Index))).ToList();
 
         return matchingMethods.Count switch
         {
-            0 => throw _errorHelper.ShowErrorMessage($"Couldn't find method `{name}` with matching signature.", type.Span),
-            > 1 => throw _errorHelper.ShowErrorMessage($"Couldn't uniquely identify method `{name}`.", type.Span),
+            0 => throw errorHelper.ShowErrorMessage($"Couldn't find method `{name}` with matching signature.", span),
+            > 1 => throw errorHelper.ShowErrorMessage($"Couldn't uniquely identify method `{name}`.", span),
             _ => matchingMethods.Single()
         };
     }
 
-    public void CreateCustomMethod(CustomClass customClass, MethodDeclaration methodDeclaration)
+    public FunctionDefinition CreateCustomMethod(DefinedType customType, MethodDeclaration methodDeclaration)
     {
-        var attributes = MethodAttributes.Public | MethodAttributes.Static;
         // arguments for instance method
         // new List<IVariableType> { customClass }.Concat(methodDeclaration.Parameters.Select(x => x.Type)).Select(GetCsType).ToArray()
-        var method = customClass.DefinedType.DefineMethod(methodDeclaration.Identifier, attributes, methodDeclaration.Type == null ? typeof(void) : GetCsType(methodDeclaration.Type), methodDeclaration.Parameters.Select(x => x.Type).Select(GetCsType).ToArray());
-        customClass.Methods.Add(method);
+        var method = new FunctionDefinition(GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
+        customType.Methods.Add(method);
+
+        return method;
     }
 
-    private MethodInfo? GetCustomMethod(CustomClass customClass, string name)
+    public DefinedType CreateCustomClass(string name, bool isStatic)
     {
-        return customClass.Methods.SingleOrDefault(x => x.Name == name);
-    }
-
-    public CustomClass CreateCustomClass(string name, bool isStatic)
-    {
-        var classAttributes = TypeAttributes.Public;
-        if (isStatic)
-        {
-            classAttributes = classAttributes | TypeAttributes.Abstract | TypeAttributes.Sealed;
-        }
-        
-        var classDef = ModuleBuilder.DefineType(name, classAttributes);
-        var userDefined = new CustomClass(classDef, isStatic);
-        CsCustomClasses.Add(name, userDefined);
+        var userDefined = new DefinedType(name, isStatic);
+        _customClasses.Add(name, userDefined);
         
         return userDefined;
     }
 
-    public CustomClass? GetCustomClass(string name)
+    public DefinedType? GetDefinedType(string name)
     {
-        return CsCustomClasses.GetValueOrDefault(name);
+        return _customClasses.GetValueOrDefault(name);
     }
 
-    private bool TypeMatches(Type type, List<IVariableType> argumentTypes, int index)
+    private bool TypeMatches(DefinedType type, List<DefinedType> argumentTypes, int index)
     {
-        if (index >= argumentTypes.Count)
-        {
-            return false;
-        }
-
-        return GetCsType(argumentTypes[index]) == type;
+        return index < argumentTypes.Count && type.Equals(argumentTypes[index]);
     }
 
-    private Dictionary<string, CustomClass> CsCustomClasses = new();
+    private readonly Dictionary<string, DefinedType> _customClasses = new();
 
-    public TypeHelper(IErrorHelper errorHelper)
+    public List<DefinedType> GetDefinedClasses()
     {
-        _errorHelper = errorHelper;
-        AssemblyBuilder = new(new AssemblyName("AssemblyName"), typeof(object).Assembly);
-        ModuleBuilder = AssemblyBuilder.DefineDynamicModule("OLangProgram");
+        return _customClasses.Values.ToList();
     }
 
-    private static readonly Dictionary<PrimitiveVariableType, Type> PrimitiveTypeMap = new()
+    private static readonly Dictionary<PrimitiveVariableTypeEnum, DefinedType> PrimitiveTypeMap = new()
     {
-        { PrimitiveVariableType.IntType, typeof(int) },
-        { PrimitiveVariableType.BoolType, typeof(bool) },
-        { PrimitiveVariableType.FloatType, typeof(float) },
-        { PrimitiveVariableType.StringType, typeof(string) },
+        { PrimitiveVariableTypeEnum.Int, PrimitiveTypes.IntType },
+        { PrimitiveVariableTypeEnum.Bool, PrimitiveTypes.BoolType },
+        { PrimitiveVariableTypeEnum.Float, PrimitiveTypes.FloatType },
+        { PrimitiveVariableTypeEnum.String, PrimitiveTypes.StringType }
     };
-
-    private static readonly Dictionary<Type, PrimitiveVariableType> ReversePrimitiveTypeMap = PrimitiveTypeMap.ToDictionary(x => x.Value, x => x.Key);
+    
+    // private static readonly Dictionary<Type, PrimitiveType> ReversePrimitiveTypeMap = PrimitiveTypeMap.ToDictionary(x => x.Value, x => x.Key);
 }

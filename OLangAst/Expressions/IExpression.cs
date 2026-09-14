@@ -1,8 +1,8 @@
-﻿using OLangAst.Miscellaneous;
+﻿using OLangAst.TypeSystem;
 
 namespace OLangAst.Expressions;
 
 public interface IExpression : IAstNode
 {
-    IVariableType? Type { get; set; }
+    DefinedType? Type { get; set; }
 }

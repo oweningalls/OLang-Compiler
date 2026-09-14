@@ -295,7 +295,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
     }
 
     // returns statement to remove local vars from the stack
-    private string GenerateFunctionScope(Scope functionScope, List<Parameter> parameterList)
+    private string GenerateFunctionScope(Scope functionScope, List<ParameterNode> parameterList)
     {
         BeginScope();
         // arguments in order should be in rdi, rsi, rdx, rcx, r8, r9, stack (earlier arguments first)

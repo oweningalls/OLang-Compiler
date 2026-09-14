@@ -13,8 +13,4 @@
       <ProjectReference Include="..\OLangHelpers\OLangHelpers.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="TypeChecking\Types\" />
-    </ItemGroup>
-
 </Project>

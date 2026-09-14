@@ -1,6 +1,6 @@
 ﻿using Lexing;
 using OLangAst.Expressions;
-using OLangAst.Miscellaneous;
+using OLangAst.TypeSystem;
 
 namespace OLangAst.Statements;
 
@@ -9,7 +9,7 @@ public class MethodInvocation(IExpression expression, string identifier, List<IE
     public IExpression? Expression = expression;
     public string Identifier = identifier;
     public List<IExpression> Arguments = arguments;
-    public IVariableType? SourceType;
+    public DefinedType? SourceType;
     public SourceSpan Span { get; set; }
-    public IVariableType? Type { get; set; }
+    public DefinedType? Type { get; set; }
 }

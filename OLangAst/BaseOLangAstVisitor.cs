@@ -120,6 +120,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return variableType switch
         {
             PrimitiveVariableType primitiveVariableType => VisitPrimitiveVariableType(primitiveVariableType),
+            InternalDefinedType type => type,
             _ => throw ErrorHelper.UnknownVariant("variable type", variableType.GetType())
         };
     }
@@ -145,9 +146,9 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)
     {
-        if (declarationStatement.Type != null)
+        if (declarationStatement.DeclaredType != null)
         {
-            declarationStatement.Type = VisitVariableType(declarationStatement.Type);
+            declarationStatement.DeclaredType = VisitVariableType(declarationStatement.DeclaredType);
         }
         
         declarationStatement.Value = VisitExpression(declarationStatement.Value);

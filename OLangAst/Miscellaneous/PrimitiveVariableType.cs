@@ -4,6 +4,7 @@ namespace OLangAst.Miscellaneous;
 
 public class PrimitiveVariableType(PrimitiveVariableTypeEnum type) : IVariableType
 {
+    public string Name => Type.ToString();
     public PrimitiveVariableTypeEnum Type = type;
     public SourceSpan Span { get; set; }
 
@@ -31,11 +32,6 @@ public class PrimitiveVariableType(PrimitiveVariableTypeEnum type) : IVariableTy
     {
         return Type.ToString();
     }
-    
-    public static readonly PrimitiveVariableType BoolType = new(PrimitiveVariableTypeEnum.Bool);
-    public static readonly PrimitiveVariableType IntType = new(PrimitiveVariableTypeEnum.Int);
-    public static readonly PrimitiveVariableType FloatType = new(PrimitiveVariableTypeEnum.Float);
-    public static readonly PrimitiveVariableType StringType = new(PrimitiveVariableTypeEnum.String);
 }
 
 public enum PrimitiveVariableTypeEnum
