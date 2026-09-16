@@ -61,7 +61,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var attributes = MethodAttributes.Public | MethodAttributes.Static;
         var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!.Value)));// _type.DefineMethod(methodDeclaration.Identifier, attributes, GetCsType(typeHelper.GetMethodType(methodDeclaration.DeclaredType)), methodDeclaration.Parameters.Select(x => GetCsType(typeHelper.GetLocalType(x.DeclaredType))).ToArray());
         _functions[methodDeclaration.Identifier] = method;
         
@@ -69,7 +68,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il = method.GetILGenerator();
 
         BeginScope();
-        for (var i = 0; i < methodDeclaration.Parameters.Count; i++)
+
+        var isStatic = IsStatic(_type);
+        for (var i = isStatic ? 0 : 1; i < (isStatic ? methodDeclaration.Parameters.Count : methodDeclaration.Parameters.Count + 1); i++)
         {
             SaveParameter(methodDeclaration.Parameters[i], i);
         }
@@ -81,6 +82,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il = originalIl;
 
         return methodDeclaration;
+    }
+
+    private static bool IsStatic(Type type)
+    {
+        return type.IsSealed && type.IsAbstract;
     }
 
     private void GenerateAssemblyFile(string filePath, string fileName, PersistedAssemblyBuilder assembly, MethodBuilder main)
@@ -299,7 +305,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             GetReferenceToStackValue(methodInvocation.Expression);
         }
 
-        _il.Emit(OpCodes.Call, GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => GetCsType(x.Type!.Value))));
+        var method = GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => GetCsType(x.Type!.Value)));
+        _il.Emit(targetType.IsValueType || method.IsStatic ? OpCodes.Call : OpCodes.Callvirt, method);
 
         return methodInvocation;
     }
@@ -408,6 +415,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         // can only change type between int and float for now
         throw ErrorHelper.ShowErrorMessage("Invalid cast.", cast.Span);
+    }
+
+    protected override IExpression VisitInstantiation(Instantiation instantiation)
+    {
+        _il.Emit(OpCodes.Newobj, GetCsType(instantiation.Type!.Value).GetConstructor([])!);
+
+        return instantiation;
     }
 
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
@@ -645,7 +659,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
     {
-        var attributes = MethodAttributes.Public | MethodAttributes.Static;
+        var attributes = MethodAttributes.Public;
+        if (definition.DeclaringType.IsStatic)
+        {
+           attributes |= MethodAttributes.Static;
+        }
+        
         var method = type.DefineMethod(definition.Name, attributes, definition.ReturnType.Equals(PrimitiveTypes.VoidType) ? null : GetCsType(definition.ReturnType), definition.Parameters.Select(x => GetCsType(x.Type)).ToArray());
         if (!_definedMethods.ContainsKey(type))
         {

@@ -271,6 +271,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
+            ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier)) { Span = instantiationTerm.Span },
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
@@ -283,6 +284,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int) { Span = intType.Span },
             FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float) { Span = floatType.Span },
             StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String) { Span = stringType.Span },
+            NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier)) { Span = customType.Span },
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }

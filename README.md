@@ -97,6 +97,7 @@ $$
 &\mid \text{(}[\mathrm{Expression}]\text{)} \\
 &\mid [\mathrm{FunctionInvocation}] \\
 &\mid [\mathrm{MethodInvocation}] \\
+&\mid \text{new ident()} \\
 [\mathrm{FunctionInvocation}]
 &\to \mathrm{ident}\text{(}[\mathrm{ArgumentList}]\text{)} \\
 &\mid \mathrm{ident}\text{()} \\

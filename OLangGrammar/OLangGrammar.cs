@@ -144,6 +144,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IFunctionInvocation functionInvocation) => new FunctionInvocationTerm(functionInvocation)),
         GrammarRule.Create((IMethodInvocation methodInvocation) => new MethodInvocationTerm(methodInvocation)),
         GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
+        GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new ClassInstantiationTerm(ident)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

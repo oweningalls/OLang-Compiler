@@ -51,9 +51,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public FunctionDefinition CreateCustomMethod(DefinedType customType, MethodDeclaration methodDeclaration)
     {
-        // arguments for instance method
-        // new List<IVariableType> { customClass }.Concat(methodDeclaration.Parameters.Select(x => x.Type)).Select(GetCsType).ToArray()
-        var method = new FunctionDefinition(GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
+        var method = new FunctionDefinition(customType, GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
         customType.Methods.Add(method);
 
         return method;

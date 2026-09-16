@@ -120,12 +120,18 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return variableType switch
         {
             PrimitiveVariableType primitiveVariableType => VisitPrimitiveVariableType(primitiveVariableType),
+            CustomType customType => VisitCustomVariableType(customType),
             InternalDefinedType type => type,
             _ => throw ErrorHelper.UnknownVariant("variable type", variableType.GetType())
         };
     }
     
     protected virtual PrimitiveVariableType VisitPrimitiveVariableType(PrimitiveVariableType variableType)
+    {
+        return variableType;
+    }
+    
+    protected virtual IVariableType VisitCustomVariableType(CustomType variableType)
     {
         return variableType;
     }
@@ -193,6 +199,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return methodInvocation;
     }
 
+    protected virtual IExpression VisitInstantiation(Instantiation instantiation)
+    {
+        return instantiation;
+    }
+
     protected virtual Scope VisitScope(Scope scopeNode)
     {
         scopeNode.Statements = VisitStatements(scopeNode.Statements);
@@ -226,6 +237,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             Negate negate => VisitNegate(negate),
             Cast cast => VisitCast(cast),
             MethodInvocation methodInvocation => VisitMethodInvocation(methodInvocation),
+            Instantiation instantiation => VisitInstantiation(instantiation),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

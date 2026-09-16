@@ -20,7 +20,7 @@ public struct DefinedType(string name, bool isStatic)
 
         foreach (var method in type.GetMethods())
         {
-            definedType.Methods.Add(new FunctionDefinition(FromCsType(method.ReturnType),
+            definedType.Methods.Add(new FunctionDefinition(definedType, FromCsType(method.ReturnType),
                 method.Name,
                 method.GetParameters()
                     .Select(parameter => new Parameter(parameter.Name,

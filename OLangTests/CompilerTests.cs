@@ -1087,6 +1087,48 @@ public class CompilerTests
         TestProgramConsoleOutput(values, false);
     }
         
+    public static readonly List<(string, string)> ClassInstantiationPrograms =
+    [
+        ("""
+         class Helper {
+             string TestString() {
+                 return "TestString";
+             }
+         }
+         
+         static class Program {
+             void Main() {
+                 let helper = new Helper();
+                 print helper.TestString();
+             }
+         }
+         """, "TestString"),
+        // TODO: allow non-primitive types to be used in declarations
+        // ("""
+        //  class Helper {
+        //      string TestString() {
+        //          return "TestString";
+        //      }
+        //      
+        //      Helper Create() { return new Helper(); }
+        //  }
+        //  
+        //  static class Program {
+        //      void Main() {
+        //          let helper = new Helper();
+        //          helper = helper.Create();
+        //          print helper.TestString();
+        //      }
+        //  }
+        //  """, "TestString"),
+    ];
+    
+    [TestCaseSource(nameof(ClassInstantiationPrograms))]
+    public void ClassInstantiationTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;

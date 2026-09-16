@@ -273,6 +273,7 @@ public class Tokenizer
         { "void", () => new VoidToken() },
         { "return", () => new ReturnToken() },
         { "print", () => new PrintToken() },
+        { "new", () => new NewToken() },
     };
 
     private BaseToken? TryParseOperator()

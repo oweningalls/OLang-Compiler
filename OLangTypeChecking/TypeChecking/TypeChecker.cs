@@ -256,6 +256,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
+        
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             var method = typeHelper.GetMethod(_currentClass!.Value, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!.Value).ToList(), functionInvocation.Span);
@@ -602,6 +603,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
         
         throw ErrorHelper.ShowErrorMessage($"Cannot cast expression of type `{expType}` to `{cast.TargetType}`.", cast.Span);
+    }
+
+    protected override IExpression VisitInstantiation(Instantiation instantiation)
+    {
+        instantiation.Type = typeHelper.GetDefinedType(instantiation.ClassName);
+
+        return instantiation;
     }
     
     private void MarkExpressionType(IExpression expression, DefinedType type)
