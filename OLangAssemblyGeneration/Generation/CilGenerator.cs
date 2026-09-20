@@ -419,7 +419,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        _il.Emit(OpCodes.Newobj, GetCsType(instantiation.Type!.Value).GetConstructor([])!);
+        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
+        _il.Emit(OpCodes.Newobj, method);
 
         return instantiation;
     }
@@ -631,6 +632,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     }
     
     private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
+    private Dictionary<DefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
 
     private List<TypeBuilder> DefineTypes(List<DefinedType> classes)
@@ -648,6 +650,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         
         var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
         _definedTypes[type] = typeBuilder;
+        _definedTypeConstructors[type] = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
         
         return typeBuilder;
     }

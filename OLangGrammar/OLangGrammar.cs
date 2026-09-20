@@ -46,8 +46,10 @@ public class OLangGrammar : IGrammar
         
         // ClassMember
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(new NonPrimitiveType(type), identifier, parameterList, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidMethodDeclarationWithParameters(identifier, parameterList, scope)),
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(new NonPrimitiveType(type), identifier, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope)),
 
         // StmtList
@@ -59,6 +61,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((PrintToken _, IExpression expression, SemicolonToken _) => new Print(expression)),
         GrammarRule.Create((LetToken _, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new LetDeclaration(identifier, expression)),
         GrammarRule.Create((IType type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(type, identifier, expression)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(new NonPrimitiveType(type), identifier, expression)),
         GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
         GrammarRule.Create((IScopeNode scope) => new ScopeStatement(scope)),
         GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope) => new If(expression, scope)),
@@ -66,8 +69,10 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((WhileToken _, IExpression expression, IScopeNode scope) => new While(expression, scope)),
         GrammarRule.Create((ForToken _, IdentifierToken identifier, InToken _, IExpression startExpression, RangeToken _, IExpression endExpression, IScopeNode scope) => new For(identifier, startExpression, endExpression, scope)),
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclarationWithParameters(type, identifier, parameterList, scope)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new FunctionDeclarationWithParameters(new NonPrimitiveType(type), identifier, parameterList, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclarationWithParameters(identifier, parameterList, scope)),
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(type, identifier, scope)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new FunctionDeclaration(new NonPrimitiveType(type), identifier, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidFunctionDeclaration(identifier, scope)),
         GrammarRule.Create((IFunctionInvocation invocation, SemicolonToken _) => new Invocation(invocation)),
         GrammarRule.Create((IMethodInvocation invocation, SemicolonToken _) => new MethodInvocationStatement(invocation)),
@@ -77,6 +82,8 @@ public class OLangGrammar : IGrammar
         // ParameterList
         GrammarRule.Create((IType type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(type, identifier, parameterList)),
         GrammarRule.Create((IType type, IdentifierToken identifier) => new Parameter(type, identifier)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(new NonPrimitiveType(type), identifier, parameterList)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier) => new Parameter(new NonPrimitiveType(type), identifier)),
 
         // ArgumentList
         GrammarRule.Create((IExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),

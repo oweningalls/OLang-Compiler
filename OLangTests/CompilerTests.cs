@@ -1103,24 +1103,23 @@ public class CompilerTests
              }
          }
          """, "TestString"),
-        // TODO: allow non-primitive types to be used in declarations
-        // ("""
-        //  class Helper {
-        //      string TestString() {
-        //          return "TestString";
-        //      }
-        //      
-        //      Helper Create() { return new Helper(); }
-        //  }
-        //  
-        //  static class Program {
-        //      void Main() {
-        //          let helper = new Helper();
-        //          helper = helper.Create();
-        //          print helper.TestString();
-        //      }
-        //  }
-        //  """, "TestString"),
+        ("""
+         class Helper {
+             string TestString() {
+                 return "TestString";
+             }
+             
+             Helper Create() { Helper helper = new Helper(); return helper; }
+         }
+         
+         static class Program {
+             void Main() {
+                 let helper = new Helper();
+                 helper = helper.Create();
+                 print helper.TestString();
+             }
+         }
+         """, "TestString"),
     ];
     
     [TestCaseSource(nameof(ClassInstantiationPrograms))]

@@ -2,11 +2,12 @@
 
 namespace OLangAst.TypeSystem;
 
-public struct DefinedType(string name, bool isStatic)
+public struct DefinedType(string name, bool isStatic, bool isCs = false)
 {
     public string Name = name;
     public bool IsStatic = isStatic;
     public List<FunctionDefinition> Methods = [];
+    public bool IsCs = isCs;
 
     public static DefinedType FromCsType(Type type)
     {
@@ -15,7 +16,7 @@ public struct DefinedType(string name, bool isStatic)
             return savedType;
         }
         
-        var definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract);
+        var definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract, true);
         _typeMap[type] = definedType;
 
         foreach (var method in type.GetMethods())
