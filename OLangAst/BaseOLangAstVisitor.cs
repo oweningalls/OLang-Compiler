@@ -12,9 +12,20 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     public virtual Program VisitProgram(Program program)
     {
+        program.UsingStatements = VisitUsingStatements(program.UsingStatements);
         program.ClassDeclarations = VisitClassDeclarations(program.ClassDeclarations);
 
         return program;
+    }
+    
+    protected List<UsingStatement> VisitUsingStatements(IEnumerable<UsingStatement> stmtList)
+    {
+        return stmtList.Select(VisitUsingStatement).ToList();
+    }
+
+    protected virtual UsingStatement VisitUsingStatement(UsingStatement usingStatement)
+    {
+        return usingStatement;
     }
     
     protected List<ClassDeclaration> VisitClassDeclarations(IEnumerable<ClassDeclaration> stmtList)
@@ -201,6 +212,8 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual IExpression VisitInstantiation(Instantiation instantiation)
     {
+        instantiation.Arguments = instantiation.Arguments.Select(VisitExpression).ToList();
+        
         return instantiation;
     }
 

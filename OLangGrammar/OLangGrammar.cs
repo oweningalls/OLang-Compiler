@@ -21,6 +21,9 @@ using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
+using OLangGrammar.ParseTree.UsingList;
+using OLangGrammar.UsingStatement;
+using OLangGrammar.UsingStatementIdentifier;
 using OLangTokens.Tokens;
 
 namespace OLangGrammar;
@@ -30,7 +33,18 @@ public class OLangGrammar : IGrammar
     private static readonly List<BaseGrammarRule> Rules =
     [
         // Prog
-        GrammarRule.Create((IClassDeclarationListNode list) => new ProgramNode(list)),
+        GrammarRule.Create((IUsingList usingList, IClassDeclarationListNode classList) => new ProgramNode(usingList, classList)),
+        
+        // UsingStatementList
+        GrammarRule.Create(() => new EmptyUsingList()),
+        GrammarRule.Create((IUsingStatement usingStatement, IUsingList usingList) => new UsingListWithStatement(usingStatement, usingList)),
+        
+        // UsingStatement
+        GrammarRule.Create((UsingToken _, IUsingStatementIdentifier identifier, SemicolonToken _) => new UsingStatement.UsingStatement(identifier)),
+        
+        // UsingStatementIdentifier
+        GrammarRule.Create((IdentifierToken identifier) => new SingleUsingStatementIdentifier(identifier)),
+        GrammarRule.Create((IdentifierToken identifier, DotToken _, IUsingStatementIdentifier continuedIdentifier) => new ContinuedUsingStatementIdentifier(identifier, continuedIdentifier)),
         
         // ClassDeclarationList
         GrammarRule.Create((IClassDeclaration classDeclaration) => new SingleClassClassList(classDeclaration)),
@@ -151,7 +165,8 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IFunctionInvocation functionInvocation) => new FunctionInvocationTerm(functionInvocation)),
         GrammarRule.Create((IMethodInvocation methodInvocation) => new MethodInvocationTerm(methodInvocation)),
         GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
-        GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new ClassInstantiationTerm(ident)),
+        GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new ParameterlessClassInstantiationTerm(ident)),
+        GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList,  RightParenToken _) => new ClassInstantiationTerm(ident, argumentList)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

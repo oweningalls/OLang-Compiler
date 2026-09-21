@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text;
 
 namespace OLangTests;
 
@@ -915,6 +916,7 @@ public class CompilerTests
         ("2.ToString();", ""),
         ("print -3.ToString();", "-3"),
         ("print -4.5.ToString();", "-4.5"),
+        ("print 12.ToString().ToString();", "12"),
     ];
     
     [TestCaseSource(nameof(ToStringPrograms))]
@@ -1124,6 +1126,28 @@ public class CompilerTests
     
     [TestCaseSource(nameof(ClassInstantiationPrograms))]
     public void ClassInstantiationTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
+    public static readonly List<(string, string)> UsingStatementPrograms =
+    [
+        ("""
+         using System.Private.CoreLib;
+         
+         static class Program {
+             void Main() {
+                 let sb = new StringBuilder();
+                 sb.Append("Hello, ");
+                 sb.Append("world!");
+                 print sb.ToString();
+             }
+         }
+         """, "Hello, world!")
+    ];
+    
+    [TestCaseSource(nameof(UsingStatementPrograms))]
+    public void UsingStatementTests((string, string) values)
     {
         TestProgramConsoleOutput(values, false);
     }

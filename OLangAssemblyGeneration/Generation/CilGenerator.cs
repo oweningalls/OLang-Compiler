@@ -49,6 +49,17 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         WriteRuntimeConfigFile(filePath, Path.GetFileNameWithoutExtension(fileName));
     }
 
+    protected override UsingStatement VisitUsingStatement(UsingStatement usingStatement)
+    {
+        var types = CsAssemblyLoader.LoadDefinedTypesFromAssembly(usingStatement.Module);
+        foreach (var (type, definedType) in types)
+        {
+            _loadedTypes[definedType] = type;
+        }
+
+        return usingStatement;
+    }
+
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         _type = _definedTypes[classDeclaration.Type!.Value];
@@ -419,7 +430,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
+        instantiation = (Instantiation)base.VisitInstantiation(instantiation);
+        var argumentTypes = instantiation.Arguments.Select(x => GetCsType(x.Type!.Value));
+        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor(argumentTypes.ToArray())! : _definedTypeConstructors[instantiation.Type.Value];
         _il.Emit(OpCodes.Newobj, method);
 
         return instantiation;
@@ -611,6 +624,10 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     public Type GetCsType(DefinedType type)
     {
+        if (type.IsCs)
+        {
+            return _loadedTypes[type];
+        }
         if (type.Equals(PrimitiveTypes.FloatType))
         {
             return typeof(float);
@@ -632,6 +649,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     }
     
     private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
+    private Dictionary<DefinedType, Type> _loadedTypes = new();
     private Dictionary<DefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
 

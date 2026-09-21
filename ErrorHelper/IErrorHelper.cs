@@ -6,7 +6,7 @@ public interface IErrorHelper
 {
     public Exception UnknownVariant(string name, Type type);
 
-    public Exception ShowErrorMessage(string message, SourceSpan token);
+    public Exception ShowErrorMessage(string message, SourceSpan span);
 
     public Exception ShowErrorMessageAtElement(string message, IGrammarElement element);
 

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
@@ -9,21 +10,27 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false)
     public List<FunctionDefinition> Methods = [];
     public bool IsCs = isCs;
 
+    private static readonly Lock _lockObject = new();
+
     public static DefinedType FromCsType(Type type)
     {
-        if (_typeMap.TryGetValue(type, out var savedType))
+        DefinedType definedType;
+        lock (_lockObject)
         {
-            return savedType;
-        }
+            if (_typeMap.TryGetValue(type, out var savedType))
+            {
+                return savedType;
+            }
         
-        var definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract, true);
-        _typeMap[type] = definedType;
+            definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract, true);
+            _typeMap[type] = definedType;
+        }
 
         foreach (var method in type.GetMethods())
         {
             definedType.Methods.Add(new FunctionDefinition(definedType, FromCsType(method.ReturnType),
                 method.Name,
-                method.GetParameters()
+                method.GetParameters().ToArray()
                     .Select(parameter => new Parameter(parameter.Name,
                         FromCsType(parameter.ParameterType)))
                     .ToList()));
@@ -32,7 +39,7 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false)
         return definedType;
     }
     
-    private static Dictionary<Type, DefinedType> _typeMap = new();
+    private static ConcurrentDictionary<Type, DefinedType> _typeMap = new();
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {

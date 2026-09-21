@@ -10,7 +10,7 @@ public class NoOpErrorHelper : IErrorHelper
         return null;
     }
 
-    public Exception ShowErrorMessage(string message, SourceSpan token)
+    public Exception ShowErrorMessage(string message, SourceSpan span)
     {
         return null;
     }

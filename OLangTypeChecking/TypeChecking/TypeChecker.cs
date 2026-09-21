@@ -27,6 +27,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return base.VisitProgram(program);
     }
 
+    protected override UsingStatement VisitUsingStatement(UsingStatement usingStatement)
+    {
+        typeHelper.LoadAssembly(usingStatement.Module);
+
+        return usingStatement;
+    }
+    
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
@@ -607,7 +614,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        instantiation.Type = typeHelper.GetDefinedType(instantiation.ClassName);
+        instantiation.Type = typeHelper.GetDefinedType(instantiation.ClassName) ?? throw ErrorHelper.ShowErrorMessage($"Unrecognized type `{instantiation.ClassName}`.", instantiation.Span);
 
         return instantiation;
     }

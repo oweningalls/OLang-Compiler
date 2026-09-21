@@ -65,9 +65,17 @@ public class TypeHelper(IErrorHelper errorHelper)
         return userDefined;
     }
 
+    public void LoadAssembly(string assemblyName)
+    {
+        foreach (var (_, type) in CsAssemblyLoader.LoadDefinedTypesFromAssembly(assemblyName))
+        {
+            _customClasses[type.Name] = type;
+        }
+    }
+
     public DefinedType? GetDefinedType(string name)
     {
-        return _customClasses.GetValueOrDefault(name);
+        return _customClasses.TryGetValue(name, out var value) ? value : null;
     }
 
     private bool TypeMatches(DefinedType type, List<DefinedType> argumentTypes, int index)
@@ -79,7 +87,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public List<DefinedType> GetDefinedClasses()
     {
-        return _customClasses.Values.ToList();
+        return _customClasses.Values.Where(x => !x.IsCs).ToList();
     }
 
     private static readonly Dictionary<PrimitiveVariableTypeEnum, DefinedType> PrimitiveTypeMap = new()

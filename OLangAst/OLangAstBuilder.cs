@@ -24,6 +24,9 @@ using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
+using OLangGrammar.ParseTree.UsingList;
+using OLangGrammar.UsingStatement;
+using OLangGrammar.UsingStatementIdentifier;
 using OLangTokens.Tokens;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
@@ -47,7 +50,43 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 {
     public Program ParseProgram(ProgramNode programNode)
     {
-        return new Program(ParseClassDeclarations(programNode.ClassDeclarationList)) { Span = programNode.Span};
+        return new Program(ParseUsingStatements(programNode.UsingList), ParseClassDeclarations(programNode.ClassDeclarationList)) { Span = programNode.Span};
+    }
+
+    private List<UsingStatement> ParseUsingStatements(IUsingList usingList)
+    {
+        return ParseList(usingList,
+            x => x switch
+            {
+                EmptyUsingList _ => (null, null),
+                UsingListWithStatement usingListWithStatement => (usingListWithStatement.UsingStatement, usingListWithStatement.UsingList),
+                _ => throw new ArgumentOutOfRangeException(nameof(x)),
+            },
+            x => ParseUsingStatement(x)
+            );
+    }
+
+    private UsingStatement ParseUsingStatement(IUsingStatement usingStatement)
+    {
+        return usingStatement switch
+        {
+            OLangGrammar.UsingStatement.UsingStatement usingStatement1 => new UsingStatement(ParseUsingStatementIdentifier(usingStatement1.UsingStatementIdentifier)),
+            _ => throw errorHelper.UnknownVariant("class list", usingStatement.GetType())
+        };
+    }
+
+    private string ParseUsingStatementIdentifier(IUsingStatementIdentifier usingStatementIdentifier)
+    {
+        var identList = ParseList(usingStatementIdentifier,
+            x => x switch
+            {
+                ContinuedUsingStatementIdentifier continuedUsingStatementIdentifier => (continuedUsingStatementIdentifier.Identifier, continuedUsingStatementIdentifier.ContinuedIdentifier),
+                SingleUsingStatementIdentifier singleUsingStatementIdentifier => (singleUsingStatementIdentifier.Identifier, null),
+                _ => throw new ArgumentOutOfRangeException(nameof(x))
+            },
+            ParseIdentifier);
+
+        return string.Join(".", identList);
     }
 
     private List<ClassDeclaration> ParseClassDeclarations(IClassDeclarationListNode classDeclarationList)
@@ -63,14 +102,21 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         );
     }
     
-    private List<TTarget> ParseList<TList, TData, TTarget>(TList first, Func<TList, (TData, TList?)> getValueAndNext, Func<TData, TTarget> parseValue)
+    private List<TTarget> ParseList<TList, TData, TTarget>(TList first, Func<TList, (TData?, TList?)> getValueAndNext, Func<TData, TTarget> parseValue)
     {
         var (value, next) = getValueAndNext(first);
-        var list = new List<TTarget> { parseValue(value) };
+        var list = new List<TTarget>();
+        if (value is { } val)
+        {
+            list.Add(parseValue(val));
+        }
         while (next != null)
         {
             (value, next) = getValueAndNext(next);
-            list.Add(parseValue(value));
+            if (value is { } nonNull)
+            {
+                list.Add(parseValue(nonNull));
+            }
         }
 
         return list;
@@ -271,7 +317,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
-            ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier)) { Span = instantiationTerm.Span },
+            ParameterlessClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
+            ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
@@ -296,19 +343,19 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
     protected List<ParameterNode> ParseParameterList(IParameterListNode parameterList)
     {
-        return ParseList<IParameterListNode, OLangGrammar.ParseTree.ParameterList.Parameter, ParameterNode>(
+        return ParseList<IParameterListNode, Parameter, ParameterNode>(
             parameterList,
             x => x switch
             {
                 ContinuedParameterList value => (value, value.ParameterList),
-                OLangGrammar.ParseTree.ParameterList.Parameter parameter => (parameter, null),
+                Parameter parameter => (parameter, null),
                 _ => throw errorHelper.UnknownVariant("parameter list", x.GetType())
             },
             ParseParameter
         );
     }
 
-    protected ParameterNode ParseParameter(OLangGrammar.ParseTree.ParameterList.Parameter parameter)
+    protected ParameterNode ParseParameter(Parameter parameter)
     {
         return new ParameterNode(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type)) { Span = parameter.Span };
     }

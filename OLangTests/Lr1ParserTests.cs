@@ -18,6 +18,7 @@ using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
 using OLangGrammar.ParseTree.UnaryExpression;
+using OLangGrammar.ParseTree.UsingList;
 using OLangLexing;
 using OLangTokens.Tokens;
 using Parser.Parser.BottomUpParser.Lr1;
@@ -102,7 +103,7 @@ public class Lr1ParserTests
 
         var classDeclaration = new ClassDeclaration(new IdentifierToken("Program"), new SingleMemberClassMemberList(method));
 
-        var expectedProgram = new ProgramNode(new SingleClassClassList(classDeclaration));
+        var expectedProgram = new ProgramNode(new EmptyUsingList(), new SingleClassClassList(classDeclaration));
 
         var errorHelper = new OLangHelpers.ErrorHelper(new SourceReader(code));
         var tokens = new Tokenizer().Tokenize(code, errorHelper);
