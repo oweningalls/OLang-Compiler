@@ -216,6 +216,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         
         return instantiation;
     }
+    
+    protected virtual IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
+    {
+        return instantiation;
+    }
 
     protected virtual Scope VisitScope(Scope scopeNode)
     {
@@ -251,6 +256,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             Cast cast => VisitCast(cast),
             MethodInvocation methodInvocation => VisitMethodInvocation(methodInvocation),
             Instantiation instantiation => VisitInstantiation(instantiation),
+            ArrayInstantiation instantiation => VisitArrayInstantiation(instantiation),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

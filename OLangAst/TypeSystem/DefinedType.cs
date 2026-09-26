@@ -3,12 +3,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
-public struct DefinedType(string name, bool isStatic, bool isCs = false)
+public struct DefinedType(string name, bool isStatic, bool isCs = false, bool isArray = false)
 {
     public string Name = name;
     public bool IsStatic = isStatic;
     public List<FunctionDefinition> Methods = [];
     public bool IsCs = isCs;
+    public bool IsArray = isArray;
+    public List<DefinedType> TypeParameters = [];
 
     private static readonly Lock _lockObject = new();
 
@@ -24,6 +26,11 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false)
         
             definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract, true);
             _typeMap[type] = definedType;
+        }
+
+        foreach (var typeArgument in type.GenericTypeArguments)
+        {
+            definedType.TypeParameters.Add(FromCsType(typeArgument));
         }
 
         foreach (var method in type.GetMethods())

@@ -7,9 +7,9 @@ public class GrammarRule : BaseGrammarRule
         _reduce = reduce;
         _rhsTypes = types.ToList();
         _lhsType = lhsType;
-        if (types.Any(x => !x.IsAssignableTo(typeof(BaseToken)) && !x.IsInterface))
+        if (types.FirstOrDefault(x => !x.IsAssignableTo(typeof(BaseToken)) && !x.IsInterface) is {} type)
         {
-            throw new Exception($"RHS of grammar rules must all be tokens or interfaces: {this}");
+            throw new Exception($"RHS of grammar rules must all be tokens or interfaces. {type} is incorrect: {this}");
         }
     }
 

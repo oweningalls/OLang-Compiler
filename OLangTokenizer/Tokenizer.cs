@@ -305,6 +305,8 @@ public class Tokenizer
         { ")", () => new RightParenToken() },
         { "{", () => new LeftCurlyToken() },
         { "}", () => new RightCurlyToken() },
+        { "[", () => new LeftBracketToken() },
+        { "]", () => new RightBracketToken() },
         { ",", () => new CommaToken() },
         { ".", () => new DotToken() },
         { "..", () => new RangeToken() },

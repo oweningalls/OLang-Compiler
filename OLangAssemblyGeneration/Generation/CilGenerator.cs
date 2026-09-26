@@ -438,6 +438,15 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return instantiation;
     }
 
+    protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
+    {
+        instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
+        _il.Emit(OpCodes.Ldc_I4, instantiation.Size);
+        _il.Emit(OpCodes.Newarr, GetCsType(instantiation.Type!.Value.TypeParameters.Single()));
+
+        return instantiation;
+    }
+
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {
         variableAccess = (VariableAccess)base.VisitVariableAccess(variableAccess);
@@ -624,10 +633,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     public Type GetCsType(DefinedType type)
     {
-        if (type.IsCs)
-        {
-            return _loadedTypes[type];
-        }
         if (type.Equals(PrimitiveTypes.FloatType))
         {
             return typeof(float);
@@ -643,6 +648,18 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         if (type.Equals(PrimitiveTypes.StringType))
         {
             return typeof(string);
+        }
+        if (type.IsCs)
+        {
+            return _loadedTypes[type];
+        }
+
+        if (type.IsArray)
+        {
+            var innerType = type.TypeParameters.Single();
+
+            return GetCsType(innerType).MakeArrayType();
+
         }
 
         return _definedTypes[type];

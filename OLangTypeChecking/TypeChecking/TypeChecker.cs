@@ -619,6 +619,17 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return instantiation;
     }
     
+    protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
+    {
+        var arrayType = typeHelper.GetLocalType(instantiation.ArrayType);
+        instantiation.Type = new DefinedType($"{arrayType}[]", false, isArray: true)
+        {
+            TypeParameters = [arrayType]
+        };
+        
+        return instantiation;
+    }
+    
     private void MarkExpressionType(IExpression expression, DefinedType type)
     {
         if (expression.Type is not null)
