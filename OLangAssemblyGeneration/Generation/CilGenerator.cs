@@ -446,6 +446,15 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         return instantiation;
     }
+    
+    protected override IExpression VisitArrayAccess(ArrayAccess arrayAccess)
+    {
+        arrayAccess = (ArrayAccess)base.VisitArrayAccess(arrayAccess);
+
+        _il.Emit(OpCodes.Ldelem_I4);
+        
+        return arrayAccess;
+    }
 
     protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
     {

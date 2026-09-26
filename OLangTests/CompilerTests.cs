@@ -1152,23 +1152,31 @@ public class CompilerTests
         TestProgramConsoleOutput(values, false);
     }
     
-    public static readonly List<(string, int)> ArrayPrograms =
+    public static readonly List<(string, string)> ArrayPrograms =
     [
         ("""
          let a = int[10];
-         """, 0),
+         """, ""),
         ("""
          let a = string[10];
-         """, 0),
+         """, ""),
         ("""
          let a = bool[10];
-         """, 0)
+         """, ""),
+        ("""
+         let a = int[10];
+         print a[0].ToString();
+         """, "0"),
+        ("""
+         let a = bool[10];
+         print a[0].ToString();
+         """, "False")
     ];
     
     [TestCaseSource(nameof(ArrayPrograms))]
-    public void ArrayTests((string, int) values)
+    public void ArrayTests((string, string) values)
     {
-        TestProgramExitCode(values);
+        TestProgramConsoleOutput(values);
     }
     
     private void TestProgramExitCode((string, int) values)

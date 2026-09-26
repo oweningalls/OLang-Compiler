@@ -320,6 +320,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             ParameterlessClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
             ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), instantiationTerm.Size.Value),
+            ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }

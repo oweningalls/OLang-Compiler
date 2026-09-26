@@ -630,6 +630,15 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return instantiation;
     }
     
+    protected override IExpression VisitArrayAccess(ArrayAccess arrayAccess)
+    {
+        arrayAccess = (ArrayAccess)base.VisitArrayAccess(arrayAccess);
+
+        arrayAccess.Type = arrayAccess.Array.Type.Value.TypeParameters.Single();
+        
+        return arrayAccess;
+    }
+    
     private void MarkExpressionType(IExpression expression, DefinedType type)
     {
         if (expression.Type is not null)
