@@ -1225,6 +1225,12 @@ public class CompilerTests
          a[1 + 2] = true;
          print a[3].ToString();
          """, "True"),
+        ("""
+         let a = int[5];
+         a[1] = 8;
+         a[1] /= 4;
+         print a[1].ToString();
+         """, "2"),
     ];
     
     [TestCaseSource(nameof(ArrayPrograms))]
@@ -1239,6 +1245,7 @@ public class CompilerTests
          class StringHolder {
              string Field;
          }
+         
          static class Program {
              void Main() {
                  let holder = new StringHolder();
@@ -1249,6 +1256,7 @@ public class CompilerTests
          class IntHolder {
              int Field;
          }
+         
          static class Program {
              void Main() {
                  let holder = new IntHolder();
@@ -1256,7 +1264,38 @@ public class CompilerTests
                  print holder.Field.ToString();
              }
          }
-         """, "0")
+         """, "0"),
+        ("""
+         class StringHolder {
+             string Field;
+         }
+         
+         static class Program {
+             void Main() {
+                 let holder = new StringHolder();
+                 holder.Field = "I got set!";
+                 
+                 print holder.Field;
+             }
+         }
+         """, "I got set!"),
+        ("""
+         class StringHolder {
+             string Field;
+         }
+         
+         static class Program {
+             void Main() {
+                 let holder = new StringHolder();
+                 
+                 for i in 0..9 {
+                     holder.Field += i.ToString();
+                 }
+                 
+                 print holder.Field;
+             }
+         }
+         """, "012345678"),
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]

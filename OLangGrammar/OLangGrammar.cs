@@ -79,6 +79,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, EqualsToken _, IExpression expression, SemicolonToken _) => new Declaration(new NonPrimitiveType(type), identifier, expression)),
         GrammarRule.Create((IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression expression, SemicolonToken _) => new Assignment(identifier, assignmentOperator, expression)),
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index, RightBracketToken _, IAssignmentOperator assignmentOperator, IExpression value, SemicolonToken _) => new ArrayAssignmentStatement(array, index, assignmentOperator, value)),
+        GrammarRule.Create((ITerm target, DotToken _, IdentifierToken identifier, IAssignmentOperator assignmentOperator, IExpression value, SemicolonToken _) => new FieldAssignmentStatement(target, identifier, assignmentOperator, value)),
         GrammarRule.Create((IScopeNode scope) => new ScopeStatement(scope)),
         GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope) => new If(expression, scope)),
         GrammarRule.Create((IfToken _, IExpression expression, IScopeNode scope, ElseToken _, IScopeNode elseScope) => new IfWithElse(expression, scope, elseScope)),

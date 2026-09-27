@@ -152,6 +152,20 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return assignmentStatement;
     }
 
+    protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
+    {
+        fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
+        var targetType = fieldAssignment.Target.Type!.Value;
+        var fieldType = targetType.Fields.Cast<FieldDefinition?>().SingleOrDefault(x => x!.Value.Name == fieldAssignment.Identifier)?.Type;
+
+        if (fieldType is not null)
+        {
+            return fieldAssignment;
+        }
+
+        throw ErrorHelper.ShowErrorMessage($"Unrecognized member `{fieldAssignment.Identifier}` on expression of type `{targetType}`", fieldAssignment.Span);
+    }
+
     protected override ExitStatement VisitExitStatement(ExitStatement exitStatement)
     {
         exitStatement = base.VisitExitStatement(exitStatement);

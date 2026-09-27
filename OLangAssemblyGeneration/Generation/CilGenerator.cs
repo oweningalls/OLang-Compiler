@@ -221,6 +221,15 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         return assignmentStatement;
     }
+    
+    protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
+    {
+        fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
+        var field = GetCsType(fieldAssignment.Target.Type!.Value).GetField(fieldAssignment.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Unknown field name: {fieldAssignment.Identifier}", fieldAssignment.Span);
+        _il.Emit(OpCodes.Stfld, field);
+
+        return fieldAssignment;
+    }
 
     protected override IfStatement VisitIfStatement(IfStatement ifStatement)
     {

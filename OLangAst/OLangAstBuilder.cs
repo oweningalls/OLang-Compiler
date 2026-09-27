@@ -149,7 +149,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return classMembers;
     }
 
-    protected List<IStatement> ParseStatementList(IStmtListNode statementList)
+    private List<IStatement> ParseStatementList(IStmtListNode statementList)
     {
         return ParseList(
             statementList,
@@ -163,7 +163,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         );
     }
 
-    protected IClassMember ParseClassMember(OLangGrammar.ParseTree.ClassMember.IClassMember classMember)
+    private IClassMember ParseClassMember(OLangGrammar.ParseTree.ClassMember.IClassMember classMember)
     {
         return classMember switch
         {
@@ -182,6 +182,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         {
             Assignment assignment => ParseAssignment(assignment),
             ArrayAssignmentStatement assignment => ParseArrayAssignment(assignment),
+            FieldAssignmentStatement assignment => ParseFieldAssignment(assignment),
             Declaration declaration => new VariableDeclarationStatement(ParseType(declaration.Type), ParseIdentifier(declaration.Identifier), ParseExpression(declaration.Expression)) { Span = declaration.Span },
             LetDeclaration letDeclaration => new VariableDeclarationStatement(null, ParseIdentifier(letDeclaration.Identifier), ParseExpression(letDeclaration.Expression)) { Span = letDeclaration.Span },
             Exit exit => new ExitStatement(ParseExpression(exit.Expression)) { Span = exit.Span },
@@ -221,9 +222,38 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return new VariableAssignment(ParseIdentifier(assignment.Identifier), value) { Span = assignment.Span };
     }
 
-    protected ArrayAssignment ParseArrayAssignment(ArrayAssignmentStatement assignmentStatement)
+    private ArrayAssignment ParseArrayAssignment(ArrayAssignmentStatement assignmentStatement)
     {
-        return new ArrayAssignment(ParseTerm(assignmentStatement.Array), ParseExpression(assignmentStatement.Index), ParseExpression(assignmentStatement.Value)) { Span = assignmentStatement.Span};
+        var array = ParseTerm(assignmentStatement.Array);
+        var index = ParseExpression(assignmentStatement.Index);
+        var declaredValue = ParseExpression(assignmentStatement.Value);
+        var value = assignmentStatement.AssignmentOperator switch
+        {
+            Equals _ => declaredValue,
+            PlusEquals => new Add(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
+            MinusEquals => new Subtract(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
+            TimesEquals => new Multiply(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
+            DivideEquals => new Divide(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
+            _ => throw errorHelper.UnknownVariant("assignment operator", assignmentStatement.AssignmentOperator.GetType())
+        };
+        return new ArrayAssignment(array, index, value) { Span = assignmentStatement.Span};
+    }
+    
+    private FieldAssignment ParseFieldAssignment(FieldAssignmentStatement assignmentStatement)
+    {
+        var target = ParseTerm(assignmentStatement.Target);
+        var identifier = ParseIdentifier(assignmentStatement.Identifier);
+        var declaredValue = ParseExpression(assignmentStatement.Value);
+        var value = assignmentStatement.AssignmentOperator switch
+        {
+            Equals _ => declaredValue,
+            PlusEquals => new Add(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
+            MinusEquals => new Subtract(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
+            TimesEquals => new Multiply(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
+            DivideEquals => new Divide(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
+            _ => throw errorHelper.UnknownVariant("assignment operator", assignmentStatement.AssignmentOperator.GetType())
+        };
+        return new FieldAssignment(target, ParseIdentifier(assignmentStatement.Identifier), value) { Span = assignmentStatement.Span};
     }
 
     protected Scope ParseScope(IScopeNode scope)
@@ -236,7 +266,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseExpression(OLangGrammar.ParseTree.Expression.IExpression expression)
+    private IExpression ParseExpression(OLangGrammar.ParseTree.Expression.IExpression expression)
     {
         return expression switch
         {
@@ -246,7 +276,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
     
-    protected IExpression ParseAndExpression(IAndExpression expression)
+    private IExpression ParseAndExpression(IAndExpression expression)
     {
         return expression switch
         {
@@ -256,7 +286,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseEqualityExpression(IEqualityExpression expression)
+    private IExpression ParseEqualityExpression(IEqualityExpression expression)
     {
         return expression switch
         {
@@ -267,7 +297,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseGreaterExpression(IGreaterExpression expression)
+    private IExpression ParseGreaterExpression(IGreaterExpression expression)
     {
         return expression switch
         {
@@ -280,7 +310,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseAddExpression(IAddExpression expression)
+    private IExpression ParseAddExpression(IAddExpression expression)
     {
         return expression switch
         {
@@ -291,7 +321,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseMultExpression(IMultExpression expression)
+    private IExpression ParseMultExpression(IMultExpression expression)
     {
         return expression switch
         {
@@ -302,7 +332,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IExpression ParseUnaryExpression(IUnaryExpression expression)
+    private IExpression ParseUnaryExpression(IUnaryExpression expression)
     {
         return expression switch
         {
@@ -335,7 +365,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
 
-    protected IVariableType ParseType(IType type)
+    private IVariableType ParseType(IType type)
     {
         return type switch
         {
@@ -348,12 +378,12 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         };
     }
     
-    protected string ParseIdentifier(IdentifierToken identifier)
+    private string ParseIdentifier(IdentifierToken identifier)
     {
         return identifier.Identifier;
     }
 
-    protected List<ParameterNode> ParseParameterList(IParameterListNode parameterList)
+    private List<ParameterNode> ParseParameterList(IParameterListNode parameterList)
     {
         return ParseList<IParameterListNode, Parameter, ParameterNode>(
             parameterList,
@@ -367,12 +397,12 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         );
     }
 
-    protected ParameterNode ParseParameter(Parameter parameter)
+    private ParameterNode ParseParameter(Parameter parameter)
     {
         return new ParameterNode(ParseIdentifier(parameter.Identifier), ParseType(parameter.Type)) { Span = parameter.Span };
     }
 
-    protected FunctionInvocation ParseFunctionInvocation(IFunctionInvocation functionInvocation)
+    private FunctionInvocation ParseFunctionInvocation(IFunctionInvocation functionInvocation)
     {
         List<IExpression> arguments;
         IdentifierToken identifier;
@@ -393,7 +423,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return new FunctionInvocation(ParseIdentifier(identifier), arguments) { Span = functionInvocation.Span };
     }
     
-    protected MethodInvocation ParseMethodInvocation(IMethodInvocation methodInvocation)
+    private MethodInvocation ParseMethodInvocation(IMethodInvocation methodInvocation)
     {
         IExpression obj;
         List<IExpression> arguments;
@@ -417,7 +447,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
     }
     
-    protected List<IExpression> ParseArgumentList(IArgumentList argumentList)
+    private List<IExpression> ParseArgumentList(IArgumentList argumentList)
     {
         return ParseList(
             argumentList,

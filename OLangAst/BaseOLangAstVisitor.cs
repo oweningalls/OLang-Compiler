@@ -76,6 +76,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             PrintStatement printStatement => VisitPrintStatement(printStatement),
             VariableAssignment assignmentStatement => VisitVariableAssignment(assignmentStatement),
             ArrayAssignment arrayAssignmentStatement => VisitArrayAssignment(arrayAssignmentStatement),
+            FieldAssignment fieldAssignmentStatement => VisitFieldAssignment(fieldAssignmentStatement),
             Scope scopeStatement => VisitScope(scopeStatement),
             IfStatement ifStatement => VisitIfStatement(ifStatement),
             WhileLoop whileStatement => VisitWhileLoop(whileStatement),
@@ -139,6 +140,14 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         assignmentStatement.Index = VisitExpression(assignmentStatement.Index);
         assignmentStatement.Value = VisitExpression(assignmentStatement.Value);
         return assignmentStatement;
+    }
+    
+    protected virtual FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
+    {
+        fieldAssignment.Target = VisitExpression(fieldAssignment.Target);
+        fieldAssignment.Value = VisitExpression(fieldAssignment.Value);
+        
+        return fieldAssignment;
     }
 
     protected IVariableType VisitVariableType(IVariableType variableType)
