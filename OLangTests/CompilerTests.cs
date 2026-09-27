@@ -611,7 +611,14 @@ public class CompilerTests
          if func() { exit 10; }
          
          exit 4;
-         """, 4)
+         """, 4),
+        ("""
+         float func() {
+             return 1;
+         }
+         
+         exit int(func());
+         """, 1)
     ];
     
     [TestCaseSource(nameof(ReturnValueFunctionPrograms))]
@@ -814,6 +821,29 @@ public class CompilerTests
          let b = a - 5;
          exit int(b * -2);
          """, 11),
+        ("""
+         let a = -0.5;
+         a = 3;
+         exit int(a);
+         """, 3),
+        ("""
+         void test(float a) {
+             exit int(a);
+         }
+         test(13);
+         """, 13),
+        ("""
+         void test(float a) {
+             if a > 2 { exit 3; } else { exit 5; }
+         }
+         test(1.5);
+         """, 5),
+        ("""
+         void test(float a) {
+             if a > 2 { exit 3; } else { exit 5; }
+         }
+         test(2.5);
+         """, 3),
     ];
     
     [TestCaseSource(nameof(FloatPrograms))]

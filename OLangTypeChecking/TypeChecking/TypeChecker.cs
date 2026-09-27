@@ -59,10 +59,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
 
         var expressionType = GetExpressionType(returnStatement.Value);
-        if (!expressionType.Equals(_currentFunctionReturnType))
-        {
-            throw ErrorHelper.ShowErrorMessage($"Function of type {_currentFunctionReturnType} cannot return expression of type {expressionType}.", returnStatement.Value.Span);
-        }
+        returnStatement.Value = CastIfImplicitOrThrow(_currentFunctionReturnType, returnStatement.Value, $"Function of type {_currentFunctionReturnType} cannot return expression of type {expressionType}.", returnStatement.Value.Span);
 
         return returnStatement;
     }
@@ -121,10 +118,10 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         assignmentStatement = base.VisitVariableAssignment(assignmentStatement);
         var expressionType = GetExpressionType(assignmentStatement.Value);
         var variableType = GetVariableType(assignmentStatement.Identifier, assignmentStatement.Span);
-        if (!expressionType.Equals(variableType))
-        {
-            throw ErrorHelper.ShowErrorMessage($"Cannot assign expression of type {expressionType} to variable {assignmentStatement.Identifier} of type {variableType}", assignmentStatement.Span);
-        }
+        assignmentStatement.Value = CastIfImplicitOrThrow(variableType,
+            assignmentStatement.Value,
+            $"Cannot assign expression of type {expressionType} to variable {assignmentStatement.Identifier} of type {variableType}",
+            assignmentStatement.Span);
 
         return assignmentStatement;
     }
@@ -147,10 +144,10 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         var arrayType = typeHelper.GetInnerArrayType(assignmentStatement.Array);
         var valueType = assignmentStatement.Value.Type!.Value;
-        if (!CanImplicitlyConvertTo(arrayType, valueType))
-        {
-            throw ErrorHelper.ShowErrorMessage($"Cannot assign expression of type {valueType} to array of type {arrayType}", assignmentStatement.Span);
-        }
+        assignmentStatement.Value = CastIfImplicitOrThrow(valueType,
+            assignmentStatement.Value,
+            $"Cannot assign expression of type {valueType} to array of type {arrayType}",
+            assignmentStatement.Span);
 
         return assignmentStatement;
     }
@@ -315,12 +312,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Function '{functionInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", functionInvocation.Span);
         }
 
-        foreach (var (argument, paramType) in functionInvocation.Arguments.Zip(signature.ParameterTypes))
+        for (var i = 0; i < functionInvocation.Arguments.Count; i++)
         {
-            if (!argument.Type.Equals(paramType))
-            {
-                throw ErrorHelper.ShowErrorMessage($"Argument of type {argument.Type} passed to function '{functionInvocation.Identifier}' does not match declared parameter type {paramType}", argument.Span);
-            }
+            var argument = functionInvocation.Arguments[i];
+            var paramType = signature.ParameterTypes[i];
+            functionInvocation.Arguments[i] = CastIfImplicitOrThrow(paramType,
+                argument,
+                $"Argument of type {argument.Type} passed to function '{functionInvocation.Identifier}' does not match declared parameter type {paramType}",
+                argument.Span);
         }
         
         if (GetReturnType(signature) is { } returnType)
@@ -359,12 +358,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Function '{methodInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", methodInvocation.Span);
         }
 
-        foreach (var (argument, paramType) in methodInvocation.Arguments.Zip(functionDefinition.Parameters.Select(x => x.Type)))
+        for (var i = 0; i < methodInvocation.Arguments.Count; i++)
         {
-            if (!argument.Type.Equals(paramType))
-            {
-                throw ErrorHelper.ShowErrorMessage($"Argument of type `{argument.Type}` passed to function `{methodInvocation.Identifier}` does not match declared parameter type `{paramType}`", argument.Span);
-            }
+            var argument = methodInvocation.Arguments[i];
+            var paramType = functionDefinition.Parameters[i].Type;
+            methodInvocation.Arguments[i] = CastIfImplicitOrThrow(paramType,
+                argument,
+                $"Argument of type `{argument.Type}` passed to function `{methodInvocation.Identifier}` does not match declared parameter type `{paramType}`",
+                argument.Span);
         }
 
         methodInvocation.Type = functionDefinition.ReturnType;
@@ -454,10 +455,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var lhsType = GetExpressionType(binaryComparisonExpression.Lhs);
         var rhsType = GetExpressionType(binaryComparisonExpression.Rhs);
 
-        if (!lhsType.Equals(rhsType))
+        var resultingType = GetCommonType(lhsType, rhsType);
+        if (resultingType == null)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot compare expressions of type {lhsType} and {rhsType}", binaryComparisonExpression.Span);
         }
+
+        binaryComparisonExpression.Lhs = MaybeImplicitCast(lhsType, binaryComparisonExpression.Lhs);
+        binaryComparisonExpression.Rhs = MaybeImplicitCast(lhsType, binaryComparisonExpression.Rhs);
     }
 
     private bool CanImplicitlyConvertTo(DefinedType expectedType, DefinedType actualType)
@@ -495,6 +500,16 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         MarkExpressionType(mathExpression, definedType);
     }
 
+    private IExpression CastIfImplicitOrThrow(DefinedType type, IExpression expression, string errorMessage, SourceSpan span)
+    {
+        if (CanImplicitlyConvertTo(type, expression.Type!.Value))
+        {
+            return MaybeImplicitCast(type, expression);
+        }
+
+        throw ErrorHelper.ShowErrorMessage(errorMessage, span);
+    }
+
     private IExpression MaybeImplicitCast(DefinedType type, IExpression expression)
     {
         if (expression.Type.Equals(type))
@@ -503,6 +518,21 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
 
         return new Cast(new InternalDefinedType(type), expression) { Type = type };
+    }
+
+    private DefinedType? GetCommonType(DefinedType type1, DefinedType type2)
+    {
+        if (type1.Equals(type2))
+        {
+            return type1;
+        }
+
+        if (IsMathType(type1) && IsMathType(type2))
+        {
+            return ResultingTypeFromMath(type1, type2);
+        }
+
+        return null;
     }
 
     private DefinedType? ResultingTypeFromMath(DefinedType type1, DefinedType type2)
