@@ -50,6 +50,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return classMember switch
         {
             MethodDeclaration methodDeclaration => VisitMethodDeclaration(methodDeclaration),
+            FieldDeclaration fieldDeclaration => VisitFieldDeclaration(fieldDeclaration),
             _ => throw ErrorHelper.UnknownVariant("class member", classMember.GetType())
         };
     }
@@ -59,6 +60,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         methodDeclaration.Scope = VisitScope(methodDeclaration.Scope);
 
         return methodDeclaration;
+    }
+    
+    protected virtual IClassMember VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
+    {
+        return fieldDeclaration;
     }
 
     protected IStatement VisitStatement(IStatement statement)

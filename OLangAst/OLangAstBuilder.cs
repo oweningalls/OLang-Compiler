@@ -43,6 +43,7 @@ using StringLiteral = OLangAst.Expressions.StringLiteral;
 using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
 using IClassMember = OLangAst.ClassMembers.IClassMember;
 using MethodDeclaration = OLangAst.ClassMembers.MethodDeclaration;
+using FieldDeclaration = OLangAst.ClassMembers.FieldDeclaration;
 
 namespace OLangAst;
 
@@ -62,7 +63,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
                 UsingListWithStatement usingListWithStatement => (usingListWithStatement.UsingStatement, usingListWithStatement.UsingList),
                 _ => throw new ArgumentOutOfRangeException(nameof(x)),
             },
-            x => ParseUsingStatement(x)
+            ParseUsingStatement
             );
     }
 
@@ -165,10 +166,11 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return classMember switch
         {
-            OLangGrammar.ParseTree.ClassMember.MethodDeclaration methodDeclaration => new MethodDeclaration(ParseType(methodDeclaration.Type), ParseIdentifier(methodDeclaration.Identifier), [], ParseScope(methodDeclaration.Scope)),
-            MethodDeclarationWithParameters methodDeclarationWithParameters => new MethodDeclaration(ParseType(methodDeclarationWithParameters.Type), ParseIdentifier(methodDeclarationWithParameters.Identifier), ParseParameterList(methodDeclarationWithParameters.Parameters), ParseScope(methodDeclarationWithParameters.Scope)),
-            VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)),
-            VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)),
+            OLangGrammar.ParseTree.ClassMember.MethodDeclaration methodDeclaration => new MethodDeclaration(ParseType(methodDeclaration.Type), ParseIdentifier(methodDeclaration.Identifier), [], ParseScope(methodDeclaration.Scope)) { Span = methodDeclaration.Span },
+            MethodDeclarationWithParameters methodDeclarationWithParameters => new MethodDeclaration(ParseType(methodDeclarationWithParameters.Type), ParseIdentifier(methodDeclarationWithParameters.Identifier), ParseParameterList(methodDeclarationWithParameters.Parameters), ParseScope(methodDeclarationWithParameters.Scope)) { Span = methodDeclarationWithParameters.Span },
+            VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)) { Span = voidMethodDeclaration.Span },
+            VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)) { Span = voidMethodDeclarationWithParameters.Span },
+            OLangGrammar.ParseTree.ClassMember.FieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.Type), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
             _ => throw errorHelper.UnknownVariant("class member", classMember.GetType())
         };
     }

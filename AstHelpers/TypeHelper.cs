@@ -52,10 +52,31 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public FunctionDefinition CreateCustomMethod(DefinedType customType, MethodDeclaration methodDeclaration)
     {
+        CheckForExistingMember(customType, methodDeclaration.Identifier, methodDeclaration.Span);
         var method = new FunctionDefinition(customType, GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
         customType.Methods.Add(method);
 
         return method;
+    }
+
+    public void CreateCustomField(DefinedType customType, FieldDeclaration fieldDeclaration)
+    {
+        CheckForExistingMember(customType, fieldDeclaration.Identifier, fieldDeclaration.Span);
+        customType.Fields.Add(new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
+    }
+
+    private void CheckForExistingMember(DefinedType type, string memberName, SourceSpan span)
+    {
+        var errorMessage = $"Member with name `{memberName}` was already declared";
+        if (type.Methods.Any(x => x.Name == memberName))
+        {
+            throw errorHelper.ShowErrorMessage(errorMessage, span);
+        }
+        
+        if (type.Fields.Any(x => x.Name == memberName))
+        {
+            throw errorHelper.ShowErrorMessage(errorMessage, span);
+        }
     }
 
     public DefinedType CreateCustomClass(string name, bool isStatic)

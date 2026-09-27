@@ -242,6 +242,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
         return methodDeclaration;
     }
+
+    protected override IClassMember VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
+    {
+        _ = typeHelper.GetLocalType(fieldDeclaration.Type);
+
+        return fieldDeclaration;
+    }
     
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {

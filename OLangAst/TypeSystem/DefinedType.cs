@@ -8,6 +8,7 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false, bool is
     public string Name = name;
     public bool IsStatic = isStatic;
     public List<FunctionDefinition> Methods = [];
+    public List<FieldDefinition> Fields = [];
     public bool IsCs = isCs;
     public bool IsArray = isArray;
     public List<DefinedType> TypeParameters = [];

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text;
 
 namespace OLangTests;
 
@@ -1232,6 +1231,26 @@ public class CompilerTests
     public void ArrayTests((string, string) values)
     {
         TestProgramConsoleOutput(values);
+    }
+    
+    public static readonly List<(string, string)> FieldPrograms =
+    [
+        ("""
+         class StringHolder {
+             string Field;
+         }
+         static class Program {
+             void Main() {
+                 let holder = new StringHolder();
+             }
+         }
+         """, "")
+    ];
+    
+    [TestCaseSource(nameof(FieldPrograms))]
+    public void FieldTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
     }
     
     private void TestProgramExitCode((string, int) values)

@@ -65,6 +65,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope)),
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(new NonPrimitiveType(type), identifier, scope)),
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, SemicolonToken _) => new FieldDeclaration(type, identifier)),
 
         // StmtList
         GrammarRule.Create((IStatement statement) => new SingleStatementStmtList(statement)),

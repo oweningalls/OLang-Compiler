@@ -27,6 +27,14 @@ public class TypeRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : B
         
         return base.VisitMethodDeclaration(methodDeclaration);
     }
+    
+    protected override IClassMember VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
+    {
+        typeHelper.CreateCustomField(_currentClass!.Value, fieldDeclaration);
+
+        return fieldDeclaration;
+    }
+    
 
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {

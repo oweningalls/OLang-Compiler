@@ -12,6 +12,7 @@ using OLangAst.Miscellaneous;
 using OLangAst.Statements;
 using OLangAst.TypeSystem;
 using OLangHelpers;
+using FieldDefinition = OLangAst.TypeSystem.FieldDefinition;
 
 namespace AssemblyGeneration.Generation;
 
@@ -38,6 +39,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var classes = typeHelper.GetDefinedClasses();
         var types = DefineTypes(classes);
         DefineMethods(classes, types);
+        DefineFields(classes, types);
         
         VisitProgram(program);
 
@@ -712,6 +714,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         classes.Zip(types).SelectMany(x => x.First.Methods.Select(method => (x.Second, method))).ToList().ForEach(x => DefineMethod(x.Second, x.method));
     }
+    
+    private void DefineFields(List<DefinedType> classes, List<TypeBuilder> types)
+    {
+        classes.Zip(types).SelectMany(x => x.First.Fields.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method));
+    }
 
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
     {
@@ -728,6 +735,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         }
         
         _definedMethods[type][definition.Name] = method;
+    }
+
+    private void DefineField(TypeBuilder type, FieldDefinition field)
+    {
+        var attributes = FieldAttributes.Public;
+        type.DefineField(field.Name, GetCsType(field.Type), attributes);
     }
 
     private MethodInfo GetMethod(Type type, string name, IEnumerable<Type> argumentTypes)
