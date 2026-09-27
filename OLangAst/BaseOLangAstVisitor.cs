@@ -245,6 +245,13 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return arrayAccess;
     }
 
+    protected virtual IExpression VisitFieldAccess(FieldAccess fieldAccess)
+    {
+        fieldAccess.Expression = VisitExpression(fieldAccess.Expression);
+        
+        return fieldAccess;
+    }
+
     protected virtual Scope VisitScope(Scope scopeNode)
     {
         scopeNode.Statements = VisitStatements(scopeNode.Statements);
@@ -281,6 +288,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             Instantiation instantiation => VisitInstantiation(instantiation),
             ArrayInstantiation instantiation => VisitArrayInstantiation(instantiation),
             ArrayAccess arrayAccess => VisitArrayAccess(arrayAccess),
+            FieldAccess arrayAccess => VisitFieldAccess(arrayAccess),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

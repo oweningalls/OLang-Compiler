@@ -171,6 +171,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList,  RightParenToken _) => new ClassInstantiationTerm(ident, argumentList)),
         GrammarRule.Create((IType type, LeftBracketToken _, IntLiteralToken intLiteral,  RightBracketToken _) => new ArrayInstantiationTerm(type, intLiteral)),
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
+        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

@@ -333,6 +333,16 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return methodInvocation;
     }
 
+    protected override IExpression VisitFieldAccess(FieldAccess fieldAccess)
+    {
+        fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
+
+        var field = GetCsType(fieldAccess.Expression.Type!.Value).GetField(fieldAccess.FieldName) ?? throw ErrorHelper.ShowErrorMessage($"Unknown field name: {fieldAccess.FieldName}", fieldAccess.Span);
+        _il.Emit(OpCodes.Ldfld, field);
+        
+        return fieldAccess;
+    }
+
     private void GetReferenceToStackValue(IExpression expression)
     {
         var local = _il.DeclareLocal(GetCsType(expression.Type!.Value));

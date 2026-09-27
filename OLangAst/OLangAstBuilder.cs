@@ -29,6 +29,7 @@ using OLangGrammar.UsingStatement;
 using OLangGrammar.UsingStatementIdentifier;
 using OLangTokens.Tokens;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
+using FieldAccess = OLangAst.Expressions.FieldAccess;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
 using FunctionDeclaration = OLangAst.Statements.FunctionDeclaration;
 using MethodInvocation = OLangAst.Statements.MethodInvocation;
@@ -329,6 +330,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
             ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), instantiationTerm.Size.Value),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
+            OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }

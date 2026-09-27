@@ -1244,7 +1244,19 @@ public class CompilerTests
                  let holder = new StringHolder();
              }
          }
-         """, "")
+         """, ""),
+        ("""
+         class IntHolder {
+             int Field;
+         }
+         static class Program {
+             void Main() {
+                 let holder = new IntHolder();
+                 
+                 print holder.Field.ToString();
+             }
+         }
+         """, "0")
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]

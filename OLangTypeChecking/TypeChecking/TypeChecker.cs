@@ -702,6 +702,23 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return arrayAccess;
     }
 
+    protected override IExpression VisitFieldAccess(FieldAccess fieldAccess)
+    {
+        fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
+
+        var type = fieldAccess.Expression.Type;
+        var fieldType = type!.Value.Fields.Cast<FieldDefinition?>().SingleOrDefault(x => x!.Value.Name == fieldAccess.FieldName)?.Type;
+
+        if (fieldType is { } valueType)
+        {
+            fieldAccess.Type = valueType;
+
+            return fieldAccess;
+        }
+
+        throw ErrorHelper.ShowErrorMessage($"Unrecognized member `{fieldAccess.FieldName}` on expression of type `{type}`", fieldAccess.Span);
+    }
+
 
     private void MarkExpressionType(IExpression expression, DefinedType type)
     {
