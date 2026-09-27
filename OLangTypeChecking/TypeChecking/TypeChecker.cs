@@ -145,7 +145,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Cannot use non-integer expression of type {indexType} as an index.", assignmentStatement.Index.Span);
         }
 
-        var arrayType = GetInnerArrayType(assignmentStatement.Array);
+        var arrayType = typeHelper.GetInnerArrayType(assignmentStatement.Array);
         var valueType = assignmentStatement.Value.Type!.Value;
         if (!CanImplicitlyConvertTo(arrayType, valueType))
         {
@@ -660,20 +660,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         arrayAccess = (ArrayAccess)base.VisitArrayAccess(arrayAccess);
 
-        arrayAccess.Type = GetInnerArrayType(arrayAccess.Array);
+        arrayAccess.Type = typeHelper.GetInnerArrayType(arrayAccess.Array);
         
         return arrayAccess;
     }
 
-    private DefinedType GetInnerArrayType(IExpression array)
-    {
-        if (!array.Type!.Value.IsArray)
-        {
-            throw ErrorHelper.ShowErrorMessage($"Cannot get inner array type from non-array type {array.Type}", array.Span);
-        }
-        
-        return array.Type.Value.TypeParameters.Single();
-    }
 
     private void MarkExpressionType(IExpression expression, DefinedType type)
     {

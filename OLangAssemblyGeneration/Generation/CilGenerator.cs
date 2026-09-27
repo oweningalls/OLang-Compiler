@@ -214,7 +214,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override ArrayAssignment VisitArrayAssignment(ArrayAssignment assignmentStatement)
     {
         assignmentStatement = base.VisitArrayAssignment(assignmentStatement);
-        _il.Emit(OpCodes.Stelem_I4);
+        var arrayType = GetCsType(typeHelper.GetInnerArrayType(assignmentStatement.Array));
+        _il.Emit(OpCodes.Stelem, arrayType);
 
         return assignmentStatement;
     }
@@ -459,7 +460,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         arrayAccess = (ArrayAccess)base.VisitArrayAccess(arrayAccess);
 
-        _il.Emit(OpCodes.Ldelem_I4);
+        _il.Emit(OpCodes.Ldelem, GetCsType(typeHelper.GetInnerArrayType(arrayAccess.Array)));
         
         return arrayAccess;
     }

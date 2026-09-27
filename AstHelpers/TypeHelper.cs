@@ -1,6 +1,7 @@
 ﻿using ErrorHelper;
 using Lexing;
 using OLangAst.ClassMembers;
+using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.TypeSystem;
 
@@ -71,6 +72,16 @@ public class TypeHelper(IErrorHelper errorHelper)
         {
             _customClasses[type.Name] = type;
         }
+    }
+    
+    public DefinedType GetInnerArrayType(IExpression array)
+    {
+        if (!array.Type!.Value.IsArray)
+        {
+            throw errorHelper.ShowErrorMessage($"Cannot get inner array type from non-array type {array.Type}", array.Span);
+        }
+        
+        return array.Type.Value.TypeParameters.Single();
     }
 
     public DefinedType? GetDefinedType(string name)
