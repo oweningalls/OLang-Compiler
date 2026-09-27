@@ -211,6 +211,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return assignment;
     }
 
+    protected override ArrayAssignment VisitArrayAssignment(ArrayAssignment assignmentStatement)
+    {
+        assignmentStatement = base.VisitArrayAssignment(assignmentStatement);
+        _il.Emit(OpCodes.Stelem_I4);
+
+        return assignmentStatement;
+    }
+
     protected override IfStatement VisitIfStatement(IfStatement ifStatement)
     {
         ifStatement.Predicate = VisitExpression(ifStatement.Predicate);

@@ -128,6 +128,32 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         return assignmentStatement;
     }
+    
+    protected override ArrayAssignment VisitArrayAssignment(ArrayAssignment assignmentStatement)
+    {
+        assignmentStatement = base.VisitArrayAssignment(assignmentStatement);
+        var expressionType = GetExpressionType(assignmentStatement.Array);
+
+        if (!expressionType.IsArray)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot index non-array type {expressionType}", assignmentStatement.Span);
+        }
+
+        var indexType = assignmentStatement.Index.Type;
+        if (!indexType.Equals(PrimitiveTypes.IntType))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot use non-integer expression of type {indexType} as an index.", assignmentStatement.Index.Span);
+        }
+
+        var arrayType = GetInnerArrayType(assignmentStatement.Array);
+        var valueType = assignmentStatement.Value.Type!.Value;
+        if (!CanImplicitlyConvertTo(arrayType, valueType))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot assign expression of type {valueType} to array of type {arrayType}", assignmentStatement.Span);
+        }
+
+        return assignmentStatement;
+    }
 
     protected override ExitStatement VisitExitStatement(ExitStatement exitStatement)
     {
@@ -634,11 +660,21 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         arrayAccess = (ArrayAccess)base.VisitArrayAccess(arrayAccess);
 
-        arrayAccess.Type = arrayAccess.Array.Type.Value.TypeParameters.Single();
+        arrayAccess.Type = GetInnerArrayType(arrayAccess.Array);
         
         return arrayAccess;
     }
-    
+
+    private DefinedType GetInnerArrayType(IExpression array)
+    {
+        if (!array.Type!.Value.IsArray)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot get inner array type from non-array type {array.Type}", array.Span);
+        }
+        
+        return array.Type.Value.TypeParameters.Single();
+    }
+
     private void MarkExpressionType(IExpression expression, DefinedType type)
     {
         if (expression.Type is not null)

@@ -1170,7 +1170,32 @@ public class CompilerTests
         ("""
          let a = bool[10];
          print a[0].ToString();
-         """, "False")
+         """, "False"),
+        ("""
+         let a = bool[10];
+         a[3] = true;
+         print a[0].ToString();
+         """, "False"),
+        ("""
+         let a = bool[10];
+         a[3] = true;
+         print a[3].ToString();
+         """, "True"),
+        ("""
+         let a = int[10];
+         for i in 0..10 {
+             a[i] = i;
+         }
+         
+         for i in 0..10 {
+             print a[i].ToString();
+         }
+         """, "0123456789"),
+        ("""
+         let a = bool[5];
+         a[1 + 2] = true;
+         print a[3].ToString();
+         """, "True"),
     ];
     
     [TestCaseSource(nameof(ArrayPrograms))]
@@ -1247,6 +1272,7 @@ public class CompilerTests
     [TestCase("var evilBool = int(true);")] // can't cast int to bool
     [TestCase("1.FakeMethodName();")] // non-existent method
     [TestCase("1.ToString(1, 2, 3, 4, 5);")] // incompatible arguments
+    [TestCase("print bool[10][10 + 1].ToString();")] // incompatible arguments
     public void TestInvalidPrograms(string program)
     {
         var ex = Assert.Catch<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));

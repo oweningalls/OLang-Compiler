@@ -178,6 +178,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return statement switch
         {
             Assignment assignment => ParseAssignment(assignment),
+            ArrayAssignmentStatement assignment => ParseArrayAssignment(assignment),
             Declaration declaration => new VariableDeclarationStatement(ParseType(declaration.Type), ParseIdentifier(declaration.Identifier), ParseExpression(declaration.Expression)) { Span = declaration.Span },
             LetDeclaration letDeclaration => new VariableDeclarationStatement(null, ParseIdentifier(letDeclaration.Identifier), ParseExpression(letDeclaration.Expression)) { Span = letDeclaration.Span },
             Exit exit => new ExitStatement(ParseExpression(exit.Expression)) { Span = exit.Span },
@@ -215,6 +216,11 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 
         value.Span = assignment.Expression.Span;
         return new VariableAssignment(ParseIdentifier(assignment.Identifier), value) { Span = assignment.Span };
+    }
+
+    protected ArrayAssignment ParseArrayAssignment(ArrayAssignmentStatement assignmentStatement)
+    {
+        return new ArrayAssignment(ParseTerm(assignmentStatement.Array), ParseExpression(assignmentStatement.Index), ParseExpression(assignmentStatement.Value)) { Span = assignmentStatement.Span};
     }
 
     protected Scope ParseScope(IScopeNode scope)
