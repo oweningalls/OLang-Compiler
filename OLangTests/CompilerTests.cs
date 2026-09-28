@@ -1362,6 +1362,26 @@ public class CompilerTests
              }
          }
          """, "4"),
+        ("""
+         class StringHolder {
+             string Field;
+             
+             StringHolder Make() {
+                 return new StringHolder();
+             }
+         }
+         
+         static class Program {
+             void Main() {
+                 let holder = new StringHolder();
+                 holder.Field = "1";
+                 holder = holder.Make();
+                 holder.Field = "2";
+                 
+                 print holder.Field;
+             }
+         }
+         """, "2"),
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]
