@@ -705,6 +705,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
         
         var arrayType = typeHelper.GetLocalType(instantiation.ArrayType);
+
         instantiation.Type = new DefinedType($"{arrayType}[]", false, isArray: true)
         {
             TypeParameters = [arrayType]

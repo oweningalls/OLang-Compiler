@@ -1184,34 +1184,34 @@ public class CompilerTests
     public static readonly List<(string, string)> ArrayPrograms =
     [
         ("""
-         let a = int[10];
+         let a = new int[10];
          """, ""),
         ("""
-         let a = string[10];
+         let a = new string[10];
          """, ""),
         ("""
-         let a = bool[10];
+         let a = new bool[10];
          """, ""),
         ("""
-         let a = int[10];
+         let a = new int[10];
          print a[0].ToString();
          """, "0"),
         ("""
-         let a = bool[10];
+         let a = new bool[10];
          print a[0].ToString();
          """, "False"),
         ("""
-         let a = bool[10];
+         let a = new bool[10];
          a[3] = true;
          print a[0].ToString();
          """, "False"),
         ("""
-         let a = bool[10];
+         let a = new bool[10];
          a[3] = true;
          print a[3].ToString();
          """, "True"),
         ("""
-         let a = int[10];
+         let a = new int[10];
          for i in 0..10 {
              a[i] = i;
          }
@@ -1221,18 +1221,18 @@ public class CompilerTests
          }
          """, "0123456789"),
         ("""
-         let a = bool[5];
+         let a = new bool[5];
          a[1 + 2] = true;
          print a[3].ToString();
          """, "True"),
         ("""
-         let a = int[5];
+         let a = new int[5];
          a[1] = 8;
          a[1] /= 4;
          print a[1].ToString();
          """, "2"),
         ("""
-         let a = int[1 + 2];
+         let a = new int[1 + 2];
          a[2] = 8;
          a[2] += 4;
          print a[2].ToString();
@@ -1302,6 +1302,67 @@ public class CompilerTests
              }
          }
          """, "012345678"),
+        ("""
+         class StringHolder {
+             string Field;
+         }
+         
+         static class Program {
+             void Main() {
+                 let arr = new StringHolder[5];
+                 arr[1] = new StringHolder();
+                 arr[1].Field = "TEST";
+                 
+                 print arr[1].Field;
+             }
+         }
+         """, "TEST"),
+        // TODO: allow arrays as fields and return types
+        // ("""
+        //  class IntString {
+        //      int IntField;
+        //      string StringField;
+        //  }
+        //  
+        //  class IntStringList {
+        //      IntString[] Arr;
+        //      int length;
+        //      int capacity;
+        //      
+        //      void Add(IntString value) {
+        //          if length < capacity {
+        //              Arr[length] = value;
+        //              length += 1;
+        //              
+        //              return;
+        //          }
+        //          
+        //          if capacity == 0 { capacity = 1; } else { capacity *= 2; }
+        //          let newArr = new IntString[capacity];
+        //          for i in 0..length {
+        //              newArr[i] = Arr[i];
+        //          }
+        //          
+        //          Arr = newArr;
+        //          Arr[length] = value;
+        //          length += 1;
+        //      }
+        //  }
+        //  
+        //  static class Program {
+        //      void Main() {
+        //          let ls = new IntStringList();
+        //          for i in 0..5 {
+        //              var val = new IntString();
+        //              val.IntField = i;
+        //              val.StringField = i.ToString();
+        //              ls.Add(val);
+        //          }
+        //          
+        //          print ls.Arr[4].StringField;
+        //      }
+        //  }
+        //  """, "4"),
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]
