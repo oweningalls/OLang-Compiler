@@ -471,7 +471,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
         instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
-        _il.Emit(OpCodes.Ldc_I4, instantiation.Size);
         _il.Emit(OpCodes.Newarr, GetCsType(instantiation.Type!.Value.TypeParameters.Single()));
 
         return instantiation;

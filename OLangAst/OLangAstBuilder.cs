@@ -358,7 +358,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
             ParameterlessClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
-            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), instantiationTerm.Size.Value),
+            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), ParseExpression(instantiationTerm.Size)),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())

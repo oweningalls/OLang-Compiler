@@ -243,6 +243,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     
     protected virtual IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
+        instantiation.Size = VisitExpression(instantiation.Size);
         return instantiation;
     }
     

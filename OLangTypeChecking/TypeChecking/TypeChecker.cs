@@ -698,6 +698,12 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
+        instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
+        if (!instantiation.Size.Type.Equals(PrimitiveTypes.IntType))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Size of array must be int, found type `{instantiation.Size.Type}`.", instantiation.Span);
+        }
+        
         var arrayType = typeHelper.GetLocalType(instantiation.ArrayType);
         instantiation.Type = new DefinedType($"{arrayType}[]", false, isArray: true)
         {
@@ -795,11 +801,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     private int? GetMathTypePrecedence(DefinedType type)
     {
-        if (!MathTypes.Contains(type))
-        {
-            throw ErrorHelper.UnknownVariant("math type", type.GetType());
-        }
-
         var idx = MathTypes.IndexOf(type);
         return idx == -1 ? null : idx;
     }

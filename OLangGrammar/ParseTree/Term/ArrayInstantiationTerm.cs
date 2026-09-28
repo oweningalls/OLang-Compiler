@@ -1,12 +1,13 @@
 ﻿using Lexing;
+using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.Type;
 using OLangTokens.Tokens;
 
 namespace OLangGrammar.ParseTree.Term;
 
-public class ArrayInstantiationTerm(IType type, IntLiteralToken size) : ITerm
+public class ArrayInstantiationTerm(IType type, IExpression size) : ITerm
 {
     public IType Type = type;
-    public IntLiteralToken Size = size;
+    public IExpression Size = size;
     public SourceSpan Span { get; set; }
 }

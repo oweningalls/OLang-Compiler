@@ -1231,6 +1231,12 @@ public class CompilerTests
          a[1] /= 4;
          print a[1].ToString();
          """, "2"),
+        ("""
+         let a = int[1 + 2];
+         a[2] = 8;
+         a[2] += 4;
+         print a[2].ToString();
+         """, "12"),
     ];
     
     [TestCaseSource(nameof(ArrayPrograms))]
