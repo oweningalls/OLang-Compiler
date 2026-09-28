@@ -1317,52 +1317,51 @@ public class CompilerTests
              }
          }
          """, "TEST"),
-        // TODO: allow arrays as fields and return types
-        // ("""
-        //  class IntString {
-        //      int IntField;
-        //      string StringField;
-        //  }
-        //  
-        //  class IntStringList {
-        //      IntString[] Arr;
-        //      int length;
-        //      int capacity;
-        //      
-        //      void Add(IntString value) {
-        //          if length < capacity {
-        //              Arr[length] = value;
-        //              length += 1;
-        //              
-        //              return;
-        //          }
-        //          
-        //          if capacity == 0 { capacity = 1; } else { capacity *= 2; }
-        //          let newArr = new IntString[capacity];
-        //          for i in 0..length {
-        //              newArr[i] = Arr[i];
-        //          }
-        //          
-        //          Arr = newArr;
-        //          Arr[length] = value;
-        //          length += 1;
-        //      }
-        //  }
-        //  
-        //  static class Program {
-        //      void Main() {
-        //          let ls = new IntStringList();
-        //          for i in 0..5 {
-        //              var val = new IntString();
-        //              val.IntField = i;
-        //              val.StringField = i.ToString();
-        //              ls.Add(val);
-        //          }
-        //          
-        //          print ls.Arr[4].StringField;
-        //      }
-        //  }
-        //  """, "4"),
+        ("""
+         class IntString {
+             int IntField;
+             string StringField;
+         }
+         
+         class IntStringList {
+             IntString[] Arr;
+             int length;
+             int capacity;
+             
+             void Add(IntString value) {
+                 if length < capacity {
+                     Arr[length] = value;
+                     length += 1;
+                     
+                     return;
+                 }
+                 
+                 if capacity == 0 { capacity = 1; } else { capacity *= 2; }
+                 let newArr = new IntString[capacity];
+                 for i in 0..length {
+                     newArr[i] = Arr[i];
+                 }
+                 
+                 Arr = newArr;
+                 Arr[length] = value;
+                 length += 1;
+             }
+         }
+         
+         static class Program {
+             void Main() {
+                 let ls = new IntStringList();
+                 for i in 0..5 {
+                     let val = new IntString();
+                     val.IntField = i;
+                     val.StringField = i.ToString();
+                     ls.Add(val);
+                 }
+                 
+                 print ls.Arr[4].StringField;
+             }
+         }
+         """, "4"),
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]

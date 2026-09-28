@@ -128,7 +128,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return whileStatement;
     }
 
-    protected virtual VariableAssignment VisitVariableAssignment(VariableAssignment assignmentStatement)
+    protected virtual IStatement VisitVariableAssignment(VariableAssignment assignmentStatement)
     {
         assignmentStatement.Value = VisitExpression(assignmentStatement.Value);
         return assignmentStatement;
@@ -264,6 +264,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return fieldAccess;
     }
 
+    protected virtual IExpression VisitThisAccess(ThisAccess thisAccess)
+    {
+        return thisAccess;
+    }
+
     protected virtual Scope VisitScope(Scope scopeNode)
     {
         scopeNode.Statements = VisitStatements(scopeNode.Statements);
@@ -301,6 +306,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             ArrayInstantiation instantiation => VisitArrayInstantiation(instantiation),
             ArrayAccess arrayAccess => VisitArrayAccess(arrayAccess),
             FieldAccess arrayAccess => VisitFieldAccess(arrayAccess),
+            ThisAccess thisAccess => VisitThisAccess(thisAccess),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

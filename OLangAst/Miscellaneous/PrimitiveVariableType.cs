@@ -2,9 +2,10 @@
 
 namespace OLangAst.Miscellaneous;
 
-public class PrimitiveVariableType(PrimitiveVariableTypeEnum type) : IVariableType
+public class PrimitiveVariableType(PrimitiveVariableTypeEnum type, bool isArray) : IVariableType
 {
     public string Name => Type.ToString();
+    public bool IsArray { get; } = isArray;
     public PrimitiveVariableTypeEnum Type = type;
     public SourceSpan Span { get; set; }
 

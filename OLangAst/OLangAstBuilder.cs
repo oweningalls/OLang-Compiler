@@ -172,6 +172,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)) { Span = voidMethodDeclaration.Span },
             VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)) { Span = voidMethodDeclarationWithParameters.Span },
             OLangGrammar.ParseTree.ClassMember.FieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.Type), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
+            ArrayFieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.ArrayType, true), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
+            
             _ => throw errorHelper.UnknownVariant("class member", classMember.GetType())
         };
     }
@@ -359,22 +361,22 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             ParameterlessClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
             ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), ParseExpression(instantiationTerm.Size)),
-            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new CustomType(ParseIdentifier(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)),
+            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new CustomType(ParseIdentifier(instantiationTerm.Type), false), ParseExpression(instantiationTerm.Size)),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
 
-    private IVariableType ParseType(IType type)
+    private IVariableType ParseType(IType type, bool isArray = false)
     {
         return type switch
         {
-            BoolType boolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool) { Span = boolType.Span },
-            IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int) { Span = intType.Span },
-            FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float) { Span = floatType.Span },
-            StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String) { Span = stringType.Span },
-            NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier)) { Span = customType.Span },
+            BoolType boolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool, isArray) { Span = boolType.Span },
+            IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int, isArray) { Span = intType.Span },
+            FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float, isArray) { Span = floatType.Span },
+            StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String, isArray) { Span = stringType.Span },
+            NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier), isArray) { Span = customType.Span },
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }

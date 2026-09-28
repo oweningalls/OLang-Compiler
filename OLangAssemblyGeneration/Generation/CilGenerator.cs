@@ -83,9 +83,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         BeginScope();
 
         var isStatic = IsStatic(_type);
-        for (var i = isStatic ? 0 : 1; i < (isStatic ? methodDeclaration.Parameters.Count : methodDeclaration.Parameters.Count + 1); i++)
+        for (var i = 0; i < methodDeclaration.Parameters.Count; i++)
         {
-            SaveParameter(methodDeclaration.Parameters[i], i);
+            SaveParameter(methodDeclaration.Parameters[i], isStatic ? i : i + 1);
         }
 
         VisitStatements(methodDeclaration.Scope.Statements);
@@ -205,9 +205,9 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return declarationStatement;
     }
 
-    protected override VariableAssignment VisitVariableAssignment(VariableAssignment assignment)
+    protected override IStatement VisitVariableAssignment(VariableAssignment assignment)
     {
-        assignment = base.VisitVariableAssignment(assignment);
+        assignment = (VariableAssignment)base.VisitVariableAssignment(assignment);
         EmitLocalSet(assignment.Identifier);
 
         return assignment;
@@ -225,7 +225,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
     {
         fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
-        var field = GetCsType(fieldAssignment.Target.Type!.Value).GetField(fieldAssignment.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Unknown field name: {fieldAssignment.Identifier}", fieldAssignment.Span);
+        var field = GetField(GetCsType(fieldAssignment.Target.Type!.Value), fieldAssignment.Identifier);
         _il.Emit(OpCodes.Stfld, field);
 
         return fieldAssignment;
@@ -346,7 +346,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
 
-        var field = GetCsType(fieldAccess.Expression.Type!.Value).GetField(fieldAccess.FieldName) ?? throw ErrorHelper.ShowErrorMessage($"Unknown field name: {fieldAccess.FieldName}", fieldAccess.Span);
+        var type = GetCsType(fieldAccess.Expression.Type!.Value);
+        var field = GetField(type, fieldAccess.FieldName);
         _il.Emit(OpCodes.Ldfld, field);
         
         return fieldAccess;
@@ -617,6 +618,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return negate;
     }
 
+    protected override IExpression VisitThisAccess(ThisAccess thisAccess)
+    {
+        _il.Emit(OpCodes.Ldarg_0);
+
+        return thisAccess;
+    }
+    
     private void SaveParameter(ParameterNode parameterNode, int index)
     {
         _parameterTracker.SetValue(parameterNode.Identifier, index);
@@ -630,9 +638,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             _il.Emit(OpCodes.Ldarg, _parameterTracker.GetValue(variableName));
         }
 
-        if (_variableTracker.ContainsKey(variableName))
+        else if (_variableTracker.ContainsKey(variableName))
         {
             _il.Emit(OpCodes.Ldloc, _variableTracker.GetValue(variableName));
+        }
+        else
+        {
+            throw new Exception();
         }
     }
 
@@ -643,10 +655,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         {
             _il.Emit(OpCodes.Starg, _parameterTracker.GetValue(variableName));
         }
-
-        if (_variableTracker.ContainsKey(variableName))
+        else if (_variableTracker.ContainsKey(variableName))
         {
             _il.Emit(OpCodes.Stloc, _variableTracker.GetValue(variableName));
+        }
+        else
+        {
+            throw new Exception();
         }
     }
 
@@ -687,6 +702,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         {
             return typeof(string);
         }
+
+        if (type.Equals(PrimitiveTypes.VoidType))
+        {
+            return typeof(void);
+        }
         if (type.IsCs)
         {
             return _loadedTypes[type];
@@ -707,6 +727,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private Dictionary<DefinedType, Type> _loadedTypes = new();
     private Dictionary<DefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
+    private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
 
     private List<TypeBuilder> DefineTypes(List<DefinedType> classes)
     {
@@ -758,7 +779,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private void DefineField(TypeBuilder type, FieldDefinition field)
     {
         var attributes = FieldAttributes.Public;
-        type.DefineField(field.Name, GetCsType(field.Type), attributes);
+        var defined = type.DefineField(field.Name, GetCsType(field.Type), attributes);
+        
+        if (!_definedFields.ContainsKey(type))
+        {
+            _definedFields[type] = new Dictionary<string, FieldBuilder>(1);
+        }
+        
+        _definedFields[type][field.Name] = defined;
     }
 
     private MethodInfo GetMethod(Type type, string name, IEnumerable<Type> argumentTypes)
@@ -768,5 +796,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             return value[name];
         }
         return type.GetMethod(name, argumentTypes.ToArray()) ?? throw new Exception();
+    }
+    
+    private FieldInfo GetField(Type type, string name)
+    {
+        if (type is TypeBuilder builder && _definedFields.GetValueOrDefault(builder) is {} value)
+        {
+            return value[name];
+        }
+        return type.GetField(name) ?? throw new Exception();
     }
 }

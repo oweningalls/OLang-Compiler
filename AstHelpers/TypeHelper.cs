@@ -30,11 +30,21 @@ public class TypeHelper(IErrorHelper errorHelper)
     }
     public DefinedType GetLocalType(IVariableType type)
     {
-        return type switch
+        var definedType = type switch
         {
             CustomType userDefinedClass => GetDefinedType(userDefinedClass.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}", type.Span),
             PrimitiveVariableType primitiveVariableType => PrimitiveTypeMap[primitiveVariableType.Type],
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
+        };
+
+        return type.IsArray ? GetArrayOfType(definedType) : definedType;
+    }
+
+    public DefinedType GetArrayOfType(DefinedType type)
+    {
+        return new DefinedType($"{type.Name}[]", false, isArray: true)
+        {
+            TypeParameters = [type]
         };
     }
     

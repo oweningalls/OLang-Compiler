@@ -94,9 +94,9 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
         return declarationStatement;
     }
 
-    protected override VariableAssignment VisitVariableAssignment(VariableAssignment assignment)
+    protected override IStatement VisitVariableAssignment(VariableAssignment assignment)
     {
-        assignment = base.VisitVariableAssignment(assignment);
+        assignment = (VariableAssignment)base.VisitVariableAssignment(assignment);
         WritePop("rax");
         WriteInstruction($"mov {GetVariableLocation(assignment.Identifier)}, rax");
 
@@ -155,7 +155,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
     {
         BeginScope();
 
-        var declaration = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int), @for.Identifier, @for.RangeStart);
+        var declaration = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int, false), @for.Identifier, @for.RangeStart);
         VisitDeclarationStatement(declaration);
         var scope = @for.Body;
         var identifierExpression = new VariableAccess(@for.Identifier);

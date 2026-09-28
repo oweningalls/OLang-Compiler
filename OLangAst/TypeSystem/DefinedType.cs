@@ -51,7 +51,7 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false, bool is
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return obj is DefinedType definedType && definedType.Name == Name;
+        return obj is DefinedType definedType && definedType.Name == Name && IsArray == definedType.IsArray && TypeParameters.SequenceEqual(definedType.TypeParameters);
     }
 
     public override string ToString()

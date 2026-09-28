@@ -113,15 +113,27 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return whileStatement;
     }
 
-    protected override VariableAssignment VisitVariableAssignment(VariableAssignment assignmentStatement)
+    protected override IStatement VisitVariableAssignment(VariableAssignment assignmentStatement)
     {
-        assignmentStatement = base.VisitVariableAssignment(assignmentStatement);
-        var expressionType = GetExpressionType(assignmentStatement.Value);
-        var variableType = GetVariableType(assignmentStatement.Identifier, assignmentStatement.Span);
-        assignmentStatement.Value = CastIfImplicitOrThrow(variableType,
-            assignmentStatement.Value,
-            $"Cannot assign expression of type {expressionType} to variable {assignmentStatement.Identifier} of type {variableType}",
-            assignmentStatement.Span);
+        if (_variableTypeStack.ContainsKey(assignmentStatement.Identifier))
+        {
+            assignmentStatement = (VariableAssignment)base.VisitVariableAssignment(assignmentStatement);
+            var expressionType = GetExpressionType(assignmentStatement.Value);
+            var variableType = GetVariableType(assignmentStatement.Identifier, assignmentStatement.Span);
+            assignmentStatement.Value = CastIfImplicitOrThrow(variableType,
+                assignmentStatement.Value,
+                $"Cannot assign expression of type {expressionType} to variable {assignmentStatement.Identifier} of type {variableType}",
+                assignmentStatement.Span);
+        }
+        
+        if (_currentClass!.Value.Fields.Any(x => x.Name == assignmentStatement.Identifier))
+        {
+            var thisAccess = new ThisAccess();
+            thisAccess = (ThisAccess)VisitThisAccess(thisAccess);
+            var fieldAssignment = new FieldAssignment(thisAccess, assignmentStatement.Identifier, assignmentStatement.Value) { Span = assignmentStatement.Span };
+
+            return VisitFieldAssignment(fieldAssignment);
+        }
 
         return assignmentStatement;
     }
@@ -538,7 +550,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return expression;
         }
 
-        return new Cast(new InternalDefinedType(type), expression) { Type = type };
+        return new Cast(new InternalDefinedType(type, type.IsArray), expression) { Type = type };
     }
 
     private DefinedType? GetCommonType(DefinedType type1, DefinedType type2)
@@ -706,10 +718,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         
         var arrayType = typeHelper.GetLocalType(instantiation.ArrayType);
 
-        instantiation.Type = new DefinedType($"{arrayType}[]", false, isArray: true)
-        {
-            TypeParameters = [arrayType]
-        };
+        instantiation.Type = typeHelper.GetArrayOfType(arrayType);
         
         return instantiation;
     }
@@ -784,20 +793,48 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     private DefinedType GetVariableType(string identifier, SourceSpan span)
     {
-        if (!_variableTypeStack.ContainsKey(identifier))
+        if (_variableTypeStack.ContainsKey(identifier))
         {
-            throw ErrorHelper.ShowErrorMessage($"Unknown identifier '{identifier}'", span);
+            return _variableTypeStack.GetValue(identifier);
         }
-    
-        return _variableTypeStack.GetValue(identifier);
+        
+        if (_currentClass!.Value.Fields.Any(x => x.Name == identifier))
+        {
+            return _currentClass!.Value.Fields.First(x => x.Name == identifier).Type;
+        }
+        
+        throw ErrorHelper.ShowErrorMessage($"Unknown identifier '{identifier}'", span);
     }
 
-    protected override VariableAccess VisitVariableAccess(VariableAccess variableAccess)
+    protected override IExpression VisitVariableAccess(VariableAccess variableAccess)
     {
-        var type = GetVariableType(variableAccess.Identifier, variableAccess.Span);
-        variableAccess.Type = type;
+        if (_variableTypeStack.ContainsKey(variableAccess.Identifier))
+        {
+            var type = GetVariableType(variableAccess.Identifier, variableAccess.Span);
+            variableAccess.Type = type;
 
-        return variableAccess;
+            return variableAccess;
+        }
+        
+        if (_currentClass!.Value.Fields.Any(x => x.Name == variableAccess.Identifier))
+        {
+            var type = _currentClass!.Value.Fields.First(x => x.Name == variableAccess.Identifier).Type;
+            variableAccess.Type = type;
+
+            var fieldAccess = new FieldAccess(new ThisAccess { Span = variableAccess.Span, Type = _currentClass!.Value }, variableAccess.Identifier) { Span = variableAccess.Span };
+            var access = VisitFieldAccess(fieldAccess);
+
+            return access;
+        }
+        
+        throw ErrorHelper.ShowErrorMessage($"Unknown identifier '{variableAccess.Identifier}'", variableAccess.Span);
+    }
+
+    protected override IExpression VisitThisAccess(ThisAccess thisAccess)
+    {
+        thisAccess.Type = _currentClass!.Value;
+
+        return thisAccess;
     }
 
     private int? GetMathTypePrecedence(DefinedType type)
