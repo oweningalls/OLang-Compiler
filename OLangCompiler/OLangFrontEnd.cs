@@ -24,7 +24,6 @@ public class OLangFrontEnd : IOLangFrontEnd
         var ast = new OLangAstBuilder(errorHelper).ParseProgram(programNode);
 
         new TypeRegisterer(errorHelper, typeHelper).VisitProgram(ast);
-        // TODO: register members separately after registering classes
         new TypeChecker(errorHelper, typeHelper).VisitProgram(ast);
         
         generator.GenerateProgram(ast, filePath, fileName);
