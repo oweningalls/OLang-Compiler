@@ -38,7 +38,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
 
-        return base.VisitClassDeclaration(classDeclaration);
+        return (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
+    }
+    
+    protected override EnumDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
+    {
+        _currentClass = typeHelper.GetDefinedType(enumDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
+
+        return (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
     }
 
     protected override Return VisitReturnStatement(Return returnStatement)
@@ -371,7 +378,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 throw ErrorHelper.ShowErrorMessage($"Unrecognized member: `{variableAccess.Identifier}`", variableAccess.Span);
             }
 
-            if (!declaredClass.IsStatic)
+            if (declaredClass.TypeVariant != TypeVariant.StaticClass)
             {
                 throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.Name}`", variableAccess.Span);
             }

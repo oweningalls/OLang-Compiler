@@ -3,6 +3,7 @@ using OLangAst.ClassMembers;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
+using OLangAst.TypeSystem;
 
 namespace OLangAst;
 
@@ -13,7 +14,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     public virtual Program VisitProgram(Program program)
     {
         program.UsingStatements = VisitUsingStatements(program.UsingStatements);
-        program.ClassDeclarations = VisitClassDeclarations(program.ClassDeclarations);
+        program.TypeDeclarations = VisitTypeDeclarations(program.TypeDeclarations);
 
         return program;
     }
@@ -28,16 +29,29 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return usingStatement;
     }
     
-    protected List<ClassDeclaration> VisitClassDeclarations(IEnumerable<ClassDeclaration> stmtList)
+    protected List<ITypeDeclaration> VisitTypeDeclarations(IEnumerable<ITypeDeclaration> stmtList)
     {
-        return stmtList.Select(VisitClassDeclaration).ToList();
+        return stmtList.Select(s =>
+        {
+            return s switch
+            {
+                ClassDeclaration classDeclaration => VisitClassDeclaration(classDeclaration),
+                EnumDeclaration enumDeclaration => VisitEnumDeclaration(enumDeclaration),
+                _ => throw new ArgumentOutOfRangeException(nameof(s))
+            };
+        }).ToList();
     }
     
-    protected virtual ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    protected virtual ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         classDeclaration.ClassMembers = classDeclaration.ClassMembers.Select(VisitClassMember).ToList();
 
         return classDeclaration;
+    }
+    
+    protected virtual ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
+    {
+        return enumDeclaration;
     }
 
     protected List<IStatement> VisitStatements(IEnumerable<IStatement> stmtList)

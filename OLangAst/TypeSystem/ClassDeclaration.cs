@@ -1,10 +1,9 @@
 ﻿using Lexing;
 using OLangAst.ClassMembers;
-using OLangAst.TypeSystem;
 
-namespace OLangAst;
+namespace OLangAst.TypeSystem;
 
-public class ClassDeclaration(bool isStatic, string identifier, List<IClassMember> classMembers) : IAstNode
+public class ClassDeclaration(bool isStatic, string identifier, List<IClassMember> classMembers) : ITypeDeclaration
 {
     public bool IsStatic = isStatic;
     public string Identifier = identifier;

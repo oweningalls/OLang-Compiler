@@ -3,7 +3,6 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
-using OLangGrammar.ParseTree.ClassDeclaration;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
@@ -20,6 +19,7 @@ using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.TypeDeclaration;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangGrammar.ParseTree.UsingList;
 using OLangGrammar.UsingStatement;
@@ -33,7 +33,7 @@ public class OLangGrammar : IGrammar
     private static readonly List<BaseGrammarRule> Rules =
     [
         // Prog
-        GrammarRule.Create((IUsingList usingList, IClassDeclarationListNode classList) => new ProgramNode(usingList, classList)),
+        GrammarRule.Create((IUsingList usingList, ITypeDeclarationListNode classList) => new ProgramNode(usingList, classList)),
         
         // UsingStatementList
         GrammarRule.Create(() => new EmptyUsingList()),
@@ -47,12 +47,13 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken identifier, DotToken _, IUsingStatementIdentifier continuedIdentifier) => new ContinuedUsingStatementIdentifier(identifier, continuedIdentifier)),
         
         // ClassDeclarationList
-        GrammarRule.Create((IClassDeclaration classDeclaration) => new SingleClassClassList(classDeclaration)),
-        GrammarRule.Create((IClassDeclaration classDeclaration, IClassDeclarationListNode classDeclarationList) => new ClassDeclarationListWithClass(classDeclaration, classDeclarationList)),
+        GrammarRule.Create((ITypeDeclaration typeDeclaration) => new SingleTypeTypeList(typeDeclaration)),
+        GrammarRule.Create((ITypeDeclaration typeDeclaration, ITypeDeclarationListNode classDeclarationList) => new TypeDeclarationListWithType(typeDeclaration, classDeclarationList)),
         
-        // ClassDeclaration
+        // TypeDeclaration
         GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
         GrammarRule.Create((StaticToken _, ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new StaticClassDeclaration(identifierToken, stmtList)),
+        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, RightCurlyToken _) => new EnumDeclaration(identifierToken)),
         
         // ClassMemberList
         GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),

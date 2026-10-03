@@ -1,10 +1,10 @@
 ﻿using Lexing;
-using OLangGrammar.ParseTree.StmtList;
+using OLangGrammar.ParseTree.ClassMemberList;
 using OLangTokens.Tokens;
 
-namespace OLangGrammar.ParseTree.ClassDeclaration;
+namespace OLangGrammar.ParseTree.TypeDeclaration;
 
-public class ClassDeclaration(IdentifierToken identifierToken, IClassMemberListNode classMemberList) : IClassDeclaration
+public class ClassDeclaration(IdentifierToken identifierToken, IClassMemberListNode classMemberList) : ITypeDeclaration
 {
     public IdentifierToken IdentifierToken = identifierToken;
     public IClassMemberListNode ClassMemberList = classMemberList;

@@ -42,7 +42,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public DefinedType GetArrayOfType(DefinedType type)
     {
-        return new DefinedType($"{type.Name}[]", false, isArray: true)
+        return new DefinedType($"{type.Name}[]", type.TypeVariant, isArray: true)
         {
             TypeParameters = [type]
         };
@@ -89,10 +89,10 @@ public class TypeHelper(IErrorHelper errorHelper)
         }
     }
 
-    public DefinedType CreateCustomClass(string name, bool isStatic)
+    public DefinedType CreateCustomType(string name, TypeVariant typeVariant)
     {
-        var userDefined = new DefinedType(name, isStatic);
-        _customClasses.Add(name, userDefined);
+        var userDefined = new DefinedType(name, typeVariant);
+        _customTypes.Add(name, userDefined);
         
         return userDefined;
     }
@@ -101,7 +101,7 @@ public class TypeHelper(IErrorHelper errorHelper)
     {
         foreach (var (_, type) in CsAssemblyLoader.LoadDefinedTypesFromAssembly(assemblyName))
         {
-            _customClasses[type.Name] = type;
+            _customTypes[type.Name] = type;
         }
     }
     
@@ -121,7 +121,7 @@ public class TypeHelper(IErrorHelper errorHelper)
         {
             return PrimitiveTypeMap.First(x => x.Key.ToString() == name).Value;
         }
-        return _customClasses.TryGetValue(name, out var value) ? value : null;
+        return _customTypes.TryGetValue(name, out var value) ? value : null;
     }
 
     private bool TypeMatches(DefinedType type, List<DefinedType> argumentTypes, int index)
@@ -129,11 +129,11 @@ public class TypeHelper(IErrorHelper errorHelper)
         return index < argumentTypes.Count && type.Equals(argumentTypes[index]);
     }
 
-    private readonly Dictionary<string, DefinedType> _customClasses = new();
+    private readonly Dictionary<string, DefinedType> _customTypes = new();
 
-    public List<DefinedType> GetDefinedClasses()
+    public List<DefinedType> GetDefinedTypes()
     {
-        return _customClasses.Values.Where(x => !x.IsCs).ToList();
+        return _customTypes.Values.Where(x => !x.IsCs).ToList();
     }
 
     private static readonly Dictionary<PrimitiveVariableTypeEnum, DefinedType> PrimitiveTypeMap = new()

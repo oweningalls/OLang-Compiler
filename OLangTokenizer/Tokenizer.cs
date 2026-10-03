@@ -275,6 +275,7 @@ public class Tokenizer
         { "print", () => new PrintToken() },
         { "new", () => new NewToken() },
         { "using", () => new UsingToken() },
+        { "enum", () => new EnumToken() },
     };
 
     private BaseToken? TryParseOperator()

@@ -11,12 +11,19 @@ namespace OLangTypeChecking.TypeChecking;
 public class TypeRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
     private DefinedType? _currentClass;
-    protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _currentClass = typeHelper.CreateCustomClass(classDeclaration.Identifier, classDeclaration.IsStatic);
+        _currentClass = typeHelper.CreateCustomType(classDeclaration.Identifier, classDeclaration.IsStatic ? TypeVariant.StaticClass : TypeVariant.Class);
         classDeclaration.Type = _currentClass;
         
-        return base.VisitClassDeclaration(classDeclaration);
+        return (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
+    }
+    
+    protected override ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
+    {
+        enumDeclaration.Type = typeHelper.CreateCustomType(enumDeclaration.Identifier, TypeVariant.Enum);
+        
+        return (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
     }
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)

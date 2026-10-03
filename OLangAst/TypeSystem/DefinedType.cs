@@ -3,10 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
-public struct DefinedType(string name, bool isStatic, bool isCs = false, bool isArray = false)
+public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = false, bool isArray = false)
 {
     public string Name = name;
-    public bool IsStatic = isStatic;
+    public TypeVariant TypeVariant = typeVariant;
+    // public bool IsStatic => TypeVariant == TypeVariant.StaticClass;
     public List<FunctionDefinition> Methods = [];
     public List<FieldDefinition> Fields = [];
     public bool IsCs = isCs;
@@ -24,8 +25,8 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false, bool is
             {
                 return savedType;
             }
-        
-            definedType = new DefinedType(type.Name, type.IsSealed && type.IsAbstract, true);
+
+            definedType = new DefinedType(type.Name, GetCsTypeVariant(type), true);
             _typeMap[type] = definedType;
         }
 
@@ -46,7 +47,22 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false, bool is
 
         return definedType;
     }
-    
+
+    private static TypeVariant GetCsTypeVariant(Type type)
+    {
+        if (type.IsEnum)
+        {
+            return TypeVariant.Enum;
+        }
+
+        if (type.IsSealed && type.IsAbstract)
+        {
+            return TypeVariant.StaticClass;
+        }
+
+        return TypeVariant.Class;
+    }
+
     private static ConcurrentDictionary<Type, DefinedType> _typeMap = new();
 
     public override bool Equals([NotNullWhen(true)] object? obj)
@@ -63,4 +79,11 @@ public struct DefinedType(string name, bool isStatic, bool isCs = false, bool is
     {
         return Name.GetHashCode();
     }
+}
+
+public enum TypeVariant
+{
+    Class,
+    StaticClass,
+    Enum
 }

@@ -4,9 +4,9 @@ using OLangGrammar.ParseTree.UsingList;
 
 namespace OLangGrammar.ParseTree.Prog;
 
-public class ProgramNode(IUsingList usingList, IClassDeclarationListNode classDeclarationList) : IProgramNode
+public class ProgramNode(IUsingList usingList, ITypeDeclarationListNode typeDeclarationList) : IProgramNode
 {
     public IUsingList UsingList = usingList;
-    public IClassDeclarationListNode ClassDeclarationList = classDeclarationList;
+    public ITypeDeclarationListNode TypeDeclarationList = typeDeclarationList;
     public SourceSpan Span { get; set; }
 }

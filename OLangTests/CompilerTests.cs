@@ -1419,6 +1419,39 @@ public class CompilerTests
         TestProgramConsoleOutput(values, false);
     }
     
+    public static readonly List<(string, string)> EnumPrograms =
+    [
+        ("""
+         enum TestEnum {
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        
+        ("""
+         class TestEnumHolder {
+             TestEnum Val;
+         }
+         enum TestEnum {
+         
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+    ];
+    
+    [TestCaseSource(nameof(EnumPrograms))]
+    public void EnumTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;

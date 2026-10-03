@@ -2,4 +2,4 @@
 
 namespace OLangGrammar.ParseTree.ClassDeclarationList;
 
-public interface IClassDeclarationListNode : INode;
+public interface ITypeDeclarationListNode : INode;

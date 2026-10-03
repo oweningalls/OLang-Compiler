@@ -6,7 +6,6 @@ using OLangGrammar.ParseTree.AddExpression;
 using OLangGrammar.ParseTree.AndExpression;
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangGrammar.ParseTree.AssignmentOperator;
-using OLangGrammar.ParseTree.ClassDeclaration;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
@@ -23,6 +22,7 @@ using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.TypeDeclaration;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangGrammar.ParseTree.UsingList;
 using OLangGrammar.UsingStatement;
@@ -30,6 +30,8 @@ using OLangGrammar.UsingStatementIdentifier;
 using OLangTokens.Tokens;
 using ArrayType = OLangAst.Miscellaneous.ArrayType;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
+using ClassDeclaration = OLangAst.TypeSystem.ClassDeclaration;
+using EnumDeclaration = OLangAst.TypeSystem.EnumDeclaration;
 using FieldAccess = OLangAst.Expressions.FieldAccess;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
 using FunctionDeclaration = OLangAst.Statements.FunctionDeclaration;
@@ -46,6 +48,7 @@ using FunctionInvocation = OLangAst.Statements.FunctionInvocation;
 using IClassMember = OLangAst.ClassMembers.IClassMember;
 using MethodDeclaration = OLangAst.ClassMembers.MethodDeclaration;
 using FieldDeclaration = OLangAst.ClassMembers.FieldDeclaration;
+using ITypeDeclaration = OLangAst.TypeSystem.ITypeDeclaration;
 
 namespace OLangAst;
 
@@ -53,7 +56,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
 {
     public Program ParseProgram(ProgramNode programNode)
     {
-        return new Program(ParseUsingStatements(programNode.UsingList), ParseClassDeclarations(programNode.ClassDeclarationList)) { Span = programNode.Span};
+        return new Program(ParseUsingStatements(programNode.UsingList), ParseTypeDeclarations(programNode.TypeDeclarationList)) { Span = programNode.Span};
     }
 
     private List<UsingStatement> ParseUsingStatements(IUsingList usingList)
@@ -92,16 +95,16 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return string.Join(".", identList);
     }
 
-    private List<ClassDeclaration> ParseClassDeclarations(IClassDeclarationListNode classDeclarationList)
+    private List<ITypeDeclaration> ParseTypeDeclarations(ITypeDeclarationListNode typeDeclarationList)
     {
-        return ParseList(classDeclarationList,
+        return ParseList(typeDeclarationList,
             x => x switch
             {
-                ClassDeclarationListWithClass classDeclarationListWithClass => (classDeclarationListWithClass.ClassDeclaration, classDeclarationListWithClass.ClassDeclarationList),
-                SingleClassClassList singleClassClassList => (singleClassClassList.ClassDeclaration, null),
+                TypeDeclarationListWithType classDeclarationListWithClass => (ClassDeclaration: classDeclarationListWithClass.TypeDeclaration, ClassDeclarationList: classDeclarationListWithClass.TypeDeclarationList),
+                SingleTypeTypeList singleClassClassList => (ClassDeclaration: singleClassClassList.TypeDeclaration, null),
                 _ => throw errorHelper.UnknownVariant("class list", x.GetType())
             },
-            ParseClassDeclaration
+            ParseTypeDeclaration
         );
     }
     
@@ -125,13 +128,14 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return list;
     }
 
-    private ClassDeclaration ParseClassDeclaration(IClassDeclaration classDeclaration)
+    private ITypeDeclaration ParseTypeDeclaration(OLangGrammar.ParseTree.TypeDeclaration.ITypeDeclaration typeDeclaration)
     {
-        return classDeclaration switch
+        return typeDeclaration switch
         {
-            OLangGrammar.ParseTree.ClassDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(false, ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = classDeclaration.Span },
-            StaticClassDeclaration staticClassDeclaration => new ClassDeclaration(true, ParseIdentifier(staticClassDeclaration.IdentifierToken), ParseClassMembers(staticClassDeclaration.ClassMemberList)) { Span = classDeclaration.Span },
-            _ => throw errorHelper.UnknownVariant("class declaration", classDeclaration.GetType())
+            OLangGrammar.ParseTree.TypeDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(false, ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
+            StaticClassDeclaration staticClassDeclaration => new ClassDeclaration(true, ParseIdentifier(staticClassDeclaration.IdentifierToken), ParseClassMembers(staticClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
+            OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration concreteClassDeclaration => new EnumDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken)) { Span = typeDeclaration.Span },
+            _ => throw errorHelper.UnknownVariant("class declaration", typeDeclaration.GetType())
         };
     }
 

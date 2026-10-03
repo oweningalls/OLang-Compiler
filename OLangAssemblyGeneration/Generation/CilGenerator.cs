@@ -36,10 +36,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _assemblyBuilder = new PersistedAssemblyBuilder(new AssemblyName("AssemblyName"), typeof(object).Assembly);
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("OLangProgram");
 
-        var classes = typeHelper.GetDefinedClasses();
-        var types = DefineTypes(classes);
-        DefineMethods(classes, types);
-        DefineFields(classes, types);
+        var types = typeHelper.GetDefinedTypes();
+        var definedClasses = types.Where(x => x.TypeVariant != TypeVariant.Enum).ToList();
+        var definedEnums = types.Where(x => x.TypeVariant == TypeVariant.Enum).ToList();
+        
+        var classes = DefineClasses(definedClasses);
+        var enums = DefineEnums(definedEnums);
+        DefineMethods(definedClasses, classes);
+        DefineFields(definedClasses, classes);
         
         VisitProgram(program);
 
@@ -62,19 +66,29 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return usingStatement;
     }
 
-    protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
+    protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         _type = _definedTypes[classDeclaration.Type!.Value];
-        classDeclaration = base.VisitClassDeclaration(classDeclaration);
+        classDeclaration = (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
         
         _type.CreateType();
 
         return classDeclaration;
     }
+    
+    protected override ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
+    {
+        _type = _definedTypes[enumDeclaration.Type!.Value];
+        enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
+        
+        _type.CreateType();
+
+        return enumDeclaration;
+    }
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!.Value)));// _type.DefineMethod(methodDeclaration.Identifier, attributes, GetCsType(typeHelper.GetMethodType(methodDeclaration.DeclaredType)), methodDeclaration.Parameters.Select(x => GetCsType(typeHelper.GetLocalType(x.DeclaredType))).ToArray());
+        var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!.Value)));
         _functions[methodDeclaration.Identifier] = method;
         
         var originalIl = _il;
@@ -729,15 +743,31 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
 
-    private List<TypeBuilder> DefineTypes(List<DefinedType> classes)
+    private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
     {
-        return classes.Select(DefineClass).ToList();
+        return classes.Where(x => x.TypeVariant != TypeVariant.Enum).Select(DefineClass).ToList();
     }
 
+    private List<TypeBuilder> DefineEnums(IEnumerable<DefinedType> enums)
+    {
+        return enums.Where(x => x.TypeVariant == TypeVariant.Enum).Select(DefineEnum).ToList();
+    }
+
+    private TypeBuilder DefineEnum(DefinedType type)
+    {
+        var attributes = TypeAttributes.Public | TypeAttributes.Abstract;
+        
+        var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
+        _definedTypes[type] = typeBuilder;
+        _definedTypeConstructors[type] = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        
+        return typeBuilder;
+    }
+    
     private TypeBuilder DefineClass(DefinedType type)
     {
         var attributes = TypeAttributes.Public;
-        if (type.IsStatic)
+        if (type.TypeVariant == TypeVariant.StaticClass)
         {
             attributes |= TypeAttributes.Abstract | TypeAttributes.Sealed;
         }
@@ -762,7 +792,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
     {
         var attributes = MethodAttributes.Public;
-        if (definition.DeclaringType.IsStatic)
+        if (definition.DeclaringType.TypeVariant == TypeVariant.StaticClass)
         {
            attributes |= MethodAttributes.Static;
         }
