@@ -1309,7 +1309,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let arr = new StringHolder[5];
+                 let arr = new [StringHolder; 5];
                  arr[1] = new StringHolder();
                  arr[1].Field = "TEST";
                  
@@ -1324,7 +1324,7 @@ public class CompilerTests
          }
          
          class IntStringList {
-             IntString[] Arr;
+             [IntString] Arr;
              int length;
              int capacity;
              
@@ -1337,7 +1337,7 @@ public class CompilerTests
                  }
                  
                  if capacity == 0 { capacity = 1; } else { capacity *= 2; }
-                 let newArr = new IntString[capacity];
+                 let newArr = new [IntString; capacity];
                  for i in 0..length {
                      newArr[i] = Arr[i];
                  }
@@ -1382,6 +1382,35 @@ public class CompilerTests
              }
          }
          """, "2"),
+        ("""
+         static class Program {
+             void Main() {
+                 let val = Helper();
+                 
+                 val[2] = 2;
+                 print val[2].ToString();
+             }
+             
+             [int] Helper(){
+                 return new [int; 3];
+             }
+         }
+         """, "2"),
+        ("""
+         static class Program {
+             void Main() {
+                 let arrays = new [[int]; 3];
+                 arrays[0] = new [int; 3];
+                 arrays[0][1] = 43;
+             
+                 print GetNestedIndex(arrays, 0, 1).ToString();
+             }
+             
+             int GetNestedIndex([[int]] arrs, int i, int j){
+                 return arrs[i][j];
+             }
+         }
+         """, "43"),
     ];
     
     [TestCaseSource(nameof(FieldPrograms))]

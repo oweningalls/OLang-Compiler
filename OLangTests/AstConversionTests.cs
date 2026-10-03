@@ -128,7 +128,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var parsed = new Declaration(new IntType(), GetIdentifier(identifier), GetIntLiteralExpression(value));
 
         var converted = ParseStatement(parsed);
-        var expected = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int, false), identifier, new IntLiteral(value));
+        var expected = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int), identifier, new IntLiteral(value));
 
         AssertEquivalence(converted, expected);
     }
@@ -186,7 +186,7 @@ public class AstConversionTests() : OLangAstBuilder(new NoOpErrorHelper())
         var parsed = new FunctionDeclaration(new BoolType(), GetIdentifier(ident), GetEmptyScope());
 
         var converted = ParseStatement(parsed);
-        var expected = new OLangAst.Statements.FunctionDeclaration(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool, false), ident, [], new Scope([]));
+        var expected = new OLangAst.Statements.FunctionDeclaration(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool), ident, [], new Scope([]));
 
         AssertEquivalence(converted, expected);
     }

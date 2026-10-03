@@ -30,14 +30,14 @@ public class TypeHelper(IErrorHelper errorHelper)
     }
     public DefinedType GetLocalType(IVariableType type)
     {
-        var definedType = type switch
+        if (type is ArrayType arrayType)
         {
-            CustomType userDefinedClass => GetDefinedType(userDefinedClass.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}", type.Span),
-            PrimitiveVariableType primitiveVariableType => PrimitiveTypeMap[primitiveVariableType.Type],
-            _ => throw errorHelper.UnknownVariant("type", type.GetType())
-        };
+            var innerType = GetLocalType(arrayType.InnerType);
 
-        return type.IsArray ? GetArrayOfType(definedType) : definedType;
+            return GetArrayOfType(innerType);
+        }
+        
+        return GetDefinedType(type.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
     }
 
     public DefinedType GetArrayOfType(DefinedType type)
@@ -117,6 +117,10 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public DefinedType? GetDefinedType(string name)
     {
+        if (PrimitiveTypeMap.Keys.Any(x => x.ToString() == name))
+        {
+            return PrimitiveTypeMap.First(x => x.Key.ToString() == name).Value;
+        }
         return _customClasses.TryGetValue(name, out var value) ? value : null;
     }
 

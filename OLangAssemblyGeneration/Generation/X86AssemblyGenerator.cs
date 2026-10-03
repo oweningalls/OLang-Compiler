@@ -155,7 +155,7 @@ public class X86AssemblyGenerator(IErrorHelper errorHelper) : BaseOLangAstVisito
     {
         BeginScope();
 
-        var declaration = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int, false), @for.Identifier, @for.RangeStart);
+        var declaration = new VariableDeclarationStatement(new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int), @for.Identifier, @for.RangeStart);
         VisitDeclarationStatement(declaration);
         var scope = @for.Body;
         var identifierExpression = new VariableAccess(@for.Identifier);

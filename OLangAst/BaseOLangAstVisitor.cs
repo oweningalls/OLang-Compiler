@@ -156,6 +156,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         {
             PrimitiveVariableType primitiveVariableType => VisitPrimitiveVariableType(primitiveVariableType),
             CustomType customType => VisitCustomVariableType(customType),
+            ArrayType type => VisitArrayType(type),
             InternalDefinedType type => type,
             _ => throw ErrorHelper.UnknownVariant("variable type", variableType.GetType())
         };
@@ -169,6 +170,13 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     protected virtual IVariableType VisitCustomVariableType(CustomType variableType)
     {
         return variableType;
+    }
+
+    protected virtual IVariableType VisitArrayType(ArrayType arrayType)
+    {
+        arrayType.InnerType = VisitVariableType(arrayType.InnerType);
+
+        return arrayType;
     }
 
     protected virtual ExitStatement VisitExitStatement(ExitStatement exitStatement)

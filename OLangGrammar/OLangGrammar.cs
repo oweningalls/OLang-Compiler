@@ -67,8 +67,6 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope)),
         GrammarRule.Create((IType type, IdentifierToken identifier, SemicolonToken _) => new FieldDeclaration(type, identifier)),
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, SemicolonToken _) => new FieldDeclaration(new NonPrimitiveType(type), identifier)),
-        GrammarRule.Create((IType type, IdentifierToken identifier, LeftBracketToken _, RightBracketToken _, SemicolonToken _) => new ArrayFieldDeclaration(type, identifier)),
-        GrammarRule.Create((IdentifierToken type, LeftBracketToken _, RightBracketToken _, IdentifierToken identifier, SemicolonToken _) => new ArrayFieldDeclaration(new NonPrimitiveType(type), identifier)),
 
         // StmtList
         GrammarRule.Create((IStatement statement) => new SingleStatementStmtList(statement)),
@@ -125,6 +123,9 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((BoolTypeToken _) => new BoolType()),
         GrammarRule.Create((FloatTypeToken _) => new FloatType()),
         GrammarRule.Create((StringTypeToken _) => new StringType()),
+        GrammarRule.Create((LeftBracketToken _, IType type, RightBracketToken _) => new ArrayType(type)),
+        GrammarRule.Create((LeftBracketToken _, IdentifierToken type, RightBracketToken _) => new CustomArrayType(type)),
+        
 
         // Expression
         GrammarRule.Create((IExpression lhs, BooleanOrToken _, IAndExpression rhs) => new Expression(lhs, rhs)),
@@ -173,8 +174,8 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new ParameterlessClassInstantiationTerm(ident)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList,  RightParenToken _) => new ClassInstantiationTerm(ident, argumentList)),
-        GrammarRule.Create((NewToken _, IType type, LeftBracketToken _, IExpression size, RightBracketToken _) => new ArrayInstantiationTerm(type, size)),
-        GrammarRule.Create((NewToken _, IdentifierToken type, LeftBracketToken _, IExpression size, RightBracketToken _) => new CustomTypeArrayInstantiationTerm(type, size)),
+        GrammarRule.Create((NewToken _, LeftBracketToken _, IType type, SemicolonToken _, IExpression size, RightBracketToken _) => new ArrayInstantiationTerm(type, size)),
+        GrammarRule.Create((NewToken _, LeftBracketToken _, IdentifierToken type, SemicolonToken _, IExpression size, RightBracketToken _) => new CustomTypeArrayInstantiationTerm(type, size)),
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
 

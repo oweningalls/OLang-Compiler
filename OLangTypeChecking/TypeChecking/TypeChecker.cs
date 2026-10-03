@@ -319,7 +319,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
     {
-        
+        functionInvocation.Arguments = functionInvocation.Arguments.Select(VisitExpression).ToList();
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             var method = typeHelper.GetMethod(_currentClass!.Value, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!.Value).ToList(), functionInvocation.Span);
@@ -331,7 +331,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return methodInvocation;
         }
         
-        functionInvocation = (FunctionInvocation)base.VisitFunctionInvocation(functionInvocation);
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
             throw ErrorHelper.ShowErrorMessage($"Unknown function: {functionInvocation.Identifier}", functionInvocation.Span);
@@ -550,7 +549,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return expression;
         }
 
-        return new Cast(new InternalDefinedType(type, type.IsArray), expression) { Type = type };
+        return new Cast(new InternalDefinedType(type), expression) { Type = type };
     }
 
     private DefinedType? GetCommonType(DefinedType type1, DefinedType type2)
@@ -716,9 +715,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Size of array must be int, found type `{instantiation.Size.Type}`.", instantiation.Span);
         }
         
-        var arrayType = typeHelper.GetLocalType(instantiation.ArrayType);
-
-        instantiation.Type = typeHelper.GetArrayOfType(arrayType);
+        instantiation.Type = typeHelper.GetLocalType(instantiation.ArrayType);
         
         return instantiation;
     }

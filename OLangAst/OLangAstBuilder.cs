@@ -28,6 +28,7 @@ using OLangGrammar.ParseTree.UsingList;
 using OLangGrammar.UsingStatement;
 using OLangGrammar.UsingStatementIdentifier;
 using OLangTokens.Tokens;
+using ArrayType = OLangAst.Miscellaneous.ArrayType;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
 using FieldAccess = OLangAst.Expressions.FieldAccess;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
@@ -172,7 +173,6 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)) { Span = voidMethodDeclaration.Span },
             VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)) { Span = voidMethodDeclarationWithParameters.Span },
             OLangGrammar.ParseTree.ClassMember.FieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.Type), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
-            ArrayFieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.ArrayType, true), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
             
             _ => throw errorHelper.UnknownVariant("class member", classMember.GetType())
         };
@@ -360,23 +360,25 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
             ParameterlessClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseArgumentList(instantiationTerm.ArgumentList)) { Span = instantiationTerm.Span },
-            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(ParseType(instantiationTerm.Type), ParseExpression(instantiationTerm.Size)),
-            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new CustomType(ParseIdentifier(instantiationTerm.Type), false), ParseExpression(instantiationTerm.Size)),
+            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(ParseType(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)),
+            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
 
-    private IVariableType ParseType(IType type, bool isArray = false)
+    private IVariableType ParseType(IType type)
     {
         return type switch
         {
-            BoolType boolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool, isArray) { Span = boolType.Span },
-            IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int, isArray) { Span = intType.Span },
-            FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float, isArray) { Span = floatType.Span },
-            StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String, isArray) { Span = stringType.Span },
-            NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier), isArray) { Span = customType.Span },
+            BoolType boolType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Bool) { Span = boolType.Span },
+            IntType intType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Int) { Span = intType.Span },
+            FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float) { Span = floatType.Span },
+            StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String) { Span = stringType.Span },
+            NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier)) { Span = customType.Span },
+            OLangGrammar.ParseTree.Type.ArrayType arrayType => new ArrayType(ParseType(arrayType.InnerType)),
+            CustomArrayType arrayType => new ArrayType(new CustomType(ParseIdentifier(arrayType.InnerType))),
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }
