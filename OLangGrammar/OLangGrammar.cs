@@ -189,6 +189,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((NewToken _, LeftBracketToken _, IdentifierToken type, SemicolonToken _, IExpression size, RightBracketToken _) => new CustomTypeArrayInstantiationTerm(type, size)),
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

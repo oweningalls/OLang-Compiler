@@ -841,6 +841,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return thisAccess;
     }
 
+    protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
+    {
+        var definedType = typeHelper.GetDefinedType(enumInstantiation.EnumName)!.Value;
+        if (definedType.TypeVariant != TypeVariant.Enum)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
+        }
+        
+        if (definedType.EnumVariants.All(x => x.Name != enumInstantiation.VariantName))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Enum `{enumInstantiation.EnumName}` does not contain a variant named `{enumInstantiation.VariantName}`.", enumInstantiation.Span);
+        }
+        
+        enumInstantiation.Type = definedType;
+
+        return enumInstantiation;
+    }
+
     private int? GetMathTypePrecedence(DefinedType type)
     {
         var idx = MathTypes.IndexOf(type);

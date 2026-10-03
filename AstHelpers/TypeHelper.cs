@@ -41,7 +41,7 @@ public class TypeHelper(IErrorHelper errorHelper)
         return GetDefinedType(type.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
     }
 
-    public DefinedType GetArrayOfType(DefinedType type)
+    private DefinedType GetArrayOfType(DefinedType type)
     {
         return new DefinedType($"{type.Name}[]", type.TypeVariant, isArray: true)
         {

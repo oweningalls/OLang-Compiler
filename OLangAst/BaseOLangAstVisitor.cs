@@ -52,7 +52,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     
     protected virtual ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
-        enumDeclaration.EnumVariants = enumDeclaration.EnumVariants.Select(x => VisitEnumVariant(x)).ToList();
+        enumDeclaration.EnumVariants = enumDeclaration.EnumVariants.Select(VisitEnumVariant).ToList();
 
         return enumDeclaration;
     }
@@ -299,6 +299,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return thisAccess;
     }
 
+    protected virtual IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
+    {
+        return enumInstantiation;
+    }
+
     protected virtual Scope VisitScope(Scope scopeNode)
     {
         scopeNode.Statements = VisitStatements(scopeNode.Statements);
@@ -337,6 +342,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             ArrayAccess arrayAccess => VisitArrayAccess(arrayAccess),
             FieldAccess arrayAccess => VisitFieldAccess(arrayAccess),
             ThisAccess thisAccess => VisitThisAccess(thisAccess),
+            EnumInstantiation enumInstantiation => VisitEnumInstantiation(enumInstantiation),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

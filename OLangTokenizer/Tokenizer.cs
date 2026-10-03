@@ -313,6 +313,7 @@ public class Tokenizer
         { "..", () => new RangeToken() },
         { "&&", () => new BooleanAndToken() },
         { "||", () => new BooleanOrToken() },
+        { "::", () => new DoubleColonToken() },
     };
 
     private string? _input;

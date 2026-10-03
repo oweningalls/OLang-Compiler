@@ -1455,6 +1455,24 @@ public class CompilerTests
              }
          }
          """, ""),
+        ("""
+         class TestEnumHolder {
+             EnumWithVariants Val;
+         }
+         
+         enum EnumWithVariants {
+             Var1,
+             Var2,
+             Var3
+         }
+         
+         static class Program {
+             void Main() {
+                 let holder = new TestEnumHolder();
+                 holder.Val = EnumWithVariants::Var1;
+             }
+         }
+         """, ""),
     ];
     
     [TestCaseSource(nameof(EnumPrograms))]

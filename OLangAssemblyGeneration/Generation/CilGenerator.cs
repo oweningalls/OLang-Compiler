@@ -7,6 +7,7 @@ using AstHelpers;
 using ErrorHelper;
 using OLangAst;
 using OLangAst.ClassMembers;
+using OLangAst.EnumVariants;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -80,10 +81,16 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         _type = _definedTypes[enumDeclaration.Type!.Value];
         enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
+        // already did CreateType() in DefineEnum
         
-        _type.CreateType();
-
         return enumDeclaration;
+    }
+
+    protected override EnumVariant VisitEnumVariant(EnumVariant enumVariant)
+    {
+        _enumVariants[_type][enumVariant.Name].CreateType();
+
+        return enumVariant;
     }
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
@@ -185,6 +192,16 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         WriteExit();
 
         return exitStatement;
+    }
+
+    protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
+    {
+        var enumType = GetCsType(enumInstantiation.Type!.Value);
+        var constructor = _enumVariantConstructors[enumType][enumInstantiation.VariantName];
+        
+        _il.Emit(OpCodes.Newobj, constructor);
+
+        return enumInstantiation;
     }
 
     private static readonly MethodInfo ExitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
@@ -742,6 +759,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private Dictionary<DefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
+    private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
+    private Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
 
     private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
     {
@@ -760,6 +779,17 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
         _definedTypes[type] = typeBuilder;
         _definedTypeConstructors[type] = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        typeBuilder.CreateType();
+        _enumVariants[typeBuilder] = [];
+        _enumVariantConstructors[typeBuilder] = [];
+
+        attributes = TypeAttributes.Public | TypeAttributes.Sealed;
+        foreach (var variant in type.EnumVariants)
+        {
+            var variantBuilder = _moduleBuilder.DefineType(variant.Name, attributes, typeBuilder);
+            _enumVariants[typeBuilder][variant.Name] = variantBuilder;
+            _enumVariantConstructors[typeBuilder][variant.Name] = variantBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        }
         
         return typeBuilder;
     }
