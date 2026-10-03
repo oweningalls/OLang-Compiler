@@ -1184,34 +1184,34 @@ public class CompilerTests
     public static readonly List<(string, string)> ArrayPrograms =
     [
         ("""
-         let a = new int[10];
+         let a = new [int; 10];
          """, ""),
         ("""
-         let a = new string[10];
+         let a = new [string; 10];
          """, ""),
         ("""
-         let a = new bool[10];
+         let a = new [bool; 10];
          """, ""),
         ("""
-         let a = new int[10];
+         let a = new [int; 10];
          print a[0].ToString();
          """, "0"),
         ("""
-         let a = new bool[10];
+         let a = new [bool; 10];
          print a[0].ToString();
          """, "False"),
         ("""
-         let a = new bool[10];
+         let a = new [bool; 10];
          a[3] = true;
          print a[0].ToString();
          """, "False"),
         ("""
-         let a = new bool[10];
+         let a = new [bool; 10];
          a[3] = true;
          print a[3].ToString();
          """, "True"),
         ("""
-         let a = new int[10];
+         let a = new [int; 10];
          for i in 0..10 {
              a[i] = i;
          }
@@ -1221,18 +1221,18 @@ public class CompilerTests
          }
          """, "0123456789"),
         ("""
-         let a = new bool[5];
+         let a = new [bool; 5];
          a[1 + 2] = true;
          print a[3].ToString();
          """, "True"),
         ("""
-         let a = new int[5];
+         let a = new [int; 5];
          a[1] = 8;
          a[1] /= 4;
          print a[1].ToString();
          """, "2"),
         ("""
-         let a = new int[1 + 2];
+         let a = new [int; 1 + 2];
          a[2] = 8;
          a[2] += 4;
          print a[2].ToString();
