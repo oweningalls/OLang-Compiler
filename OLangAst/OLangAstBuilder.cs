@@ -9,6 +9,8 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumVariant;
+using OLangGrammar.ParseTree.EnumVariantList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -32,6 +34,7 @@ using ArrayType = OLangAst.Miscellaneous.ArrayType;
 using BoolLiteral = OLangAst.Expressions.BoolLiteral;
 using ClassDeclaration = OLangAst.TypeSystem.ClassDeclaration;
 using EnumDeclaration = OLangAst.TypeSystem.EnumDeclaration;
+using EnumVariant = OLangAst.EnumVariants.EnumVariant;
 using FieldAccess = OLangAst.Expressions.FieldAccess;
 using FloatLiteral = OLangAst.Expressions.FloatLiteral;
 using FunctionDeclaration = OLangAst.Statements.FunctionDeclaration;
@@ -134,11 +137,11 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         {
             OLangGrammar.ParseTree.TypeDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(false, ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
             StaticClassDeclaration staticClassDeclaration => new ClassDeclaration(true, ParseIdentifier(staticClassDeclaration.IdentifierToken), ParseClassMembers(staticClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
-            OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration concreteClassDeclaration => new EnumDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken)) { Span = typeDeclaration.Span },
+            OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration enumDeclaration => new EnumDeclaration(ParseIdentifier(enumDeclaration.IdentifierToken), ParseEnumVariantList(enumDeclaration.EnumVariantList)) { Span = typeDeclaration.Span },
             _ => throw errorHelper.UnknownVariant("class declaration", typeDeclaration.GetType())
         };
     }
-
+    
     private List<IClassMember> ParseClassMembers(IClassMemberListNode classMemberList)
     {
         var classMembers = ParseList(
@@ -152,6 +155,29 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             ParseClassMember
         );
         return classMembers;
+    }
+
+    private List<EnumVariant> ParseEnumVariantList(IEnumVariantList enumVariantList)
+    {
+        return ParseList(
+            enumVariantList,
+            x => x switch
+            {
+                EmptyEnumVariantList => (null, null),
+                EnumVariantListWithStatement enumVariantListWithStatement => (enumVariantListWithStatement.EnumVariant, enumVariantListWithStatement.EnumVariantList),
+                SingleVariantEnumVariantList singleVariantEnumVariantList => (singleVariantEnumVariantList.EnumVariant, null),
+                _ => throw errorHelper.UnknownVariant("enum variant list", x.GetType())
+            },
+            ParseEnumVariant);
+    }
+
+    private EnumVariant ParseEnumVariant(IEnumVariant enumVariant)
+    {
+        return enumVariant switch
+        {
+            OLangGrammar.ParseTree.EnumVariant.EnumVariant enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier)),
+            _ => throw errorHelper.UnknownVariant("enum variant", enumVariant.GetType())
+        };
     }
 
     private List<IStatement> ParseStatementList(IStmtListNode statementList)

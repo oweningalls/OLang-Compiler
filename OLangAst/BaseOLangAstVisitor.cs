@@ -1,5 +1,6 @@
 ﻿using ErrorHelper;
 using OLangAst.ClassMembers;
+using OLangAst.EnumVariants;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -51,7 +52,14 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
     
     protected virtual ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
+        enumDeclaration.EnumVariants = enumDeclaration.EnumVariants.Select(x => VisitEnumVariant(x)).ToList();
+
         return enumDeclaration;
+    }
+
+    protected virtual EnumVariant VisitEnumVariant(EnumVariant enumVariant)
+    {
+        return enumVariant;
     }
 
     protected List<IStatement> VisitStatements(IEnumerable<IStatement> stmtList)

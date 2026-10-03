@@ -6,6 +6,8 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumVariant;
+using OLangGrammar.ParseTree.EnumVariantList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FunctionInvocation;
@@ -46,18 +48,26 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken identifier) => new SingleUsingStatementIdentifier(identifier)),
         GrammarRule.Create((IdentifierToken identifier, DotToken _, IUsingStatementIdentifier continuedIdentifier) => new ContinuedUsingStatementIdentifier(identifier, continuedIdentifier)),
         
-        // ClassDeclarationList
+        // TypeDeclarationList
         GrammarRule.Create((ITypeDeclaration typeDeclaration) => new SingleTypeTypeList(typeDeclaration)),
         GrammarRule.Create((ITypeDeclaration typeDeclaration, ITypeDeclarationListNode classDeclarationList) => new TypeDeclarationListWithType(typeDeclaration, classDeclarationList)),
         
         // TypeDeclaration
         GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
         GrammarRule.Create((StaticToken _, ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new StaticClassDeclaration(identifierToken, stmtList)),
-        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, RightCurlyToken _) => new EnumDeclaration(identifierToken)),
+        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, IEnumVariantList enumVariantList, RightCurlyToken _) => new EnumDeclaration(identifierToken, enumVariantList)),
         
         // ClassMemberList
         GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),
         GrammarRule.Create((IClassMember statement, IClassMemberListNode statementList) => new ClassMemberListWithClassMember(statement, statementList)),
+        
+        // EnumVariantList
+        GrammarRule.Create(() => new EmptyEnumVariantList()),
+        GrammarRule.Create((IEnumVariant enumVariant) => new SingleVariantEnumVariantList(enumVariant)),
+        GrammarRule.Create((IEnumVariant enumVariant, CommaToken _, IEnumVariantList enumVariantList) => new EnumVariantListWithStatement(enumVariant, enumVariantList)),
+        
+        // EnumVariant
+        GrammarRule.Create((IdentifierToken identifier) => new EnumVariant(identifier)),
         
         // ClassMember
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope)),

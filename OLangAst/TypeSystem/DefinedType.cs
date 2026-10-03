@@ -7,7 +7,7 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
 {
     public string Name = name;
     public TypeVariant TypeVariant = typeVariant;
-    // public bool IsStatic => TypeVariant == TypeVariant.StaticClass;
+    public List<DefinedEnumVariant> EnumVariants = [];
     public List<FunctionDefinition> Methods = [];
     public List<FieldDefinition> Fields = [];
     public bool IsCs = isCs;

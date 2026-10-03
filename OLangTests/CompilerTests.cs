@@ -1430,13 +1430,24 @@ public class CompilerTests
              }
          }
          """, ""),
-        
         ("""
          class TestEnumHolder {
              TestEnum Val;
          }
+         
          enum TestEnum {
          
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        ("""
+         enum TestEnum {
+             Variant1,
+             Variant2
          }
          
          static class Program {

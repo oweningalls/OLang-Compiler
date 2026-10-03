@@ -1,6 +1,7 @@
 ﻿using ErrorHelper;
 using Lexing;
 using OLangAst.ClassMembers;
+using OLangAst.EnumVariants;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.TypeSystem;
@@ -62,11 +63,39 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public FunctionDefinition CreateCustomMethod(DefinedType customType, MethodDeclaration methodDeclaration)
     {
+        if (customType.TypeVariant == TypeVariant.Enum)
+        {
+            throw errorHelper.ShowErrorMessage($"Cannot define method on enum {customType.Name}", methodDeclaration.Span);
+        }
+        
         CheckForExistingMember(customType, methodDeclaration.Identifier, methodDeclaration.Span);
         var method = new FunctionDefinition(customType, GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
         customType.Methods.Add(method);
 
         return method;
+    }
+
+    public DefinedEnumVariant CreateEnumVariant(DefinedType customType, EnumVariant enumVariant)
+    {
+        if (customType.TypeVariant != TypeVariant.Enum)
+        {
+            throw errorHelper.ShowErrorMessage($"Cannot define enum variant on non-enum {customType.Name}", enumVariant.Span);
+        }
+        
+        CheckForExistingEnumVariant(customType, enumVariant.Name, enumVariant.Span);
+
+        var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name);
+        customType.EnumVariants.Add(definedEnumVariant);
+
+        return definedEnumVariant;
+    }
+
+    private void CheckForExistingEnumVariant(DefinedType type, string variantName, SourceSpan span)
+    {
+        if (type.EnumVariants.Any(x => x.Name == variantName))
+        {
+            throw errorHelper.ShowErrorMessage($"Enum `{type.Name}` had variant `{variantName}` defined twice", span);
+        }
     }
 
     public void CreateCustomField(DefinedType customType, FieldDeclaration fieldDeclaration)
