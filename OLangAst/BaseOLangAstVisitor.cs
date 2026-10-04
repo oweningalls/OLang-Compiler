@@ -301,6 +301,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
+        enumInstantiation.Arguments = enumInstantiation.Arguments.Select(VisitExpression).ToList();
         return enumInstantiation;
     }
 

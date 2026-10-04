@@ -9,6 +9,7 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumValueList;
 using OLangGrammar.ParseTree.EnumVariant;
 using OLangGrammar.ParseTree.EnumVariantList;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -175,9 +176,23 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return enumVariant switch
         {
-            OLangGrammar.ParseTree.EnumVariant.EnumVariant enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier)),
+            OLangGrammar.ParseTree.EnumVariant.EnumVariant enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), []),
+            EnumVariantWithValues enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), ParseEnumVariantValueList(enumVariant1.ValueList)),
             _ => throw errorHelper.UnknownVariant("enum variant", enumVariant.GetType())
         };
+    }
+
+    private List<IVariableType> ParseEnumVariantValueList(IEnumValueList enumValueList)
+    {
+        return ParseList(
+            enumValueList,
+            x => x switch
+            {
+                ContinuedEnumValueList continuedEnumValueList => (continuedEnumValueList.Type, continuedEnumValueList.EnumValueList),
+                SingleValueEnumValueList singleValueEnumValueList => (singleValueEnumValueList.Type, null),
+                _ => throw errorHelper.UnknownVariant("enum variant value list", x.GetType())
+            },
+            ParseType);
     }
 
     private List<IStatement> ParseStatementList(IStmtListNode statementList)
@@ -394,7 +409,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
-            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName)),
+            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []),
+            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }

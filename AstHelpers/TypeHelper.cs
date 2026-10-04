@@ -84,7 +84,7 @@ public class TypeHelper(IErrorHelper errorHelper)
         
         CheckForExistingEnumVariant(customType, enumVariant.Name, enumVariant.Span);
 
-        var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name);
+        var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name, enumVariant.Values.Select(GetLocalType).ToList());
         customType.EnumVariants.Add(definedEnumVariant);
 
         return definedEnumVariant;

@@ -6,6 +6,7 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumValueList;
 using OLangGrammar.ParseTree.EnumVariant;
 using OLangGrammar.ParseTree.EnumVariantList;
 using OLangGrammar.ParseTree.EqualityExpression;
@@ -68,6 +69,13 @@ public class OLangGrammar : IGrammar
         
         // EnumVariant
         GrammarRule.Create((IdentifierToken identifier) => new EnumVariant(identifier)),
+        GrammarRule.Create((IdentifierToken identifier, LeftParenToken _, IEnumValueList valueList, RightParenToken _) => new EnumVariantWithValues(identifier, valueList)),
+        
+        // EnumValueList
+        GrammarRule.Create((IType type) => new SingleValueEnumValueList(type)),
+        GrammarRule.Create((IdentifierToken type) => new SingleValueEnumValueList(new NonPrimitiveType(type))),
+        GrammarRule.Create((IType type, CommaToken _, IEnumValueList valueList) => new ContinuedEnumValueList(type, valueList)),
+        GrammarRule.Create((IdentifierToken type, CommaToken _, IEnumValueList valueList) => new ContinuedEnumValueList(new NonPrimitiveType(type), valueList)),
         
         // ClassMember
         GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope)),
@@ -137,7 +145,6 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((LeftBracketToken _, IType type, RightBracketToken _) => new ArrayType(type)),
         GrammarRule.Create((LeftBracketToken _, IdentifierToken type, RightBracketToken _) => new CustomArrayType(type)),
         
-
         // Expression
         GrammarRule.Create((IExpression lhs, BooleanOrToken _, IAndExpression rhs) => new Expression(lhs, rhs)),
         GrammarRule.Create((IAndExpression expression) => new NonExpression(expression)),
@@ -190,6 +197,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
         GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new EnumVariantInstantiationWithArguments(enumName, variantName, argumentList)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

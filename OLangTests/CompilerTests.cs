@@ -1473,6 +1473,82 @@ public class CompilerTests
              }
          }
          """, ""),
+        ("""
+         enum IntOption {
+             Some(int),
+             None
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        ("""
+         enum MultiValue {
+             Some(int, string),
+             None
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        ("""
+         enum NestedEnum {
+             Holder(One),
+             None
+         }
+         
+         enum One {
+             Value(bool)
+         }
+         
+         static class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        ("""
+         enum NestedEnum {
+             Holder(One),
+             None
+         }
+         
+         enum One {
+             Value(bool)
+         }
+         
+         static class Program {
+             void Main() {
+                 let test = NestedEnum::Holder(One::Value(true));
+             }
+         }
+         """, ""),
+        ("""
+         enum MultiValue {
+             Some(int, string),
+             None
+         }
+         
+         static class Program {
+             void Main() {
+                 let multi = MultiValue::Some(1, "test");
+             }
+         }
+         """, ""),
+        ("""
+         enum ImplicitConversion {
+             Some(float)
+         }
+         
+         static class Program {
+             void Main() {
+                 let conv = ImplicitConversion::Some(1);
+             }
+         }
+         """, ""),
     ];
     
     [TestCaseSource(nameof(EnumPrograms))]
@@ -1552,12 +1628,35 @@ public class CompilerTests
     [TestCase("print bool[10][10 + 1].ToString();")] // incompatible arguments
     public void TestInvalidPrograms(string program)
     {
-        var ex = Assert.Catch<Exception>(() => OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", "test.file"));
+        var ex = Assert.Catch<Exception>(() => CompileAndExecuteProgram(program, out _));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
     }
 
+    [TestCase("enum Test { Val(int) }", "let a = Test::Val(1.0);")]
+    [TestCase("enum Test { Val(int) }", "let a = Test::Val();")]
+    [TestCase("enum Test { Val(int) }", "let a = Test::Val;")]
+    [TestCase("enum Test { Val(FakeType) }", "")]
+    [TestCase("enum Test { Val(int) }", "let a = Test::Val(1.0);")]
+    public void TestFullInvalidPrograms(string typeDefinitions, string mainBody)
+    {
+        var program =
+            $$"""
+              {{typeDefinitions}}
+              
+              static class Program {
+                  void Main() {
+                      {{mainBody}}
+                  }
+              }
+              """;
+        var ex = Assert.Catch<Exception>(() => CompileAndExecuteProgram(program, out _, false));
+        
+        TestContext.Out.WriteLine(ex.Message);
+        Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
+    }
+    
     [Test]
     public void TestFibonacci([Range(1, 13)] int num)
     {

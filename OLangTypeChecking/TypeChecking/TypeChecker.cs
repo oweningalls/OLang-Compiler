@@ -230,6 +230,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         {
             throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.DeclaredType}", declarationStatement.Value.Span);
         }
+
+        if (type.Equals(PrimitiveTypes.VoidType))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot set variable to void value", declarationStatement.Span);
+        }
     
         declarationStatement.VariableType = typeHelper.TryGetLocalType(declarationStatement.DeclaredType!) ?? type;
         declarationStatement.Value = MaybeImplicitCast(declarationStatement.VariableType!.Value, declarationStatement.Value);
@@ -394,7 +399,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var argCount = methodInvocation.Arguments.Count;
         if (argCount != paramCount)
         {
-            throw ErrorHelper.ShowErrorMessage($"Function '{methodInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", methodInvocation.Span);
+            throw ErrorHelper.ShowErrorMessage($"Method '{methodInvocation.Identifier}' has {paramCount} parameters but is invoked with {argCount} arguments.", methodInvocation.Span);
         }
 
         for (var i = 0; i < methodInvocation.Arguments.Count; i++)
@@ -843,15 +848,31 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
+        enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
         var definedType = typeHelper.GetDefinedType(enumInstantiation.EnumName)!.Value;
         if (definedType.TypeVariant != TypeVariant.Enum)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
         }
-        
-        if (definedType.EnumVariants.All(x => x.Name != enumInstantiation.VariantName))
+
+        var variant = definedType.EnumVariants.Cast<DefinedEnumVariant?>().FirstOrDefault(x => x!.Value.Name == enumInstantiation.VariantName);
+        if (variant is not {} enumVariant)
         {
             throw ErrorHelper.ShowErrorMessage($"Enum `{enumInstantiation.EnumName}` does not contain a variant named `{enumInstantiation.VariantName}`.", enumInstantiation.Span);
+        }
+
+        var args = enumInstantiation.Arguments;
+        var paramTypes = enumVariant.Parameters;
+
+        if (args.Count != paramTypes.Count)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` expected {paramTypes.Count} arguments, found {args.Count}.", enumInstantiation.Span);
+        }
+        
+        var mismatch = args.Zip(paramTypes).Cast<(IExpression, DefinedType)?>().FirstOrDefault(x => !CanImplicitlyConvertTo(x!.Value.Item2, x.Value.Item1.Type!.Value));
+        if (mismatch is {} actualMismatch)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{actualMismatch.Item1.Type}` cannot implicitly convert to defined parameter of type `{actualMismatch.Item2}`.", actualMismatch.Item1.Span);
         }
         
         enumInstantiation.Type = definedType;
