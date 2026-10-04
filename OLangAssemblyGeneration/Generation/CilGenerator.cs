@@ -493,8 +493,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
         instantiation = (Instantiation)base.VisitInstantiation(instantiation);
-        var argumentTypes = instantiation.Arguments.Select(x => GetCsType(x.Type!.Value));
-        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor(argumentTypes.ToArray())! : _definedTypeConstructors[instantiation.Type.Value];
+        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
         _il.Emit(OpCodes.Newobj, method);
 
         return instantiation;

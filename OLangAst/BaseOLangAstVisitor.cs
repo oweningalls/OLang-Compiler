@@ -266,8 +266,6 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual IExpression VisitInstantiation(Instantiation instantiation)
     {
-        instantiation.Arguments = instantiation.Arguments.Select(VisitExpression).ToList();
-        
         return instantiation;
     }
     
