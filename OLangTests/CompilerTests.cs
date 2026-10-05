@@ -1129,7 +1129,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let helper = new Helper();
+                 let helper = new Helper{};
                  print helper.TestString();
              }
          }
@@ -1140,12 +1140,12 @@ public class CompilerTests
                  return "TestString";
              }
              
-             Helper Create() { Helper helper = new Helper(); return helper; }
+             Helper Create() { Helper helper = new Helper{}; return helper; }
          }
          
          static class Program {
              void Main() {
-                 let helper = new Helper();
+                 let helper = new Helper {};
                  helper = helper.Create();
                  print helper.TestString();
              }
@@ -1166,7 +1166,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let sb = new StringBuilder();
+                 let sb = new StringBuilder {};
                  sb.Append("Hello, ");
                  sb.Append("world!");
                  print sb.ToString();
@@ -1254,7 +1254,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new StringHolder();
+                 let holder = new StringHolder { Field = "" };
              }
          }
          """, ""),
@@ -1265,7 +1265,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new IntHolder();
+                 let holder = new IntHolder { Field = 0 };
                  
                  print holder.Field.ToString();
              }
@@ -1278,7 +1278,20 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new StringHolder();
+                 let holder = new StringHolder { Field = "original value" };
+                 
+                 print holder.Field;
+             }
+         }
+         """, "original value"),
+        ("""
+         class StringHolder {
+             string Field;
+         }
+         
+         static class Program {
+             void Main() {
+                 let holder = new StringHolder { Field = "OLD VALUE" };
                  holder.Field = "I got set!";
                  
                  print holder.Field;
@@ -1292,7 +1305,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new StringHolder();
+                 let holder = new StringHolder { Field = "" };
                  
                  for i in 0..9 {
                      holder.Field += i.ToString();
@@ -1310,7 +1323,7 @@ public class CompilerTests
          static class Program {
              void Main() {
                  let arr = new [StringHolder; 5];
-                 arr[1] = new StringHolder();
+                 arr[1] = new StringHolder { Field = "" };
                  arr[1].Field = "TEST";
                  
                  print arr[1].Field;
@@ -1350,11 +1363,9 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let ls = new IntStringList();
+                 let ls = new IntStringList { Arr = new [IntString; 0], length = 0, capacity = 0 };
                  for i in 0..5 {
-                     let val = new IntString();
-                     val.IntField = i;
-                     val.StringField = i.ToString();
+                     let val = new IntString { IntField = i, StringField = i.ToString() };
                      ls.Add(val);
                  }
                  
@@ -1367,13 +1378,13 @@ public class CompilerTests
              string Field;
              
              StringHolder Make() {
-                 return new StringHolder();
+                 return new StringHolder { Field = "" };
              }
          }
          
          static class Program {
              void Main() {
-                 let holder = new StringHolder();
+                 let holder = new StringHolder {Field = "" };
                  holder.Field = "1";
                  holder = holder.Make();
                  holder.Field = "2";
@@ -1468,8 +1479,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new TestEnumHolder();
-                 holder.Val = EnumWithVariants::Var1;
+                 let holder = new TestEnumHolder { Val = EnumWithVariants::Var1 };
              }
          }
          """, ""),
@@ -1639,6 +1649,10 @@ public class CompilerTests
     [TestCase("enum Test { Val(int) }", "let a = Test::Val;")]
     [TestCase("enum Test { Val(FakeType) }", "")]
     [TestCase("enum Test { Val(int) }", "let a = Test::Val(1.0);")]
+    [TestCase("class HasField { int Field }", "let a = new HasField {};")]
+    [TestCase("class HasField { int Field }", "let a = new HasField { FakeField = 1 };")]
+    [TestCase("class HasField { int Field }", "let a = new HasField {Field = \"string value\"};")]
+    [TestCase("class HasField { int Field }", "let a = new HasField { Field = 1, Field = 1 };")]
     public void TestFullInvalidPrograms(string typeDefinitions, string mainBody)
     {
         var program =

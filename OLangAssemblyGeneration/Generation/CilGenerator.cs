@@ -255,11 +255,18 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
     {
-        fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
-        var field = GetField(GetCsType(fieldAssignment.Target.Type!.Value), fieldAssignment.Identifier);
-        _il.Emit(OpCodes.Stfld, field);
+        fieldAssignment.Target = VisitExpression(fieldAssignment.Target);
+        EmitFieldAssignment(GetCsType(fieldAssignment.Target.Type!.Value), fieldAssignment.Value, fieldAssignment.Identifier);
 
         return fieldAssignment;
+    }
+
+    private void EmitFieldAssignment(Type targetType, IExpression value, string identifier)
+    {
+        value = VisitExpression(value);
+        
+       var field = GetField(targetType, identifier); 
+        _il.Emit(OpCodes.Stfld, field);
     }
 
     protected override IfStatement VisitIfStatement(IfStatement ifStatement)
@@ -492,9 +499,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        instantiation = (Instantiation)base.VisitInstantiation(instantiation);
-        var method = instantiation.Type!.Value.IsCs ? GetCsType(instantiation.Type!.Value).GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
+        var type = GetCsType(instantiation.Type!.Value);
+        var method = instantiation.Type!.Value.IsCs ? type.GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
         _il.Emit(OpCodes.Newobj, method);
+        foreach (var field in instantiation.Type!.Value.Fields.Keys)
+        {
+            _il.Emit(OpCodes.Dup);
+            EmitFieldAssignment(type, instantiation.FieldInitializations[field], field);
+        }
 
         return instantiation;
     }
@@ -815,7 +827,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     private void DefineFields(List<DefinedType> classes, List<TypeBuilder> types)
     {
-        classes.Zip(types).SelectMany(x => x.First.Fields.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method));
+        classes.Zip(types).SelectMany(x => x.First.Fields.Values.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method));
     }
 
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)

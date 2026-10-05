@@ -101,7 +101,7 @@ public class TypeHelper(IErrorHelper errorHelper)
     public void CreateCustomField(DefinedType customType, FieldDeclaration fieldDeclaration)
     {
         CheckForExistingMember(customType, fieldDeclaration.Identifier, fieldDeclaration.Span);
-        customType.Fields.Add(new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
+        customType.Fields.Add(fieldDeclaration.Identifier, new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
     }
 
     private void CheckForExistingMember(DefinedType type, string memberName, SourceSpan span)
@@ -112,7 +112,7 @@ public class TypeHelper(IErrorHelper errorHelper)
             throw errorHelper.ShowErrorMessage(errorMessage, span);
         }
         
-        if (type.Fields.Any(x => x.Name == memberName))
+        if (type.Fields.ContainsKey(memberName))
         {
             throw errorHelper.ShowErrorMessage(errorMessage, span);
         }

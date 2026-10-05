@@ -1,4 +1,5 @@
 ﻿using ErrorHelper;
+using Lexing;
 using OLangAst.Expressions;
 using OLangAst.Miscellaneous;
 using OLangAst.Statements;
@@ -14,8 +15,10 @@ using OLangGrammar.ParseTree.EnumVariant;
 using OLangGrammar.ParseTree.EnumVariantList;
 using OLangGrammar.ParseTree.EqualityExpression;
 using OLangGrammar.ParseTree.Expression;
+using OLangGrammar.ParseTree.FieldInitialization;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.InitializationList;
 using OLangGrammar.ParseTree.MethodInvocation;
 using OLangGrammar.ParseTree.MultExpression;
 using OLangGrammar.ParseTree.ParameterList;
@@ -403,7 +406,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
             CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
-            ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier)) { Span = instantiationTerm.Span },
+            ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
+            ClassInstantiationTermWithInitializers instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseInitializerList(instantiationTerm.InitializationList)) { Span = instantiationTerm.Span },
             ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(ParseType(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)),
             CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)),
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
@@ -411,6 +415,43 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []),
             EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)),
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
+        };
+    }
+
+    private Dictionary<string, IExpression> ParseInitializerList(IInitializationList initializationList)
+    {
+        var list = ParseList(
+            initializationList,
+            x => x switch
+            {
+                ContinuedInitializationList continuedInitializationList => (continuedInitializationList.FieldInitialization, continuedInitializationList.InitializationList),
+                SingleFieldInitializationList singleFieldInitializationList => (singleFieldInitializationList.fieldInitialization, null),
+                _ => throw errorHelper.UnknownVariant("initializer list", x.GetType())
+            },
+            ParseFieldInitialization
+        );
+
+        var dict = new Dictionary<string, IExpression>();
+
+        foreach (var initialization in list)
+        {
+            if (dict.ContainsKey(initialization.name))
+            {
+                throw errorHelper.ShowErrorMessage($"Member `{initialization.name}` was initialized twice. Each member must be initialized exactly once.", initialization.span);
+            }
+
+            dict[initialization.name] = initialization.value;
+        }
+
+        return dict;
+    }
+
+    private (string name, IExpression value, SourceSpan span) ParseFieldInitialization(IFieldInitialization fieldInitialization)
+    {
+        return fieldInitialization switch
+        {
+            FieldInitialization fieldInitialization1 => (ParseIdentifier(fieldInitialization1.FieldName), ParseExpression(fieldInitialization1.Value), fieldInitialization1.Span),
+            _ => throw errorHelper.UnknownVariant("field initialization", fieldInitialization.GetType())
         };
     }
 

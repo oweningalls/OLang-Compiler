@@ -266,6 +266,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual IExpression VisitInstantiation(Instantiation instantiation)
     {
+        foreach (var (fieldName, value) in instantiation.FieldInitializations)
+        {
+            instantiation.FieldInitializations[fieldName] = VisitExpression(value);
+        }
+        
         return instantiation;
     }
     

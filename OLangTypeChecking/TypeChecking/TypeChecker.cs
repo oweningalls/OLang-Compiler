@@ -133,7 +133,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 assignmentStatement.Span);
         }
         
-        if (_currentClass!.Value.Fields.Any(x => x.Name == assignmentStatement.Identifier))
+        if (_currentClass!.Value.Fields.ContainsKey(assignmentStatement.Identifier))
         {
             var thisAccess = new ThisAccess();
             thisAccess = (ThisAccess)VisitThisAccess(thisAccess);
@@ -175,9 +175,8 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
         var targetType = fieldAssignment.Target.Type!.Value;
-        var fieldType = targetType.Fields.Cast<FieldDefinition?>().SingleOrDefault(x => x!.Value.Name == fieldAssignment.Identifier)?.Type;
 
-        if (fieldType is not null)
+        if (targetType.Fields.TryGetValue(fieldAssignment.Identifier, out _))
         {
             return fieldAssignment;
         }
@@ -714,7 +713,29 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        instantiation.Type = typeHelper.GetDefinedType(instantiation.ClassName) ?? throw ErrorHelper.ShowErrorMessage($"Unrecognized type `{instantiation.ClassName}`.", instantiation.Span);
+        var type = typeHelper.GetDefinedType(instantiation.ClassName) ?? throw ErrorHelper.ShowErrorMessage($"Unrecognized type `{instantiation.ClassName}`.", instantiation.Span);
+        instantiation.Type = type;
+        instantiation = (Instantiation)base.VisitInstantiation(instantiation);
+
+        var missingInitializations = type.Fields.Keys.Except(instantiation.FieldInitializations.Select(x => x.Key));
+
+        if (missingInitializations.FirstOrDefault() is { } missingField)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Member `{missingField}` on type `{type}` was not initialized.", instantiation.Span);
+        }
+        
+        foreach (var (fieldName, value) in instantiation.FieldInitializations)
+        {
+            if (!type.Fields.TryGetValue(fieldName, out var field))
+            {
+                throw ErrorHelper.ShowErrorMessage($"Class `{type.Name}` does not have a field named `{field}`.", value.Span);
+            }
+
+            if (!CanImplicitlyConvertTo(field.Type, value.Type!.Value))
+            {
+                throw ErrorHelper.ShowErrorMessage($"Expression of type `{value.Type!.Value}` cannot implicitly convert to type `{field.Type}`", value.Span);
+            }
+        }
 
         return instantiation;
     }
@@ -746,11 +767,10 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
 
         var type = fieldAccess.Expression.Type;
-        var fieldType = type!.Value.Fields.Cast<FieldDefinition?>().SingleOrDefault(x => x!.Value.Name == fieldAccess.FieldName)?.Type;
 
-        if (fieldType is { } valueType)
+        if (type!.Value.Fields.TryGetValue(fieldAccess.FieldName, out var fieldType))
         {
-            fieldAccess.Type = valueType;
+            fieldAccess.Type = fieldType.Type;
 
             return fieldAccess;
         }
@@ -807,9 +827,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return _variableTypeStack.GetValue(identifier);
         }
         
-        if (_currentClass!.Value.Fields.Any(x => x.Name == identifier))
+        if (_currentClass!.Value.Fields.TryGetValue(identifier, out var field))
         {
-            return _currentClass!.Value.Fields.First(x => x.Name == identifier).Type;
+            return field.Type;
         }
         
         throw ErrorHelper.ShowErrorMessage($"Unknown identifier '{identifier}'", span);
@@ -825,9 +845,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return variableAccess;
         }
         
-        if (_currentClass!.Value.Fields.Any(x => x.Name == variableAccess.Identifier))
+        if (_currentClass!.Value.Fields.TryGetValue(variableAccess.Identifier, out var field))
         {
-            var type = _currentClass!.Value.Fields.First(x => x.Name == variableAccess.Identifier).Type;
+            var type = field.Type;
             variableAccess.Type = type;
 
             var fieldAccess = new FieldAccess(new ThisAccess { Span = variableAccess.Span, Type = _currentClass!.Value }, variableAccess.Identifier) { Span = variableAccess.Span };
@@ -868,12 +888,17 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         {
             throw ErrorHelper.ShowErrorMessage($"Enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` expected {paramTypes.Count} arguments, found {args.Count}.", enumInstantiation.Span);
         }
-        
-        var mismatch = args.Zip(paramTypes).Cast<(IExpression, DefinedType)?>().FirstOrDefault(x => !CanImplicitlyConvertTo(x!.Value.Item2, x.Value.Item1.Type!.Value));
-        if (mismatch is {} actualMismatch)
-        {
-            throw ErrorHelper.ShowErrorMessage($"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{actualMismatch.Item1.Type}` cannot implicitly convert to defined parameter of type `{actualMismatch.Item2}`.", actualMismatch.Item1.Span);
-        }
+
+        enumInstantiation.Arguments = args.Zip(paramTypes)
+            .Select(x => CastIfImplicitOrThrow
+                (
+                    x.Second,
+                    x.First,
+                    $"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{x.First.Type!.Value}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
+                    x.First.Span
+                )
+            )
+            .ToList();
         
         enumInstantiation.Type = definedType;
 
