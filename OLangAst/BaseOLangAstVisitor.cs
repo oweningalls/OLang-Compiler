@@ -308,6 +308,19 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return enumInstantiation;
     }
 
+    protected virtual IExpression VisitMatchExpression(MatchExpression matchExpression)
+    {
+        matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
+        matchExpression.MatchArms = matchExpression.MatchArms.Select(VisitMatchArm).ToList();
+
+        return matchExpression;
+    }
+
+    protected virtual MatchArm VisitMatchArm(MatchArm matchArm)
+    {
+        return matchArm;
+    }
+
     protected virtual Scope VisitScope(Scope scopeNode)
     {
         scopeNode.Statements = VisitStatements(scopeNode.Statements);
@@ -347,6 +360,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             FieldAccess arrayAccess => VisitFieldAccess(arrayAccess),
             ThisAccess thisAccess => VisitThisAccess(thisAccess),
             EnumInstantiation enumInstantiation => VisitEnumInstantiation(enumInstantiation),
+            MatchExpression matchExpression => VisitMatchExpression(matchExpression),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

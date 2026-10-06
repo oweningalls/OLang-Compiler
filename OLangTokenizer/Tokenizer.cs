@@ -141,14 +141,14 @@ public class Tokenizer
             return MakeStringLiteralToken();
         }
 
-        if (TryParseEqualsToken() is { } token)
-        {
-            return token;
-        }
-
         if (TryParseOperator() is { } op)
         {
             return op;
+        }
+
+        if (TryParseEqualsToken() is { } token)
+        {
+            return token;
         }
 
         throw new Exception($"Unexpected character: `{Peek()}`");
@@ -276,6 +276,7 @@ public class Tokenizer
         { "new", () => new NewToken() },
         { "using", () => new UsingToken() },
         { "enum", () => new EnumToken() },
+        { "match", () => new MatchToken() },
     };
 
     private BaseToken? TryParseOperator()
@@ -314,6 +315,7 @@ public class Tokenizer
         { "&&", () => new BooleanAndToken() },
         { "||", () => new BooleanOrToken() },
         { "::", () => new DoubleColonToken() },
+        { "=>", () => new ArrowToken() },
     };
 
     private string? _input;

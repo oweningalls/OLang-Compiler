@@ -1567,6 +1567,58 @@ public class CompilerTests
         TestProgramConsoleOutput(values, false);
     }
     
+    public static readonly List<(string, string)> MatchPrograms =
+    [
+        ("""
+         enum TestEnum {
+             Var1,
+             Var2,
+             Var3
+         }
+         
+         static class Program {
+             void Main() {
+                 let value = TestEnum::Var2;
+                 
+                 let matched = match value {
+                     TestEnum::Var1 => 1,
+                     TestEnum::Var2 => 2,
+                     TestEnum::Var3 => 3
+                 };
+                 
+                 print matched.ToString();
+             }
+         }
+         """, "2"),
+        ("""
+         enum TestEnum {
+             Var1,
+             Var2,
+             Var3
+         }
+         
+         static class Program {
+             void Main() {
+                 let value = TestEnum::Var2;
+                 
+                 let matched = match value {
+                     TestEnum::Var1 => 1,
+                     TestEnum::Var2 => 2.5,
+                     TestEnum::Var3 => 3
+                 };
+                 
+                 print matched.ToString();
+             }
+         }
+         """, "2.5"),
+    ];
+    
+    [TestCaseSource(nameof(MatchPrograms))]
+    public void MatchTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;

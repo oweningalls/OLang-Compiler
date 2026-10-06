@@ -875,11 +875,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
         }
 
-        var variant = definedType.EnumVariants.Cast<DefinedEnumVariant?>().FirstOrDefault(x => x!.Value.Name == enumInstantiation.VariantName);
-        if (variant is not {} enumVariant)
-        {
-            throw ErrorHelper.ShowErrorMessage($"Enum `{enumInstantiation.EnumName}` does not contain a variant named `{enumInstantiation.VariantName}`.", enumInstantiation.Span);
-        }
+        var enumVariant = CheckEnumVariantExists(enumInstantiation.VariantName, definedType, enumInstantiation.Span);
 
         var args = enumInstantiation.Arguments;
         var paramTypes = enumVariant.Parameters;
@@ -903,6 +899,76 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         enumInstantiation.Type = definedType;
 
         return enumInstantiation;
+    }
+
+    private DefinedEnumVariant CheckEnumVariantExists(string variantName, DefinedType definedType, SourceSpan span)
+    {
+        var variant = definedType.EnumVariants.Cast<DefinedEnumVariant?>().FirstOrDefault(x => x!.Value.Name == variantName);
+        if (variant is not {} enumVariant)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Enum `{definedType.Name}` does not contain a variant named `{variantName}`.", span);
+        }
+
+        return enumVariant;
+    }
+
+    protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
+    {
+        matchExpression = (MatchExpression)base.VisitMatchExpression(matchExpression);
+
+        var matchTargetType = matchExpression.MatchTarget.Type!.Value;
+        if (matchTargetType.TypeVariant != TypeVariant.Enum)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot match expression of non-enum type `{matchTargetType}`.", matchExpression.MatchTarget.Span);
+        }
+
+        foreach (var arm in matchExpression.MatchArms)
+        {
+            var enumVariant = CheckEnumVariantExists(arm.VariantName, matchTargetType, arm.Span);
+        }
+
+        matchExpression.Type = GetCommonType(matchExpression.MatchArms.Select(x => x.Value.Type!.Value));
+        if (matchExpression.Type is not {} commonType)
+        {
+            throw ErrorHelper.ShowErrorMessage("Not all branches of match expression can implicitly convert to a common type.", matchExpression.Span);
+        }
+
+        matchExpression.MatchArms.ForEach(x => x.Value = MaybeImplicitCast(commonType, x.Value));
+        
+        return matchExpression;
+    }
+
+    private DefinedType? GetCommonType(IEnumerable<DefinedType> types)
+    {
+        DefinedType? matchExpressionType = null;
+        foreach (var type in types)
+        {
+            if (matchExpressionType is not {} currentType)
+            {
+                matchExpressionType = type;
+                continue;
+            }
+
+            if (currentType.Equals(type) || CanImplicitlyConvertTo(currentType, type))
+            {
+                continue;
+            }
+            
+            if (CanImplicitlyConvertTo(type, currentType))
+            {
+                matchExpressionType = type;
+                continue;
+            }
+
+            return null;
+        }
+
+        return matchExpressionType;
+    }
+
+    protected override MatchArm VisitMatchArm(MatchArm matchArm)
+    {
+        return matchArm;
     }
 
     private int? GetMathTypePrecedence(DefinedType type)

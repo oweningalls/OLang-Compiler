@@ -15,6 +15,8 @@ using OLangGrammar.ParseTree.FieldInitialization;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
 using OLangGrammar.ParseTree.InitializationList;
+using OLangGrammar.ParseTree.MatchArm;
+using OLangGrammar.ParseTree.MatchArmList;
 using OLangGrammar.ParseTree.MethodInvocation;
 using OLangGrammar.ParseTree.MultExpression;
 using OLangGrammar.ParseTree.ParameterList;
@@ -200,6 +202,14 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
         GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
         GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new EnumVariantInstantiationWithArguments(enumName, variantName, argumentList)),
+        GrammarRule.Create((MatchToken _, IExpression matchTarget, LeftCurlyToken _,  IMatchArmList matchArmList, RightCurlyToken _) => new MatchTerm(matchTarget, matchArmList)),
+        
+        // MatchArmList
+        GrammarRule.Create((IMatchArm matchArm) => new SingleMatchMatchArmList(matchArm)),
+        GrammarRule.Create((IMatchArm matchArm, CommaToken _, IMatchArmList matchArmList) => new ContinuedMatchMatchArmList(matchArm, matchArmList)),
+        
+        // MatchArm
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, ArrowToken _, IExpression value) => new MatchArm(enumName, variantName, value)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

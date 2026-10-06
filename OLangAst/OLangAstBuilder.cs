@@ -19,6 +19,8 @@ using OLangGrammar.ParseTree.FieldInitialization;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
 using OLangGrammar.ParseTree.InitializationList;
+using OLangGrammar.ParseTree.MatchArm;
+using OLangGrammar.ParseTree.MatchArmList;
 using OLangGrammar.ParseTree.MethodInvocation;
 using OLangGrammar.ParseTree.MultExpression;
 using OLangGrammar.ParseTree.ParameterList;
@@ -56,6 +58,7 @@ using IClassMember = OLangAst.ClassMembers.IClassMember;
 using MethodDeclaration = OLangAst.ClassMembers.MethodDeclaration;
 using FieldDeclaration = OLangAst.ClassMembers.FieldDeclaration;
 using ITypeDeclaration = OLangAst.TypeSystem.ITypeDeclaration;
+using MatchArm = OLangAst.Expressions.MatchArm;
 
 namespace OLangAst;
 
@@ -83,7 +86,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return usingStatement switch
         {
-            OLangGrammar.UsingStatement.UsingStatement usingStatement1 => new UsingStatement(ParseUsingStatementIdentifier(usingStatement1.UsingStatementIdentifier)),
+            OLangGrammar.UsingStatement.UsingStatement usingStatement1 => new UsingStatement(ParseUsingStatementIdentifier(usingStatement1.UsingStatementIdentifier)) { Span = usingStatement1.Span },
             _ => throw errorHelper.UnknownVariant("class list", usingStatement.GetType())
         };
     }
@@ -179,8 +182,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return enumVariant switch
         {
-            OLangGrammar.ParseTree.EnumVariant.EnumVariant enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), []),
-            EnumVariantWithValues enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), ParseEnumVariantValueList(enumVariant1.ValueList)),
+            OLangGrammar.ParseTree.EnumVariant.EnumVariant enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), []) { Span = enumVariant1.Span },
+            EnumVariantWithValues enumVariant1 => new EnumVariant(ParseIdentifier(enumVariant1.Identifier), ParseEnumVariantValueList(enumVariant1.ValueList)) { Span = enumVariant1.Span },
             _ => throw errorHelper.UnknownVariant("enum variant", enumVariant.GetType())
         };
     }
@@ -261,10 +264,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         var value = assignment.Operator switch
         {
             Equals _ => parsedExpression,
-            PlusEquals => new Add(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
-            MinusEquals => new Subtract(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
-            TimesEquals => new Multiply(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
-            DivideEquals => new Divide(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression),
+            PlusEquals => new Add(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression) { Span = assignment.Span },
+            MinusEquals => new Subtract(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression) { Span = assignment.Span },
+            TimesEquals => new Multiply(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression) { Span = assignment.Span },
+            DivideEquals => new Divide(new VariableAccess(identifier) { Span = assignment.Identifier.Span }, parsedExpression) { Span = assignment.Span },
             _ => throw errorHelper.UnknownVariant("assignment operator", assignment.Operator.GetType())
         };
 
@@ -280,10 +283,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         var value = assignmentStatement.AssignmentOperator switch
         {
             Equals _ => declaredValue,
-            PlusEquals => new Add(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
-            MinusEquals => new Subtract(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
-            TimesEquals => new Multiply(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
-            DivideEquals => new Divide(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue),
+            PlusEquals => new Add(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            MinusEquals => new Subtract(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            TimesEquals => new Multiply(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            DivideEquals => new Divide(new ArrayAccess(array, index) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
             _ => throw errorHelper.UnknownVariant("assignment operator", assignmentStatement.AssignmentOperator.GetType())
         };
         return new ArrayAssignment(array, index, value) { Span = assignmentStatement.Span};
@@ -297,10 +300,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         var value = assignmentStatement.AssignmentOperator switch
         {
             Equals _ => declaredValue,
-            PlusEquals => new Add(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
-            MinusEquals => new Subtract(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
-            TimesEquals => new Multiply(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
-            DivideEquals => new Divide(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue),
+            PlusEquals => new Add(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            MinusEquals => new Subtract(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            TimesEquals => new Multiply(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
+            DivideEquals => new Divide(new FieldAccess(target, identifier) { Span = assignmentStatement.Span }, declaredValue) { Span = assignmentStatement.Span },
             _ => throw errorHelper.UnknownVariant("assignment operator", assignmentStatement.AssignmentOperator.GetType())
         };
         return new FieldAssignment(target, ParseIdentifier(assignmentStatement.Identifier), value) { Span = assignmentStatement.Span};
@@ -405,16 +408,40 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             MethodInvocationTerm methodInvocationTerm => ParseMethodInvocation(methodInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
-            CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)),
+            CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)) { Span = castTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTermWithInitializers instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseInitializerList(instantiationTerm.InitializationList)) { Span = instantiationTerm.Span },
-            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(ParseType(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)),
-            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)),
-            ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)),
-            OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)),
-            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []),
-            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)),
+            ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(ParseType(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)) { Span = instantiationTerm.Span },
+            CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)) { Span = instantiationTerm.Span },
+            ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)) { Span = arrayAccessTerm.Span },
+            OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)) { Span = fieldAccess.Span },
+            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
+            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
+            MatchTerm matchTerm => new MatchExpression(ParseExpression(matchTerm.MatchTarget), ParseMatchArmList(matchTerm.MatchArmList)) { Span = matchTerm.Span },
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
+        };
+    }
+
+    private List<MatchArm> ParseMatchArmList(IMatchArmList matchArmList)
+    {
+        return ParseList(
+            matchArmList,
+            x => x switch
+            {
+                ContinuedMatchMatchArmList continuedMatchMatchArmList => (continuedMatchMatchArmList.MatchArm, continuedMatchMatchArmList.MatchArmList),
+                SingleMatchMatchArmList singleMatchMatchArmList => (singleMatchMatchArmList.MatchArm, null),
+                _ => throw errorHelper.UnknownVariant("match arm", x.GetType())
+            },
+            ParseMatchArm
+        );
+    }
+
+    private MatchArm ParseMatchArm(IMatchArm matchArm)
+    {
+        return matchArm switch
+        {
+            OLangGrammar.ParseTree.MatchArm.MatchArm matchArm1 => new MatchArm(ParseIdentifier(matchArm1.EnumName), ParseIdentifier(matchArm1.VariantName), ParseExpression(matchArm1.Value)) { Span = matchArm1.Span },
+            _ => throw new ArgumentOutOfRangeException(nameof(matchArm))
         };
     }
 
@@ -464,8 +491,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             FloatType floatType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.Float) { Span = floatType.Span },
             StringType stringType => new PrimitiveVariableType(PrimitiveVariableTypeEnum.String) { Span = stringType.Span },
             NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier)) { Span = customType.Span },
-            OLangGrammar.ParseTree.Type.ArrayType arrayType => new ArrayType(ParseType(arrayType.InnerType)),
-            CustomArrayType arrayType => new ArrayType(new CustomType(ParseIdentifier(arrayType.InnerType))),
+            OLangGrammar.ParseTree.Type.ArrayType arrayType => new ArrayType(ParseType(arrayType.InnerType)) { Span = arrayType.Span },
+            CustomArrayType arrayType => new ArrayType(new CustomType(ParseIdentifier(arrayType.InnerType))) { Span = arrayType.Span },
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }

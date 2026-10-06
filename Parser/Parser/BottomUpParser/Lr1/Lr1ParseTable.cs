@@ -205,7 +205,13 @@ public class Lr1ParseTable : ILrParseTable
         {
             throw _errorHelper.ShowErrorMessageAtElement("Parsing error: unexpected end of input.", next);
         }
-        throw _errorHelper.ShowErrorMessageAtElement("Parsing error: unexpected token", next);
+        
+        throw _errorHelper.ShowErrorMessageAtElement(GetUnexpectedTokenMessage(state, next), next);
+    }
+
+    private string GetUnexpectedTokenMessage(int state, IGrammarElement element)
+    {
+        return $"Parsing error: unexpected token. Expected one of ({string.Join(", ", _transitions[state].Keys.Select(x => x.ToString()).Concat(_states[state].Select(x => x.GetLookAhead().ToString())).Take(3))}) but found {element}.";
     }
 
     private class AugmentStartSymbol(INode program) : INode
