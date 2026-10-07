@@ -144,6 +144,29 @@ public class GrammarRule : BaseGrammarRule
         );
     }
 
+    public static GrammarRule Create<TNode, T1, T2, T3, T4, T5, T6, T7, T8>(Func<T1, T2, T3, T4, T5, T6, T7, T8, TNode> reduce)
+        where T1 : IGrammarElement
+        where T2 : IGrammarElement
+        where T3 : IGrammarElement
+        where T4 : IGrammarElement
+        where T5 : IGrammarElement
+        where T6 : IGrammarElement
+        where T7 : IGrammarElement
+        where T8 : IGrammarElement
+        where TNode : INode
+    {
+        return new GrammarRule(
+            x =>
+            {
+                var node = reduce((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6], (T8)x[7]);
+                node.Span = CombineNodeSourceSpans((T1)x[0], (T2)x[1], (T3)x[2], (T4)x[3], (T5)x[4], (T6)x[5], (T7)x[6], (T8)x[7]);
+
+                return node;
+            },
+            GetInterface(typeof(TNode)), typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7), typeof(T8)
+        );
+    }
+
     private static SourceSpan CombineNodeSourceSpans(params IGrammarElement[] elements)
     {
         return SourceSpan.CombineSpans(elements.Select(x => x.Span).ToArray());

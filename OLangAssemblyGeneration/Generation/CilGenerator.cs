@@ -13,7 +13,6 @@ using OLangAst.Miscellaneous;
 using OLangAst.Statements;
 using OLangAst.TypeSystem;
 using OLangHelpers;
-using FieldDefinition = OLangAst.TypeSystem.FieldDefinition;
 
 namespace AssemblyGeneration.Generation;
 
@@ -43,6 +42,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         
         var classes = DefineClasses(definedClasses);
         var enums = DefineEnums(definedEnums);
+        DefineEnumVariants(definedEnums);
         DefineMethods(definedClasses, classes);
         DefineFields(definedClasses, classes);
         
@@ -196,6 +196,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
+        enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
         var enumType = GetCsType(enumInstantiation.Type!.Value);
         var constructor = _enumVariantConstructors[enumType][enumInstantiation.VariantName];
         
@@ -670,8 +671,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
     {
         matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
-        var local = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!.Value));
-        _il.Emit(OpCodes.Stloc, local);
+        var matchTargetLocal = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!.Value));
+        _il.Emit(OpCodes.Stloc, matchTargetLocal);
 
         var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName)!.Value);
         var enumVariants = _enumVariants[enumBaseCsType];
@@ -679,15 +680,33 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var exitLabel = _il.DefineLabel();
         foreach (var matchArm in matchExpression.MatchArms)
         {
+            var enumVariant = matchExpression.MatchTarget.Type!.Value.EnumVariants[matchArm.VariantName];
             var variantCsType = enumVariants[matchArm.VariantName];
-            _il.Emit(OpCodes.Ldloc, local);
+            _il.Emit(OpCodes.Ldloc, matchTargetLocal);
             _il.Emit(OpCodes.Isinst, variantCsType);
             _il.Emit(OpCodes.Ldnull);
             _il.Emit(OpCodes.Cgt_Un);
             
             var label = _il.DefineLabel();
             _il.Emit(OpCodes.Brfalse, label);
+            
+            BeginScope();
+            foreach (var ((index, variable), type) in matchArm.DestructureVariables.Index().Zip(enumVariant.Parameters))
+            {
+                var local = _il.DeclareLocal(GetCsType(type));
+                _variableTracker.SetValue(variable, local);
+                
+                _il.Emit(OpCodes.Ldloc, matchTargetLocal);
+                _il.Emit(OpCodes.Isinst, variantCsType);
+                var field = GetField(_enumVariants[enumBaseCsType][matchArm.VariantName], GetEnumField(index));
+                _il.Emit(OpCodes.Ldfld, field);
+                
+                EmitLocalSet(variable);
+            }
+
             VisitExpression(matchArm.Value);
+            EndScope();
+            
             _il.Emit(OpCodes.Br, exitLabel);
             EmitLabel(label);
         }
@@ -711,7 +730,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         {
             _il.Emit(OpCodes.Ldarg, _parameterTracker.GetValue(variableName));
         }
-
         else if (_variableTracker.ContainsKey(variableName))
         {
             _il.Emit(OpCodes.Ldloc, _variableTracker.GetValue(variableName));
@@ -826,17 +844,53 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _enumVariants[typeBuilder] = [];
         _enumVariantConstructors[typeBuilder] = [];
 
-        attributes = TypeAttributes.Public | TypeAttributes.Sealed;
-        foreach (var variant in type.EnumVariants)
-        {
-            var variantBuilder = _moduleBuilder.DefineType(variant.Name, attributes, typeBuilder);
-            _enumVariants[typeBuilder][variant.Name] = variantBuilder;
-            _enumVariantConstructors[typeBuilder][variant.Name] = variantBuilder.DefineDefaultConstructor(MethodAttributes.Public);
-        }
-        
         return typeBuilder;
     }
-    
+
+    private void DefineEnumVariants(IEnumerable<DefinedType> enums)
+    {
+        foreach (var enumType in enums)
+        {
+            var builder = _definedTypes[enumType];
+            foreach (var variant in enumType.EnumVariants.Values)
+            {
+                MakeEnumVariant(variant, builder);
+            }
+        }
+    }
+
+    private void MakeEnumVariant(DefinedEnumVariant variant, TypeBuilder enumBaseClass)
+    {
+        var variantBuilder = _moduleBuilder.DefineType(variant.Name, TypeAttributes.Public | TypeAttributes.Sealed, enumBaseClass);
+        
+        _enumVariants[enumBaseClass][variant.Name] = variantBuilder;
+
+        if (!variant.Parameters.Any())
+        {
+            _enumVariantConstructors[enumBaseClass][variant.Name] = variantBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+            return;
+        }
+        
+        var constructorBuilder = variantBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, variant.Parameters.Select(GetCsType).ToArray());
+        var constructorGenerator = constructorBuilder.GetILGenerator();
+        
+        for (var i = 0; i < variant.Parameters.Count; i++)
+        {
+            var field = DefineField(variantBuilder, GetEnumField(i), variant.Parameters[i]);
+            constructorGenerator.Emit(OpCodes.Ldarg_0);
+            constructorGenerator.Emit(OpCodes.Ldarg, i + 1);
+            constructorGenerator.Emit(OpCodes.Stfld, field);
+        }
+        constructorGenerator.Emit(OpCodes.Ret);
+        
+        _enumVariantConstructors[enumBaseClass][variant.Name] = constructorBuilder;
+    }
+
+    private string GetEnumField(int index)
+    {
+        return $"_{index}";
+    }
+
     private TypeBuilder DefineClass(DefinedType type)
     {
         var attributes = TypeAttributes.Public;
@@ -859,7 +913,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     private void DefineFields(List<DefinedType> classes, List<TypeBuilder> types)
     {
-        classes.Zip(types).SelectMany(x => x.First.Fields.Values.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method));
+        classes.Zip(types).SelectMany(x => x.First.Fields.Values.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method.Name, x.method.Type));
     }
 
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
@@ -879,17 +933,19 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _definedMethods[type][definition.Name] = method;
     }
 
-    private void DefineField(TypeBuilder type, FieldDefinition field)
+    private FieldBuilder DefineField(TypeBuilder type, string fieldName, DefinedType fieldType)
     {
         var attributes = FieldAttributes.Public;
-        var defined = type.DefineField(field.Name, GetCsType(field.Type), attributes);
+        var defined = type.DefineField(fieldName, GetCsType(fieldType), attributes);
         
         if (!_definedFields.ContainsKey(type))
         {
             _definedFields[type] = new Dictionary<string, FieldBuilder>(1);
         }
         
-        _definedFields[type][field.Name] = defined;
+        _definedFields[type][fieldName] = defined;
+
+        return defined;
     }
 
     private MethodInfo GetMethod(Type type, string name, IEnumerable<Type> argumentTypes)

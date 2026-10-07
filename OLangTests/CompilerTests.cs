@@ -1626,6 +1626,27 @@ public class CompilerTests
              }
          }
          """, "3.5"),
+        ("""
+         enum TestEnum {
+             Var1,
+             Var2(int, string),
+             Var3(bool, float, int)
+         }
+         
+         static class Program {
+             void Main() {
+                 let value = TestEnum::Var2(1234, "hello");
+                 
+                 let matched = match value {
+                     TestEnum::Var1 => "1",
+                     TestEnum::Var2(intVal, stringVal) => intVal.ToString() + stringVal,
+                     TestEnum::Var3(boolVal, floatVal, intVal) => boolVal.ToString() + floatVal.ToString() + intVal.ToString()
+                 };
+                 
+                 print matched.ToString();
+             }
+         }
+         """, "1234hello"),
     ];
     
     [TestCaseSource(nameof(MatchPrograms))]

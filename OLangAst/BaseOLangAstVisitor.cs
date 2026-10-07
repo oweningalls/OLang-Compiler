@@ -318,6 +318,8 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual MatchArm VisitMatchArm(MatchArm matchArm)
     {
+        matchArm.Value = VisitExpression(matchArm.Value);
+        
         return matchArm;
     }
 

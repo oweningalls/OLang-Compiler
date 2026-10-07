@@ -7,7 +7,7 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
 {
     public string Name = name;
     public TypeVariant TypeVariant = typeVariant;
-    public List<DefinedEnumVariant> EnumVariants = [];
+    public Dictionary<string, DefinedEnumVariant> EnumVariants = [];
     public List<FunctionDefinition> Methods = [];
     public Dictionary<string, FieldDefinition> Fields = [];
     public bool IsCs = isCs;

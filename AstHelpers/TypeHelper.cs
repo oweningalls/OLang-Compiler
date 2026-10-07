@@ -85,14 +85,14 @@ public class TypeHelper(IErrorHelper errorHelper)
         CheckForExistingEnumVariant(customType, enumVariant.Name, enumVariant.Span);
 
         var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name, enumVariant.Values.Select(GetLocalType).ToList());
-        customType.EnumVariants.Add(definedEnumVariant);
+        customType.EnumVariants.Add(enumVariant.Name, definedEnumVariant);
 
         return definedEnumVariant;
     }
 
     private void CheckForExistingEnumVariant(DefinedType type, string variantName, SourceSpan span)
     {
-        if (type.EnumVariants.Any(x => x.Name == variantName))
+        if (type.EnumVariants.ContainsKey(variantName))
         {
             throw errorHelper.ShowErrorMessage($"Enum `{type.Name}` had variant `{variantName}` defined twice", span);
         }

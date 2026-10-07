@@ -903,8 +903,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     private DefinedEnumVariant CheckEnumVariantExists(string variantName, DefinedType definedType, SourceSpan span)
     {
-        var variant = definedType.EnumVariants.Cast<DefinedEnumVariant?>().FirstOrDefault(x => x!.Value.Name == variantName);
-        if (variant is not {} enumVariant)
+        if (!definedType.EnumVariants.TryGetValue(variantName, out var enumVariant))
         {
             throw ErrorHelper.ShowErrorMessage($"Enum `{definedType.Name}` does not contain a variant named `{variantName}`.", span);
         }
@@ -914,7 +913,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
     {
-        matchExpression = (MatchExpression)base.VisitMatchExpression(matchExpression);
+        matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
 
         var matchTargetType = matchExpression.MatchTarget.Type!.Value;
         if (matchTargetType.TypeVariant != TypeVariant.Enum)
@@ -925,6 +924,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         foreach (var arm in matchExpression.MatchArms)
         {
             var enumVariant = CheckEnumVariantExists(arm.VariantName, matchTargetType, arm.Span);
+
+            var enumParameterCount = enumVariant.Parameters.Count;
+            var destructureVariableCount = arm.DestructureVariables.Count;
+            if (enumParameterCount != destructureVariableCount)
+            {
+                throw ErrorHelper.ShowErrorMessage($"Enum destructure had {destructureVariableCount} variables, expected {enumParameterCount};", arm.Span);
+            }
+            
+            BeginScope();
+            
+            foreach (var (variable, type) in arm.DestructureVariables.Zip(enumVariant.Parameters))
+            {
+                RecordVariableType(variable, type, arm.Span);
+            }
+
+            arm.Value = VisitExpression(arm.Value);
+            
+            EndScope();
         }
 
         matchExpression.Type = GetCommonType(matchExpression.MatchArms.Select(x => x.Value.Type!.Value));

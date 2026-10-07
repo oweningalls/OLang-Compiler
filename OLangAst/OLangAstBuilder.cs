@@ -18,6 +18,7 @@ using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FieldInitialization;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.IdentifierList;
 using OLangGrammar.ParseTree.InitializationList;
 using OLangGrammar.ParseTree.MatchArm;
 using OLangGrammar.ParseTree.MatchArmList;
@@ -430,7 +431,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             {
                 ContinuedMatchMatchArmList continuedMatchMatchArmList => (continuedMatchMatchArmList.MatchArm, continuedMatchMatchArmList.MatchArmList),
                 SingleMatchMatchArmList singleMatchMatchArmList => (singleMatchMatchArmList.MatchArm, null),
-                _ => throw errorHelper.UnknownVariant("match arm", x.GetType())
+                _ => throw errorHelper.UnknownVariant("match arm list", x.GetType())
             },
             ParseMatchArm
         );
@@ -440,9 +441,24 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return matchArm switch
         {
-            OLangGrammar.ParseTree.MatchArm.MatchArm matchArm1 => new MatchArm(ParseIdentifier(matchArm1.EnumName), ParseIdentifier(matchArm1.VariantName), ParseExpression(matchArm1.Value)) { Span = matchArm1.Span },
-            _ => throw new ArgumentOutOfRangeException(nameof(matchArm))
+            OLangGrammar.ParseTree.MatchArm.MatchArm matchArm1 => new MatchArm(ParseIdentifier(matchArm1.EnumName), ParseIdentifier(matchArm1.VariantName), [], ParseExpression(matchArm1.Value)) { Span = matchArm1.Span },
+            DestructuringMatchArm destructuringMatchArm => new MatchArm(ParseIdentifier(destructuringMatchArm.EnumName), ParseIdentifier(destructuringMatchArm.VariantName), ParseIdentifierList(destructuringMatchArm.IdentifierList), ParseExpression(destructuringMatchArm.Value)) { Span = destructuringMatchArm.Span },
+            _ => throw errorHelper.UnknownVariant("match arm", matchArm.GetType())
         };
+    }
+
+    private List<string> ParseIdentifierList(IIdentifierList identifierList)
+    {
+        return ParseList(
+            identifierList,
+            x => x switch
+        {
+            ContinuedIdentifierList continuedIdentifierList => (continuedIdentifierList.Identifier, continuedIdentifierList.IdentifierList),
+            SingleIdentifierList singleIdentifierList => (singleIdentifierList.Identifier, null),
+            _ => throw errorHelper.UnknownVariant("identifier list", x.GetType())
+        },
+            ParseIdentifier
+        );
     }
 
     private Dictionary<string, IExpression> ParseInitializerList(IInitializationList initializationList)

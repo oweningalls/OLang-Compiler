@@ -14,6 +14,7 @@ using OLangGrammar.ParseTree.Expression;
 using OLangGrammar.ParseTree.FieldInitialization;
 using OLangGrammar.ParseTree.FunctionInvocation;
 using OLangGrammar.ParseTree.GreaterExpression;
+using OLangGrammar.ParseTree.IdentifierList;
 using OLangGrammar.ParseTree.InitializationList;
 using OLangGrammar.ParseTree.MatchArm;
 using OLangGrammar.ParseTree.MatchArmList;
@@ -210,6 +211,11 @@ public class OLangGrammar : IGrammar
         
         // MatchArm
         GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, ArrowToken _, IExpression value) => new MatchArm(enumName, variantName, value)),
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IIdentifierList identifierList, RightParenToken _, ArrowToken _, IExpression value) => new DestructuringMatchArm(enumName, variantName, identifierList, value)),
+        
+        // IdentifierList
+        GrammarRule.Create((IdentifierToken identifier) => new SingleIdentifierList(identifier)),
+        GrammarRule.Create((IdentifierToken enumVariant, CommaToken _, IIdentifierList identifierList) => new ContinuedIdentifierList(enumVariant, identifierList)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),
