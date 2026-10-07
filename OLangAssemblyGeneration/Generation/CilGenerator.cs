@@ -666,6 +666,38 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         return thisAccess;
     }
+
+    protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
+    {
+        matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
+        var local = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!.Value));
+        _il.Emit(OpCodes.Stloc, local);
+
+        var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName)!.Value);
+        var enumVariants = _enumVariants[enumBaseCsType];
+
+        var exitLabel = _il.DefineLabel();
+        foreach (var matchArm in matchExpression.MatchArms)
+        {
+            var variantCsType = enumVariants[matchArm.VariantName];
+            _il.Emit(OpCodes.Ldloc, local);
+            _il.Emit(OpCodes.Isinst, variantCsType);
+            _il.Emit(OpCodes.Ldnull);
+            _il.Emit(OpCodes.Cgt_Un);
+            
+            var label = _il.DefineLabel();
+            _il.Emit(OpCodes.Brfalse, label);
+            VisitExpression(matchArm.Value);
+            _il.Emit(OpCodes.Br, exitLabel);
+            EmitLabel(label);
+        }
+        
+        _il.Emit(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)!);
+        _il.Emit(OpCodes.Throw);
+        EmitLabel(exitLabel);
+
+        return matchExpression;
+    }
     
     private void SaveParameter(ParameterNode parameterNode, int index)
     {
@@ -724,7 +756,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il.MarkLabel(label);
     }
     
-    private int _generatedVariableCounter;
+    private long _generatedVariableCounter;
     
     public Type GetCsType(DefinedType type)
     {

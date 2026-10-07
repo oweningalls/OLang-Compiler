@@ -1570,6 +1570,21 @@ public class CompilerTests
     public static readonly List<(string, string)> MatchPrograms =
     [
         ("""
+         enum SingleVariant {
+             Variant
+         }
+         
+         static class Program {
+             void Main() {
+                 let matched = match SingleVariant::Variant {
+                     SingleVariant::Variant => 1
+                 };
+                 
+                 print matched.ToString();
+             }
+         }
+         """, "1"),
+        ("""
          enum TestEnum {
              Var1,
              Var2,
@@ -1599,18 +1614,18 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let value = TestEnum::Var2;
+                 let value = TestEnum::Var3;
                  
                  let matched = match value {
                      TestEnum::Var1 => 1,
                      TestEnum::Var2 => 2.5,
-                     TestEnum::Var3 => 3
+                     TestEnum::Var3 => 3.5
                  };
                  
                  print matched.ToString();
              }
          }
-         """, "2.5"),
+         """, "3.5"),
     ];
     
     [TestCaseSource(nameof(MatchPrograms))]
