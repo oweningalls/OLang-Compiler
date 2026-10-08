@@ -10,6 +10,7 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumInstantiation;
 using OLangGrammar.ParseTree.EnumValueList;
 using OLangGrammar.ParseTree.EnumVariant;
 using OLangGrammar.ParseTree.EnumVariantList;
@@ -416,10 +417,19 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             CustomTypeArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(new CustomType(ParseIdentifier(instantiationTerm.Type))), ParseExpression(instantiationTerm.Size)) { Span = instantiationTerm.Span },
             ArrayAccessTerm arrayAccessTerm => new ArrayAccess(ParseTerm(arrayAccessTerm.ArrayExpression), ParseExpression(arrayAccessTerm.Index)) { Span = arrayAccessTerm.Span },
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)) { Span = fieldAccess.Span },
-            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
-            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
+            EnumInstantiationTerm enumInstantiationTerm => ParseEnumInstantiation(enumInstantiationTerm),
             MatchTerm matchTerm => new MatchExpression(ParseExpression(matchTerm.MatchTarget), ParseMatchArmList(matchTerm.MatchArmList)) { Span = matchTerm.Span },
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
+        };
+    }
+
+    private EnumInstantiation ParseEnumInstantiation(EnumInstantiationTerm enumInstantiation)
+    {
+        return enumInstantiation.EnumInstantiation switch
+        {
+            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
+            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
+            _ => throw errorHelper.UnknownVariant("enum instantiation", enumInstantiation.EnumInstantiation.GetType())
         };
     }
 
@@ -560,26 +570,32 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     
     private MethodInvocation ParseMethodInvocation(IMethodInvocation methodInvocation)
     {
-        IExpression obj;
+        IExpression? obj;
         List<IExpression> arguments;
         IdentifierToken identifier;
         switch (methodInvocation)
         {
             case OLangGrammar.ParseTree.MethodInvocation.MethodInvocation invocation:
                 obj = ParseTerm(invocation.Term);
-                arguments = new List<IExpression>();
+                arguments = [];
                 identifier = invocation.Identifier;
-                break;
+                return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
             case MethodInvocationWithArguments invocationWithArguments:
                 obj = ParseTerm(invocationWithArguments.Term);
                 arguments = ParseArgumentList(invocationWithArguments.Arguments);
                 identifier = invocationWithArguments.Identifier;
-                break;
+                return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
+            case StaticMethodInvocation staticMethodInvocation:
+                arguments = [];
+                identifier = staticMethodInvocation.Identifier;
+                return new MethodInvocation(ParseIdentifier(staticMethodInvocation.Type), ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
+            case StaticMethodInvocationWithArguments staticMethodInvocationWithArguments:
+                arguments = ParseArgumentList(staticMethodInvocationWithArguments.Arguments);
+                identifier = staticMethodInvocationWithArguments.Identifier;
+                return new MethodInvocation(ParseIdentifier(staticMethodInvocationWithArguments.Type), ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
             default:
                 throw errorHelper.UnknownVariant("function invocation", methodInvocation.GetType());
         }
-
-        return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
     }
     
     private List<IExpression> ParseArgumentList(IArgumentList argumentList)

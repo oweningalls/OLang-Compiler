@@ -335,7 +335,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         {
             var method = typeHelper.GetMethod(_currentClass!.Value, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!.Value).ToList(), functionInvocation.Span);
 
-            var methodInvocation = new MethodInvocation(null, functionInvocation.Identifier, functionInvocation.Arguments) { Type = method.ReturnType };
+            var methodInvocation = new MethodInvocation(_currentClass!.Value.Name, functionInvocation.Identifier, functionInvocation.Arguments) { Type = method.ReturnType };
             
             VisitMethodInvocationStatement(methodInvocation);
 
@@ -375,24 +375,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
     {
-        if (methodInvocation.Expression is VariableAccess variableAccess && !_variableTypeStack.ContainsKey(variableAccess.Identifier))
+        if (methodInvocation.IsStatic)
         {
-            if (typeHelper.GetDefinedType(variableAccess.Identifier) is not { } declaredClass)
+            if (typeHelper.GetDefinedType(methodInvocation.ClassName) is not { } declaredClass)
             {
-                throw ErrorHelper.ShowErrorMessage($"Unrecognized member: `{variableAccess.Identifier}`", variableAccess.Span);
+                throw ErrorHelper.ShowErrorMessage($"Unrecognized class name: `{methodInvocation.ClassName}`", methodInvocation.Span);
             }
 
             if (declaredClass.TypeVariant != TypeVariant.StaticClass)
             {
-                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.Name}`", variableAccess.Span);
+                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.Name}`", methodInvocation.Span);
             }
 
             methodInvocation.SourceType = declaredClass;
-            methodInvocation.Expression = null;
         }
         
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var functionDefinition = typeHelper.GetMethod(methodInvocation.SourceType ?? methodInvocation.Expression?.Type ?? _currentClass!.Value, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!.Value).ToList(), methodInvocation.Span);
+        var targetType = methodInvocation.IsStatic ? methodInvocation.SourceType!.Value : methodInvocation.Expression?.Type ?? _currentClass!.Value;
+        var functionDefinition = typeHelper.GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!.Value).ToList(), methodInvocation.Span);
 
         var paramCount = functionDefinition.Parameters.Count;
         var argCount = methodInvocation.Arguments.Count;

@@ -6,6 +6,7 @@ using OLangGrammar.ParseTree.AssignmentOperator;
 using OLangGrammar.ParseTree.ClassDeclarationList;
 using OLangGrammar.ParseTree.ClassMember;
 using OLangGrammar.ParseTree.ClassMemberList;
+using OLangGrammar.ParseTree.EnumInstantiation;
 using OLangGrammar.ParseTree.EnumValueList;
 using OLangGrammar.ParseTree.EnumVariant;
 using OLangGrammar.ParseTree.EnumVariantList;
@@ -194,6 +195,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((LeftParenToken _, IExpression expression, RightParenToken _) => new Paren(expression)),
         GrammarRule.Create((IFunctionInvocation functionInvocation) => new FunctionInvocationTerm(functionInvocation)),
         GrammarRule.Create((IMethodInvocation methodInvocation) => new MethodInvocationTerm(methodInvocation)),
+        GrammarRule.Create((IEnumInstantiation enumInstantiation) => new EnumInstantiationTerm(enumInstantiation)),
         GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftCurlyToken _, RightCurlyToken _) => new ClassInstantiationTerm(ident)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftCurlyToken _, IInitializationList initializationList , RightCurlyToken _) => new ClassInstantiationTermWithInitializers(ident, initializationList)),
@@ -201,8 +203,6 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((NewToken _, LeftBracketToken _, IdentifierToken type, SemicolonToken _, IExpression size, RightBracketToken _) => new CustomTypeArrayInstantiationTerm(type, size)),
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
-        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
-        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new EnumVariantInstantiationWithArguments(enumName, variantName, argumentList)),
         GrammarRule.Create((MatchToken _, IExpression matchTarget, LeftCurlyToken _,  IMatchArmList matchArmList, RightCurlyToken _) => new MatchTerm(matchTarget, matchArmList)),
         
         // MatchArmList
@@ -216,6 +216,10 @@ public class OLangGrammar : IGrammar
         // IdentifierList
         GrammarRule.Create((IdentifierToken identifier) => new SingleIdentifierList(identifier)),
         GrammarRule.Create((IdentifierToken enumVariant, CommaToken _, IIdentifierList identifierList) => new ContinuedIdentifierList(enumVariant, identifierList)),
+        
+        // EnumInstantiation
+        GrammarRule.Create((NewToken _, IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
+        GrammarRule.Create((NewToken _, IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new EnumVariantInstantiationWithArguments(enumName, variantName, argumentList)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),
@@ -224,6 +228,8 @@ public class OLangGrammar : IGrammar
         // MethodInvocation
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new MethodInvocationWithArguments(expression, ident, argumentList)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new MethodInvocation(expression, ident)),
+        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new StaticMethodInvocationWithArguments(type, ident, argumentList)),
+        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new StaticMethodInvocation(type, ident)),
         
         // InitializationList
         GrammarRule.Create((IFieldInitialization fieldInitialization) => new SingleFieldInitializationList(fieldInitialization)),

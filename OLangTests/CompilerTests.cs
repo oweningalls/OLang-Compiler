@@ -1021,7 +1021,7 @@ public class CompilerTests
         ("""
          static class Program {
              void Main() {
-                 print Helper.TestString();
+                 print Helper::TestString();
              }
          }
          
@@ -1034,7 +1034,7 @@ public class CompilerTests
         ("""
          static class Program {
              void Main() {
-                 print Helper.TestString();
+                 print Helper::TestString();
              }
          }
          
@@ -1047,7 +1047,7 @@ public class CompilerTests
         ("""
          static class Class2 {
              string Corecursive() {
-                 return Class1.Corecursive(0);
+                 return Class1::Corecursive(0);
              }
          }
          
@@ -1058,7 +1058,7 @@ public class CompilerTests
              
              string Corecursive(int num){
                  if num == 0 {return "done";}
-                 return Class2.Corecursive();
+                 return Class2::Corecursive();
              }
          }
          """, "done"),
@@ -1070,13 +1070,13 @@ public class CompilerTests
              
              string Corecursive(int num){
                  if num == 0 {return "done";}
-                 return Class2.Corecursive();
+                 return Class2::Corecursive();
              }
          }
          
          static class Class2 {
              string Corecursive() {
-                 return ReverseCorecursiveClasses.Corecursive(0);
+                 return ReverseCorecursiveClasses::Corecursive(0);
              }
          }
          """, "done"),
@@ -1479,7 +1479,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let holder = new TestEnumHolder { Val = EnumWithVariants::Var1 };
+                 let holder = new TestEnumHolder { Val = new EnumWithVariants::Var1 };
              }
          }
          """, ""),
@@ -1532,7 +1532,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let test = NestedEnum::Holder(One::Value(true));
+                 let test = new NestedEnum::Holder(new One::Value(true));
              }
          }
          """, ""),
@@ -1544,7 +1544,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let multi = MultiValue::Some(1, "test");
+                 let multi = new MultiValue::Some(1, "test");
              }
          }
          """, ""),
@@ -1555,7 +1555,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let conv = ImplicitConversion::Some(1);
+                 let conv = new ImplicitConversion::Some(1);
              }
          }
          """, ""),
@@ -1576,7 +1576,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let matched = match SingleVariant::Variant {
+                 let matched = match new SingleVariant::Variant {
                      SingleVariant::Variant => 1
                  };
                  
@@ -1593,7 +1593,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let value = TestEnum::Var2;
+                 let value = new TestEnum::Var2;
                  
                  let matched = match value {
                      TestEnum::Var1 => 1,
@@ -1614,7 +1614,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let value = TestEnum::Var3;
+                 let value = new TestEnum::Var3;
                  
                  let matched = match value {
                      TestEnum::Var1 => 1,
@@ -1635,7 +1635,7 @@ public class CompilerTests
          
          static class Program {
              void Main() {
-                 let value = TestEnum::Var2(1234, "hello");
+                 let value = new TestEnum::Var2(1234, "hello");
                  
                  let matched = match value {
                      TestEnum::Var1 => "1",
@@ -1732,11 +1732,11 @@ public class CompilerTests
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
     }
 
-    [TestCase("enum Test { Val(int) }", "let a = Test::Val(1.0);")]
-    [TestCase("enum Test { Val(int) }", "let a = Test::Val();")]
-    [TestCase("enum Test { Val(int) }", "let a = Test::Val;")]
+    [TestCase("enum Test { Val(int) }", "let a = new Test::Val(1.0);")]
+    [TestCase("enum Test { Val(int) }", "let a = new Test::Val();")]
+    [TestCase("enum Test { Val(int) }", "let a = new Test::Val;")]
     [TestCase("enum Test { Val(FakeType) }", "")]
-    [TestCase("enum Test { Val(int) }", "let a = Test::Val(1.0);")]
+    [TestCase("enum Test { Val(int) }", "let a = new Test::Val(1.0);")]
     [TestCase("class HasField { int Field }", "let a = new HasField {};")]
     [TestCase("class HasField { int Field }", "let a = new HasField { FakeField = 1 };")]
     [TestCase("class HasField { int Field }", "let a = new HasField {Field = \"string value\"};")]

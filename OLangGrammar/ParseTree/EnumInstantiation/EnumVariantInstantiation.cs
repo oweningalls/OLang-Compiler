@@ -1,9 +1,9 @@
 ﻿using Lexing;
 using OLangTokens.Tokens;
 
-namespace OLangGrammar.ParseTree.Term;
+namespace OLangGrammar.ParseTree.EnumInstantiation;
 
-public class EnumVariantInstantiation(IdentifierToken enumName, IdentifierToken variantName) : ITerm
+public class EnumVariantInstantiation(IdentifierToken enumName, IdentifierToken variantName) : IEnumInstantiation
 {
     public IdentifierToken EnumName = enumName;
     public IdentifierToken VariantName = variantName;

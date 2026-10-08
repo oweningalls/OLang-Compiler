@@ -2,9 +2,9 @@
 using OLangGrammar.ParseTree.ArgumentList;
 using OLangTokens.Tokens;
 
-namespace OLangGrammar.ParseTree.Term;
+namespace OLangGrammar.ParseTree.EnumInstantiation;
 
-public class EnumVariantInstantiationWithArguments(IdentifierToken enumName, IdentifierToken variantName, IArgumentList argumentList) : ITerm
+public class EnumVariantInstantiationWithArguments(IdentifierToken enumName, IdentifierToken variantName, IArgumentList argumentList) : IEnumInstantiation
 {
     public IdentifierToken EnumName = enumName;
     public IdentifierToken VariantName = variantName;
