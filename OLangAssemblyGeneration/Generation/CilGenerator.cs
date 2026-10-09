@@ -103,10 +103,10 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         BeginScope();
 
-        var isStatic = IsStatic(_type);
+        var isInstance = methodDeclaration.IsInstance;
         for (var i = 0; i < methodDeclaration.Parameters.Count; i++)
         {
-            SaveParameter(methodDeclaration.Parameters[i], isStatic ? i : i + 1);
+            SaveParameter(methodDeclaration.Parameters[i], isInstance ? i + 1 : i);
         }
 
         VisitStatements(methodDeclaration.Scope.Statements);
@@ -116,11 +116,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _il = originalIl;
 
         return methodDeclaration;
-    }
-
-    private static bool IsStatic(Type type)
-    {
-        return type.IsSealed && type.IsAbstract;
     }
 
     private void GenerateAssemblyFile(string filePath, string fileName, PersistedAssemblyBuilder assembly, MethodBuilder main)
@@ -717,6 +712,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         return matchExpression;
     }
+
+    protected override IExpression VisitSelfAccess(SelfAccess selfAccess)
+    {
+        _il.Emit(OpCodes.Ldarg, 0);
+
+        return selfAccess;
+    }
     
     private void SaveParameter(ParameterNode parameterNode, int index)
     {
@@ -894,10 +896,6 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private TypeBuilder DefineClass(DefinedType type)
     {
         var attributes = TypeAttributes.Public;
-        if (type.TypeVariant == TypeVariant.StaticClass)
-        {
-            attributes |= TypeAttributes.Abstract | TypeAttributes.Sealed;
-        }
         
         var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
         _definedTypes[type] = typeBuilder;
@@ -919,7 +917,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private void DefineMethod(TypeBuilder type, FunctionDefinition definition)
     {
         var attributes = MethodAttributes.Public;
-        if (definition.DeclaringType.TypeVariant == TypeVariant.StaticClass)
+        if (!definition.IsInstance)
         {
            attributes |= MethodAttributes.Static;
         }

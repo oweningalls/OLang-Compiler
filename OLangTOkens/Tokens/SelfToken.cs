@@ -2,4 +2,4 @@
 
 namespace OLangTokens.Tokens;
 
-public class StaticToken : BaseToken;
+public class SelfToken : BaseToken;

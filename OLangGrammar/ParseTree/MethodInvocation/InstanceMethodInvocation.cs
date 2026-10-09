@@ -1,11 +1,12 @@
 ﻿using Lexing;
+using OLangGrammar.ParseTree.Term;
 using OLangTokens.Tokens;
 
 namespace OLangGrammar.ParseTree.MethodInvocation;
 
-public class StaticMethodInvocation(IdentifierToken type, IdentifierToken identifier) : IMethodInvocation
+public class InstanceMethodInvocation(ITerm term, IdentifierToken identifier) : IMethodInvocation
 {
-    public IdentifierToken Type = type;
+    public ITerm Term = term;
     public IdentifierToken Identifier = identifier;
     public SourceSpan Span { get; set; }
 }

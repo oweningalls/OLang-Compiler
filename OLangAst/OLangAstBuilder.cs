@@ -32,7 +32,6 @@ using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
-using OLangGrammar.ParseTree.TypeDeclaration;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangGrammar.ParseTree.UsingList;
 using OLangGrammar.UsingStatement;
@@ -144,8 +143,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return typeDeclaration switch
         {
-            OLangGrammar.ParseTree.TypeDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(false, ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
-            StaticClassDeclaration staticClassDeclaration => new ClassDeclaration(true, ParseIdentifier(staticClassDeclaration.IdentifierToken), ParseClassMembers(staticClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
+            OLangGrammar.ParseTree.TypeDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
             OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration enumDeclaration => new EnumDeclaration(ParseIdentifier(enumDeclaration.IdentifierToken), ParseEnumVariantList(enumDeclaration.EnumVariantList)) { Span = typeDeclaration.Span },
             _ => throw errorHelper.UnknownVariant("class declaration", typeDeclaration.GetType())
         };
@@ -221,10 +219,10 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return classMember switch
         {
-            OLangGrammar.ParseTree.ClassMember.MethodDeclaration methodDeclaration => new MethodDeclaration(ParseType(methodDeclaration.Type), ParseIdentifier(methodDeclaration.Identifier), [], ParseScope(methodDeclaration.Scope)) { Span = methodDeclaration.Span },
-            MethodDeclarationWithParameters methodDeclarationWithParameters => new MethodDeclaration(ParseType(methodDeclarationWithParameters.Type), ParseIdentifier(methodDeclarationWithParameters.Identifier), ParseParameterList(methodDeclarationWithParameters.Parameters), ParseScope(methodDeclarationWithParameters.Scope)) { Span = methodDeclarationWithParameters.Span },
-            VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope)) { Span = voidMethodDeclaration.Span },
-            VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope)) { Span = voidMethodDeclarationWithParameters.Span },
+            OLangGrammar.ParseTree.ClassMember.MethodDeclaration methodDeclaration => new MethodDeclaration(ParseType(methodDeclaration.Type), ParseIdentifier(methodDeclaration.Identifier), [], ParseScope(methodDeclaration.Scope), methodDeclaration.IsInstance) { Span = methodDeclaration.Span },
+            MethodDeclarationWithParameters methodDeclarationWithParameters => new MethodDeclaration(ParseType(methodDeclarationWithParameters.Type), ParseIdentifier(methodDeclarationWithParameters.Identifier), ParseParameterList(methodDeclarationWithParameters.Parameters), ParseScope(methodDeclarationWithParameters.Scope), methodDeclarationWithParameters.IsInstance) { Span = methodDeclarationWithParameters.Span },
+            VoidMethodDeclaration voidMethodDeclaration => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclaration.Identifier), [], ParseScope(voidMethodDeclaration.Scope), voidMethodDeclaration.IsInstance) { Span = voidMethodDeclaration.Span },
+            VoidMethodDeclarationWithParameters voidMethodDeclarationWithParameters => new MethodDeclaration(null, ParseIdentifier(voidMethodDeclarationWithParameters.Identifier), ParseParameterList(voidMethodDeclarationWithParameters.Parameters), ParseScope(voidMethodDeclarationWithParameters.Scope), voidMethodDeclarationWithParameters.IsInstance) { Span = voidMethodDeclarationWithParameters.Span },
             OLangGrammar.ParseTree.ClassMember.FieldDeclaration fieldDeclaration => new FieldDeclaration(ParseType(fieldDeclaration.Type), ParseIdentifier(fieldDeclaration.Identifier)) { Span = fieldDeclaration.Span },
             
             _ => throw errorHelper.UnknownVariant("class member", classMember.GetType())
@@ -419,6 +417,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             OLangGrammar.ParseTree.Term.FieldAccess fieldAccess => new FieldAccess(ParseTerm(fieldAccess.Term), ParseIdentifier(fieldAccess.Identifier)) { Span = fieldAccess.Span },
             EnumInstantiationTerm enumInstantiationTerm => ParseEnumInstantiation(enumInstantiationTerm),
             MatchTerm matchTerm => new MatchExpression(ParseExpression(matchTerm.MatchTarget), ParseMatchArmList(matchTerm.MatchArmList)) { Span = matchTerm.Span },
+            SelfAccessTerm matchTerm => new SelfAccess { Span = matchTerm.Span },
             _ => throw errorHelper.UnknownVariant("term", term.GetType())
         };
     }
@@ -575,21 +574,21 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         IdentifierToken identifier;
         switch (methodInvocation)
         {
-            case OLangGrammar.ParseTree.MethodInvocation.MethodInvocation invocation:
+            case InstanceMethodInvocation invocation:
                 obj = ParseTerm(invocation.Term);
                 arguments = [];
                 identifier = invocation.Identifier;
                 return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
-            case MethodInvocationWithArguments invocationWithArguments:
+            case InstanceMethodInvocationWithArguments invocationWithArguments:
                 obj = ParseTerm(invocationWithArguments.Term);
                 arguments = ParseArgumentList(invocationWithArguments.Arguments);
                 identifier = invocationWithArguments.Identifier;
                 return new MethodInvocation(obj, ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
-            case StaticMethodInvocation staticMethodInvocation:
+            case OLangGrammar.ParseTree.MethodInvocation.MethodInvocation methodInvocation2:
                 arguments = [];
-                identifier = staticMethodInvocation.Identifier;
-                return new MethodInvocation(ParseIdentifier(staticMethodInvocation.Type), ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };
-            case StaticMethodInvocationWithArguments staticMethodInvocationWithArguments:
+                identifier = methodInvocation2.Identifier;
+                return new MethodInvocation(ParseIdentifier(methodInvocation2.Type), ParseIdentifier(identifier), arguments) { Span = methodInvocation2.Span };
+            case MethodInvocationWithArguments staticMethodInvocationWithArguments:
                 arguments = ParseArgumentList(staticMethodInvocationWithArguments.Arguments);
                 identifier = staticMethodInvocationWithArguments.Identifier;
                 return new MethodInvocation(ParseIdentifier(staticMethodInvocationWithArguments.Type), ParseIdentifier(identifier), arguments) { Span = methodInvocation.Span };

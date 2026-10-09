@@ -316,6 +316,11 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
         return matchExpression;
     }
 
+    protected virtual IExpression VisitSelfAccess(SelfAccess selfAccess)
+    {
+        return selfAccess;
+    }
+
     protected virtual MatchArm VisitMatchArm(MatchArm matchArm)
     {
         matchArm.Value = VisitExpression(matchArm.Value);
@@ -363,6 +368,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
             ThisAccess thisAccess => VisitThisAccess(thisAccess),
             EnumInstantiation enumInstantiation => VisitEnumInstantiation(enumInstantiation),
             MatchExpression matchExpression => VisitMatchExpression(matchExpression),
+            SelfAccess selfAccess => VisitSelfAccess(selfAccess),
             _ => throw ErrorHelper.UnknownVariant("expression", expression.GetType())
         };
     }

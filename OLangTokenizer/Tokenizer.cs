@@ -256,7 +256,6 @@ public class Tokenizer
     private static readonly Dictionary<string, Func<BaseToken>> KeywordMap = new()
     {
         { "class", () => new ClassToken() },
-        { "static", () => new StaticToken() },
         { "exit", () => new ExitToken() },
         { "let", () => new LetToken() },
         { "int", () => new IntTypeToken() },
@@ -277,6 +276,7 @@ public class Tokenizer
         { "using", () => new UsingToken() },
         { "enum", () => new EnumToken() },
         { "match", () => new MatchToken() },
+        { "self", () => new SelfToken() },
     };
 
     private BaseToken? TryParseOperator()

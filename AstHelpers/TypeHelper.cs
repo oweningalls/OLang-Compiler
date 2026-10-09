@@ -69,7 +69,11 @@ public class TypeHelper(IErrorHelper errorHelper)
         }
         
         CheckForExistingMember(customType, methodDeclaration.Identifier, methodDeclaration.Span);
-        var method = new FunctionDefinition(customType, GetMethodType(methodDeclaration.DeclaredType), methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))));
+        var method = new FunctionDefinition(customType,
+            GetMethodType(methodDeclaration.DeclaredType),
+            methodDeclaration.Identifier,
+            methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))),
+            methodDeclaration.IsInstance);
         customType.Methods.Add(method);
 
         return method;

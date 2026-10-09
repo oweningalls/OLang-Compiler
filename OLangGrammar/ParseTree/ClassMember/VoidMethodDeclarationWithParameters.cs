@@ -5,10 +5,11 @@ using OLangTokens.Tokens;
 
 namespace OLangGrammar.ParseTree.ClassMember;
 
-public class VoidMethodDeclarationWithParameters(IdentifierToken identifier, IParameterListNode parameters, IScopeNode scope) : IClassMember
+public class VoidMethodDeclarationWithParameters(IdentifierToken identifier, IParameterListNode parameters, IScopeNode scope, bool isInstance) : IClassMember
 {
     public IdentifierToken Identifier = identifier;
     public IParameterListNode Parameters = parameters;
     public IScopeNode Scope = scope;
+    public bool IsInstance = isInstance;
     public SourceSpan Span { get; set; }
 }

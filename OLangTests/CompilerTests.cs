@@ -958,12 +958,12 @@ public class CompilerTests
     [
         ("""
          class Helper {
-             string TestString() {
+             string TestString(self) {
                  return "TestString";
              }
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  print "Main";
              }
@@ -980,7 +980,7 @@ public class CompilerTests
     public static readonly List<(string, string)> MethodCallPrograms =
     [
         ("""
-         static class Program {
+         class Program {
              string TestString() {
                  return "TestString";
              }
@@ -991,7 +991,7 @@ public class CompilerTests
          }
          """, "TestString"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  print BackwardsMethodOrder();
              }
@@ -1002,7 +1002,7 @@ public class CompilerTests
          }
          """, "Reversed"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  print MutualRecursion1(1);
              }
@@ -1019,39 +1019,39 @@ public class CompilerTests
          }
          """, "Finished Recursing"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  print Helper::TestString();
              }
          }
          
-         static class Helper {
+         class Helper {
              string TestString() {
                  return "TestString";
              }
          }
          """, "TestString"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  print Helper::TestString();
              }
          }
          
-         static class Helper {
+         class Helper {
              string TestString() {
                  return "TestString";
              }
          }
          """, "TestString"),
         ("""
-         static class Class2 {
+         class Class2 {
              string Corecursive() {
                  return Class1::Corecursive(0);
              }
          }
          
-         static class Class1 {
+         class Class1 {
              void Main() {
                  print Corecursive(3);
              }
@@ -1063,7 +1063,7 @@ public class CompilerTests
          }
          """, "done"),
         ("""
-         static class ReverseCorecursiveClasses {
+         class ReverseCorecursiveClasses {
              void Main() {
                  print Corecursive(3);
              }
@@ -1074,14 +1074,14 @@ public class CompilerTests
              }
          }
          
-         static class Class2 {
+         class Class2 {
              string Corecursive() {
                  return ReverseCorecursiveClasses::Corecursive(0);
              }
          }
          """, "done"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  string ShadowedMethod() {
                      return "Function";
@@ -1096,7 +1096,7 @@ public class CompilerTests
          }
          """, "Function"),
         ("""
-         static class Program {
+         class Program {
              string ShadowedMethod() {
                  return "Method";
              }
@@ -1122,12 +1122,12 @@ public class CompilerTests
     [
         ("""
          class Helper {
-             string TestString() {
+             string TestString(self) {
                  return "TestString";
              }
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let helper = new Helper{};
                  print helper.TestString();
@@ -1136,14 +1136,14 @@ public class CompilerTests
          """, "TestString"),
         ("""
          class Helper {
-             string TestString() {
+             string TestString(self) {
                  return "TestString";
              }
              
-             Helper Create() { Helper helper = new Helper{}; return helper; }
+             Helper Create(self) { Helper helper = new Helper{}; return helper; }
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let helper = new Helper {};
                  helper = helper.Create();
@@ -1164,7 +1164,7 @@ public class CompilerTests
         ("""
          using System.Private.CoreLib;
          
-         static class Program {
+         class Program {
              void Main() {
                  let sb = new StringBuilder {};
                  sb.Append("Hello, ");
@@ -1252,7 +1252,7 @@ public class CompilerTests
              string Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new StringHolder { Field = "" };
              }
@@ -1263,7 +1263,7 @@ public class CompilerTests
              int Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new IntHolder { Field = 0 };
                  
@@ -1276,7 +1276,7 @@ public class CompilerTests
              string Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new StringHolder { Field = "original value" };
                  
@@ -1289,7 +1289,7 @@ public class CompilerTests
              string Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new StringHolder { Field = "OLD VALUE" };
                  holder.Field = "I got set!";
@@ -1303,7 +1303,7 @@ public class CompilerTests
              string Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new StringHolder { Field = "" };
                  
@@ -1320,7 +1320,7 @@ public class CompilerTests
              string Field;
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let arr = new [StringHolder; 5];
                  arr[1] = new StringHolder { Field = "" };
@@ -1341,27 +1341,27 @@ public class CompilerTests
              int length;
              int capacity;
              
-             void Add(IntString value) {
-                 if length < capacity {
-                     Arr[length] = value;
-                     length += 1;
+             void Add(self, IntString value) {
+                 if self.length < self.capacity {
+                     self.Arr[self.length] = value;
+                     self.length += 1;
                      
                      return;
                  }
                  
-                 if capacity == 0 { capacity = 1; } else { capacity *= 2; }
-                 let newArr = new [IntString; capacity];
-                 for i in 0..length {
-                     newArr[i] = Arr[i];
+                 if self.capacity == 0 { self.capacity = 1; } else { self.capacity *= 2; }
+                 let newArr = new [IntString; self.capacity];
+                 for i in 0..self.length {
+                     newArr[i] = self.Arr[i];
                  }
                  
-                 Arr = newArr;
-                 Arr[length] = value;
-                 length += 1;
+                 self.Arr = newArr;
+                 self.Arr[self.length] = value;
+                 self.length += 1;
              }
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let ls = new IntStringList { Arr = new [IntString; 0], length = 0, capacity = 0 };
                  for i in 0..5 {
@@ -1377,12 +1377,12 @@ public class CompilerTests
          class StringHolder {
              string Field;
              
-             StringHolder Make() {
+             StringHolder Make(self) {
                  return new StringHolder { Field = "" };
              }
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new StringHolder {Field = "" };
                  holder.Field = "1";
@@ -1394,7 +1394,7 @@ public class CompilerTests
          }
          """, "2"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  let val = Helper();
                  
@@ -1408,7 +1408,7 @@ public class CompilerTests
          }
          """, "2"),
         ("""
-         static class Program {
+         class Program {
              void Main() {
                  let arrays = new [[int]; 3];
                  arrays[0] = new [int; 3];
@@ -1436,7 +1436,7 @@ public class CompilerTests
          enum TestEnum {
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1450,7 +1450,7 @@ public class CompilerTests
          
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1461,7 +1461,7 @@ public class CompilerTests
              Variant2
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1477,7 +1477,7 @@ public class CompilerTests
              Var3
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let holder = new TestEnumHolder { Val = new EnumWithVariants::Var1 };
              }
@@ -1489,7 +1489,7 @@ public class CompilerTests
              None
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1500,7 +1500,7 @@ public class CompilerTests
              None
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1515,7 +1515,7 @@ public class CompilerTests
              Value(bool)
          }
          
-         static class Program {
+         class Program {
              void Main() {
              }
          }
@@ -1530,7 +1530,7 @@ public class CompilerTests
              Value(bool)
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let test = new NestedEnum::Holder(new One::Value(true));
              }
@@ -1542,7 +1542,7 @@ public class CompilerTests
              None
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let multi = new MultiValue::Some(1, "test");
              }
@@ -1553,7 +1553,7 @@ public class CompilerTests
              Some(float)
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let conv = new ImplicitConversion::Some(1);
              }
@@ -1574,7 +1574,7 @@ public class CompilerTests
              Variant
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let matched = match new SingleVariant::Variant {
                      SingleVariant::Variant => 1
@@ -1591,7 +1591,7 @@ public class CompilerTests
              Var3
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let value = new TestEnum::Var2;
                  
@@ -1612,7 +1612,7 @@ public class CompilerTests
              Var3
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let value = new TestEnum::Var3;
                  
@@ -1633,7 +1633,7 @@ public class CompilerTests
              Var3(bool, float, int)
          }
          
-         static class Program {
+         class Program {
              void Main() {
                  let value = new TestEnum::Var2(1234, "hello");
                  
@@ -1747,7 +1747,7 @@ public class CompilerTests
             $$"""
               {{typeDefinitions}}
               
-              static class Program {
+              class Program {
                   void Main() {
                       {{mainBody}}
                   }
@@ -1829,7 +1829,7 @@ public class CompilerTests
 
         if (wrapWithMain)
         {
-            program = $"static class Program {{void Main() {{\n{program}\n}}}}";
+            program = $"class Program {{void Main() {{\n{program}\n}}}}";
         }
         OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", outputFile);
 

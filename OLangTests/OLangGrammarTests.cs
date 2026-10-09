@@ -22,7 +22,7 @@ public class OLangGrammarTests
     public void ReduceMethodDeclaration()
     {
         var rule = new OLangGrammar.OLangGrammar().GetRules().First(x => x.GetLhsType() == typeof(IClassMemberListNode) && x.GetRhsTypes().Count == 1);
-        var classMember = new MethodDeclaration(null, null, null);
+        var classMember = new MethodDeclaration(null, null, null, false);
         var parsedClassMemberList = rule.ReduceRule([classMember]);
 
         var classMemberList = parsedClassMemberList as SingleMemberClassMemberList;

@@ -61,7 +61,6 @@ public class OLangGrammar : IGrammar
         
         // TypeDeclaration
         GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
-        GrammarRule.Create((StaticToken _, ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new StaticClassDeclaration(identifierToken, stmtList)),
         GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, IEnumVariantList enumVariantList, RightCurlyToken _) => new EnumDeclaration(identifierToken, enumVariantList)),
         
         // ClassMemberList
@@ -84,12 +83,20 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken type, CommaToken _, IEnumValueList valueList) => new ContinuedEnumValueList(new NonPrimitiveType(type), valueList)),
         
         // ClassMember
-        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope)),
-        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(new NonPrimitiveType(type), identifier, parameterList, scope)),
-        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidMethodDeclarationWithParameters(identifier, parameterList, scope)),
-        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope)),
-        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(new NonPrimitiveType(type), identifier, scope)),
-        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope, false)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(new NonPrimitiveType(type), identifier, parameterList, scope, false)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidMethodDeclarationWithParameters(identifier, parameterList, scope, false)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope, false)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(new NonPrimitiveType(type), identifier, scope, false)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope, false)),
+        
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, SelfToken _, CommaToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(type, identifier, parameterList, scope, true)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, SelfToken _, CommaToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new MethodDeclarationWithParameters(new NonPrimitiveType(type), identifier, parameterList, scope, true)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, SelfToken _, CommaToken _, IParameterListNode parameterList, RightParenToken _, IScopeNode scope) => new VoidMethodDeclarationWithParameters(identifier, parameterList, scope, true)),
+        GrammarRule.Create((IType type, IdentifierToken identifier, LeftParenToken _, SelfToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(type, identifier, scope, true)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, LeftParenToken _, SelfToken _, RightParenToken _, IScopeNode scope) => new MethodDeclaration(new NonPrimitiveType(type), identifier, scope, true)),
+        GrammarRule.Create((VoidToken _, IdentifierToken identifier, LeftParenToken _, SelfToken _, RightParenToken _, IScopeNode scope) => new VoidMethodDeclaration(identifier, scope, true)),
+        
         GrammarRule.Create((IType type, IdentifierToken identifier, SemicolonToken _) => new FieldDeclaration(type, identifier)),
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, SemicolonToken _) => new FieldDeclaration(new NonPrimitiveType(type), identifier)),
 
@@ -204,6 +211,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((ITerm array, LeftBracketToken _, IExpression index,  RightBracketToken _) => new ArrayAccessTerm(array, index)),
         GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident) => new FieldAccess(expression, ident)),
         GrammarRule.Create((MatchToken _, IExpression matchTarget, LeftCurlyToken _,  IMatchArmList matchArmList, RightCurlyToken _) => new MatchTerm(matchTarget, matchArmList)),
+        GrammarRule.Create((SelfToken _) => new SelfAccessTerm()),
         
         // MatchArmList
         GrammarRule.Create((IMatchArm matchArm) => new SingleMatchMatchArmList(matchArm)),
@@ -226,10 +234,10 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, RightParenToken _) => new FunctionInvocation(ident)),
         
         // MethodInvocation
-        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new MethodInvocationWithArguments(expression, ident, argumentList)),
-        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new MethodInvocation(expression, ident)),
-        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new StaticMethodInvocationWithArguments(type, ident, argumentList)),
-        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new StaticMethodInvocation(type, ident)),
+        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new InstanceMethodInvocationWithArguments(expression, ident, argumentList)),
+        GrammarRule.Create((ITerm expression, DotToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new InstanceMethodInvocation(expression, ident)),
+        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new MethodInvocationWithArguments(type, ident, argumentList)),
+        GrammarRule.Create((IdentifierToken type, DoubleColonToken _, IdentifierToken ident, LeftParenToken _, RightParenToken _) => new MethodInvocation(type, ident)),
         
         // InitializationList
         GrammarRule.Create((IFieldInitialization fieldInitialization) => new SingleFieldInitializationList(fieldInitialization)),

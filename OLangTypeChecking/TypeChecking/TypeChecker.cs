@@ -17,7 +17,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
     private DefinedType _currentFunctionReturnType;
     private DefinedType? _currentClass;
-    private bool _isInFunction;
+    private bool _isInInstanceMethod;
     
     public override Program VisitProgram(Program program)
     {
@@ -55,10 +55,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Value.Span);
         }
         returnStatement = base.VisitReturnStatement(returnStatement);
-        if (!_isInFunction)
-        {
-            throw ErrorHelper.ShowErrorMessage("Cannot return outside of a function.", returnStatement.Span);
-        }
 
         if (returnStatement.Value == null)
         {
@@ -256,13 +252,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var originalTypeStack = _variableTypeStack;
         _variableTypeStack = new ScopeTracker<string, DefinedType>();
     
+        _variableTypeStack.SetValue("self", _currentClass!.Value);
         foreach (var param in typedParameters)
         {
             _variableTypeStack.SetValue(param.Name, param.Type);
         }
-    
-        var wasInFunction = _isInFunction;
-        _isInFunction = true;
+
+        _isInInstanceMethod = methodDeclaration.IsInstance;
         var previousFunctionType = _currentFunctionReturnType;
         _currentFunctionReturnType = typeHelper.GetMethodType(methodDeclaration.DeclaredType);
     
@@ -274,8 +270,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
         _variableTypeStack = originalTypeStack;
         _currentFunctionReturnType = previousFunctionType;
-    
-        _isInFunction = wasInFunction;
     
         return methodDeclaration;
     }
@@ -300,8 +294,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             _variableTypeStack.SetValue(param.Identifier, typeHelper.GetLocalType(param.DeclaredType));
         }
     
-        var wasInFunction = _isInFunction;
-        _isInFunction = true;
         var previousFunctionType = _currentFunctionReturnType;
         _currentFunctionReturnType = GetReturnType(signature);
     
@@ -314,8 +306,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _variableTypeStack = originalTypeStack;
         _currentFunctionReturnType = previousFunctionType;
     
-        _isInFunction = wasInFunction;
-
         return functionDeclaration;
     }
 
@@ -375,24 +365,29 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override MethodInvocation VisitMethodInvocation(MethodInvocation methodInvocation)
     {
-        if (methodInvocation.IsStatic)
+        if (!methodInvocation.IsInstance)
         {
             if (typeHelper.GetDefinedType(methodInvocation.ClassName) is not { } declaredClass)
             {
                 throw ErrorHelper.ShowErrorMessage($"Unrecognized class name: `{methodInvocation.ClassName}`", methodInvocation.Span);
             }
 
-            if (declaredClass.TypeVariant != TypeVariant.StaticClass)
-            {
-                throw ErrorHelper.ShowErrorMessage($"Cannot access non-static method `{methodInvocation.Identifier} on class `{declaredClass.Name}`", methodInvocation.Span);
-            }
-
             methodInvocation.SourceType = declaredClass;
         }
         
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var targetType = methodInvocation.IsStatic ? methodInvocation.SourceType!.Value : methodInvocation.Expression?.Type ?? _currentClass!.Value;
+        var targetType = methodInvocation.IsInstance ? methodInvocation.Expression?.Type ?? _currentClass!.Value : methodInvocation.SourceType!.Value;
         var functionDefinition = typeHelper.GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!.Value).ToList(), methodInvocation.Span);
+
+        if (methodInvocation.IsInstance && !functionDefinition.IsInstance)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot call non-instance method `{methodInvocation.Identifier}` as instance method.", methodInvocation.Span);
+        }
+        
+        if (!methodInvocation.IsInstance && functionDefinition.IsInstance)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot call instance method `{methodInvocation.Identifier}` as non-instance method.", methodInvocation.Span);
+        }
 
         var paramCount = functionDefinition.Parameters.Count;
         var argCount = methodInvocation.Arguments.Count;
@@ -845,17 +840,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             return variableAccess;
         }
         
-        if (_currentClass!.Value.Fields.TryGetValue(variableAccess.Identifier, out var field))
-        {
-            var type = field.Type;
-            variableAccess.Type = type;
-
-            var fieldAccess = new FieldAccess(new ThisAccess { Span = variableAccess.Span, Type = _currentClass!.Value }, variableAccess.Identifier) { Span = variableAccess.Span };
-            var access = VisitFieldAccess(fieldAccess);
-
-            return access;
-        }
-        
         throw ErrorHelper.ShowErrorMessage($"Unknown identifier '{variableAccess.Identifier}'", variableAccess.Span);
     }
 
@@ -953,6 +937,18 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         matchExpression.MatchArms.ForEach(x => x.Value = MaybeImplicitCast(commonType, x.Value));
         
         return matchExpression;
+    }
+
+    protected override IExpression VisitSelfAccess(SelfAccess selfAccess)
+    {
+        if (!_isInInstanceMethod)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot access `self` outside of an instance method.", selfAccess.Span);
+        }
+        
+        selfAccess.Type = _currentClass!.Value;
+
+        return selfAccess;
     }
 
     private DefinedType? GetCommonType(IEnumerable<DefinedType> types)

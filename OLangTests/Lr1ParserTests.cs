@@ -99,7 +99,7 @@ public class Lr1ParserTests
         var bInvocation = new NonMultExpression(new NonUnaryExpression(new FunctionInvocationTerm(new FunctionInvocation(new IdentifierToken("b")))));
         var exitStatement = new Exit(new NonExpression(new NonAnd(new NonEquality(new NonGreaterExpression(new Plus(aAccess, bInvocation))))));
 
-        var method = new VoidMethodDeclaration(new IdentifierToken("Main"), new ScopeNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new SingleStatementStmtList(exitStatement)))));
+        var method = new VoidMethodDeclaration(new IdentifierToken("Main"), new ScopeNode(new StmtListWithStatement(letAStatement, new StmtListWithStatement(bDeclarationStatement, new SingleStatementStmtList(exitStatement)))), false);
 
         var classDeclaration = new ClassDeclaration(new IdentifierToken("Program"), new SingleMemberClassMemberList(method));
 

@@ -10,7 +10,7 @@ public class TypeRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : B
     private DefinedType? _currentType;
     protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _currentType = typeHelper.CreateCustomType(classDeclaration.Identifier, classDeclaration.IsStatic ? TypeVariant.StaticClass : TypeVariant.Class);
+        _currentType = typeHelper.CreateCustomType(classDeclaration.Identifier, TypeVariant.Class);
         classDeclaration.Type = _currentType;
         
         return (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);

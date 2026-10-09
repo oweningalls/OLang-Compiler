@@ -6,7 +6,7 @@ namespace OLangAst.Statements;
 
 public class MethodInvocation : IStatement, IExpression
 {
-    public bool IsStatic => Expression == null;
+    public bool IsInstance => Expression != null;
     public string? ClassName;
     public IExpression? Expression;
     public string Identifier;

@@ -42,7 +42,7 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
                 method.GetParameters().ToArray()
                     .Select(parameter => new Parameter(parameter.Name,
                         FromCsType(parameter.ParameterType)))
-                    .ToList()));
+                    .ToList(), !method.IsStatic));
         }
 
         return definedType;
@@ -53,11 +53,6 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
         if (type.IsEnum)
         {
             return TypeVariant.Enum;
-        }
-
-        if (type.IsSealed && type.IsAbstract)
-        {
-            return TypeVariant.StaticClass;
         }
 
         return TypeVariant.Class;
@@ -84,6 +79,5 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
 public enum TypeVariant
 {
     Class,
-    StaticClass,
     Enum
 }
