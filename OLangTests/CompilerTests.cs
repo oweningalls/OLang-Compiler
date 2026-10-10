@@ -1655,6 +1655,37 @@ public class CompilerTests
         TestProgramConsoleOutput(values, false);
     }
     
+    public static readonly List<(string, string)> GenericTypePrograms =
+    [
+        ("""
+         enum UnusedGenericType<T> {
+             None
+         }
+         
+         class Program {
+             void Main() {
+             }
+         }
+         """, ""),
+        // ("""
+        //  enum Maybe<T> {
+        //      Val<T>,
+        //      None
+        //  }
+        //  
+        //  class Program {
+        //      void Main() {
+        //      }
+        //  }
+        //  """, ""),
+    ];
+    
+    [TestCaseSource(nameof(GenericTypePrograms))]
+    public void GenericTypeTests((string, string) values)
+    {
+        TestProgramConsoleOutput(values, false);
+    }
+    
     private void TestProgramExitCode((string, int) values)
     {
         var program = values.Item1;

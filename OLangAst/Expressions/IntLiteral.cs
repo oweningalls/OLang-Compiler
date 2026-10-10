@@ -7,5 +7,5 @@ public class IntLiteral(int value) : IExpression
 {
     public int Value = value;
     public SourceSpan Span { get; set; }
-    public DefinedType? Type { get; set; } = PrimitiveTypes.IntType;
+    public ConcreteType? Type { get; set; } = PrimitiveTypes.IntType;
 }

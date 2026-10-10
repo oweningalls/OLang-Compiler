@@ -1,7 +1,7 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct FieldDefinition(DefinedType type, string name)
+public struct FieldDefinition(ConcreteType type, string name)
 {
-    public readonly DefinedType Type = type;
+    public readonly ConcreteType Type = type;
     public readonly string Name = name;
 }

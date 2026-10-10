@@ -4,5 +4,5 @@ namespace OLangAst.Expressions;
 
 public class Multiply(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs)
 {
-    public override DefinedType? Type { get; set; }
+    public override ConcreteType? Type { get; set; }
 }

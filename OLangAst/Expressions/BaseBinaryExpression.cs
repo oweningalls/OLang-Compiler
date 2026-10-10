@@ -9,5 +9,5 @@ public abstract class BaseBinaryExpression(IExpression lhs, IExpression rhs) : I
     public IExpression Lhs = lhs;
     public IExpression Rhs = rhs;
     public SourceSpan Span { get; set; }
-    public abstract DefinedType? Type { get; set; }
+    public abstract ConcreteType? Type { get; set; }
 }

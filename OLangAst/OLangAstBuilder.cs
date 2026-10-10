@@ -144,7 +144,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
         return typeDeclaration switch
         {
             OLangGrammar.ParseTree.TypeDeclaration.ClassDeclaration concreteClassDeclaration => new ClassDeclaration(ParseIdentifier(concreteClassDeclaration.IdentifierToken), ParseClassMembers(concreteClassDeclaration.ClassMemberList)) { Span = typeDeclaration.Span },
-            OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration enumDeclaration => new EnumDeclaration(ParseIdentifier(enumDeclaration.IdentifierToken), ParseEnumVariantList(enumDeclaration.EnumVariantList)) { Span = typeDeclaration.Span },
+            OLangGrammar.ParseTree.TypeDeclaration.EnumDeclaration enumDeclaration => new EnumDeclaration(ParseIdentifier(enumDeclaration.IdentifierToken), enumDeclaration.TypeParameters == null ? [] :ParseIdentifierList(enumDeclaration.TypeParameters), ParseEnumVariantList(enumDeclaration.EnumVariantList)) { Span = typeDeclaration.Span },
             _ => throw errorHelper.UnknownVariant("class declaration", typeDeclaration.GetType())
         };
     }

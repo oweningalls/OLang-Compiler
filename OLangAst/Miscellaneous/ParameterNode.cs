@@ -7,6 +7,6 @@ public class ParameterNode(string identifier, IVariableType declaredType) : IAst
 {
     public IVariableType DeclaredType = declaredType;
     public string Identifier = identifier;
-    public DefinedType? Type;
+    public ConcreteType? Type;
     public SourceSpan Span { get; set; }
 }

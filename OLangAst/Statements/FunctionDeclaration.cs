@@ -11,6 +11,6 @@ public class FunctionDeclaration(IVariableType? declaredType, string identifier,
     public string Identifier = identifier;
     public List<ParameterNode> Parameters = parameters;
     public Scope Scope = scope;
-    public DefinedType? ReturnType; 
+    public ConcreteType? ReturnType; 
     public SourceSpan Span { get; set; }
 }

@@ -61,7 +61,8 @@ public class OLangGrammar : IGrammar
         
         // TypeDeclaration
         GrammarRule.Create((ClassToken _, IdentifierToken identifierToken, LeftCurlyToken _, IClassMemberListNode stmtList, RightCurlyToken _) => new ClassDeclaration(identifierToken, stmtList)),
-        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, IEnumVariantList enumVariantList, RightCurlyToken _) => new EnumDeclaration(identifierToken, enumVariantList)),
+        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LeftCurlyToken _, IEnumVariantList enumVariantList, RightCurlyToken _) => new EnumDeclaration(identifierToken, enumVariantList, null)),
+        GrammarRule.Create((EnumToken _, IdentifierToken identifierToken, LessToken _, IIdentifierList typeParameters, GreaterToken _, LeftCurlyToken _, IEnumVariantList enumVariantList, RightCurlyToken _) => new EnumDeclaration(identifierToken, enumVariantList, typeParameters)),
         
         // ClassMemberList
         GrammarRule.Create((IClassMember statement) => new SingleMemberClassMemberList(statement)),

@@ -1,7 +1,7 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct Parameter(string name, DefinedType type)
+public struct Parameter(string name, ConcreteType type)
 {
     public string Name = name;
-    public DefinedType Type = type;
+    public ConcreteType Type = type;
 }

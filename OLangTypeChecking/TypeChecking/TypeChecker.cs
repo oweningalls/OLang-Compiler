@@ -13,15 +13,15 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private ScopeTracker<string, DefinedType> _variableTypeStack = null!;
+    private ScopeTracker<string, ConcreteType> _variableTypeStack = null!;
     private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
-    private DefinedType _currentFunctionReturnType;
-    private DefinedType? _currentClass;
+    private ConcreteType _currentFunctionReturnType;
+    private ConcreteType? _currentClass;
     private bool _isInInstanceMethod;
     
     public override Program VisitProgram(Program program)
     {
-        _variableTypeStack = new ScopeTracker<string, DefinedType>();
+        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
         _functionTypeStack = new ScopeTracker<string, FunctionSignature>();
 
         return base.VisitProgram(program);
@@ -43,9 +43,16 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override EnumDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
-        _currentClass = typeHelper.GetDefinedType(enumDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
+        var type = typeHelper.GetDefinedType(enumDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Enum `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
+        _currentClass = type;
 
-        return (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
+        enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
+        // foreach (var typeParameter in enumDeclaration.TypeParameters)
+        // {
+        //     type.ConcreteTypeParameters.Add(typeParameter);
+        // }
+
+        return enumDeclaration;
     }
 
     protected override Return VisitReturnStatement(Return returnStatement)
@@ -250,7 +257,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         typeHelper.GetMethod(_currentClass!.Value, methodDeclaration.Identifier, typedParameters.Select(x => x.Type).ToList(), methodDeclaration.Span);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, DefinedType>();
+        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
     
         _variableTypeStack.SetValue("self", _currentClass!.Value);
         foreach (var param in typedParameters)
@@ -287,7 +294,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _functionTypeStack.SetValue(functionDeclaration.Identifier, signature);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, DefinedType>();
+        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
     
         foreach (var param in functionDeclaration.Parameters)
         {
@@ -309,7 +316,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return functionDeclaration;
     }
 
-    private DefinedType GetReturnType(FunctionSignature signature)
+    private ConcreteType GetReturnType(FunctionSignature signature)
     {
         if (signature.ReturnType == null)
         {
@@ -503,7 +510,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         binaryComparisonExpression.Rhs = MaybeImplicitCast(lhsType, binaryComparisonExpression.Rhs);
     }
 
-    private bool CanImplicitlyConvertTo(DefinedType expectedType, DefinedType actualType)
+    private bool CanImplicitlyConvertTo(ConcreteType expectedType, ConcreteType actualType)
     {
         if (expectedType.Equals(actualType))
         {
@@ -538,7 +545,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         MarkExpressionType(mathExpression, definedType);
     }
 
-    private IExpression CastIfImplicitOrThrow(DefinedType type, IExpression expression, string errorMessage, SourceSpan span)
+    private IExpression CastIfImplicitOrThrow(ConcreteType type, IExpression expression, string errorMessage, SourceSpan span)
     {
         if (CanImplicitlyConvertTo(type, expression.Type!.Value))
         {
@@ -548,7 +555,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         throw ErrorHelper.ShowErrorMessage(errorMessage, span);
     }
 
-    private IExpression MaybeImplicitCast(DefinedType type, IExpression expression)
+    private IExpression MaybeImplicitCast(ConcreteType type, IExpression expression)
     {
         if (expression.Type.Equals(type))
         {
@@ -558,7 +565,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return new Cast(new InternalDefinedType(type), expression) { Type = type };
     }
 
-    private DefinedType? GetCommonType(DefinedType type1, DefinedType type2)
+    private ConcreteType? GetCommonType(ConcreteType type1, ConcreteType type2)
     {
         if (type1.Equals(type2))
         {
@@ -573,7 +580,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return null;
     }
 
-    private DefinedType? ResultingTypeFromMath(DefinedType type1, DefinedType type2)
+    private ConcreteType? ResultingTypeFromMath(ConcreteType type1, ConcreteType type2)
     {
         var t1Precedence = GetMathTypePrecedence(type1);
         var t2Precedence = GetMathTypePrecedence(type2);
@@ -774,7 +781,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     }
 
 
-    private void MarkExpressionType(IExpression expression, DefinedType type)
+    private void MarkExpressionType(IExpression expression, ConcreteType type)
     {
         if (expression.Type is not null)
         {
@@ -783,7 +790,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         expression.Type = type;
     }
     
-    private DefinedType GetExpressionType(IExpression expression)
+    private ConcreteType GetExpressionType(IExpression expression)
     {
         if (expression is FunctionInvocation { Type: null } inv)
         {
@@ -805,7 +812,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _functionTypeStack.EndScope();
     }
     
-    private void RecordVariableType(string identifier, DefinedType expressionType, SourceSpan span)
+    private void RecordVariableType(string identifier, ConcreteType expressionType, SourceSpan span)
     {
         if (_variableTypeStack.ContainsKey(identifier))
         {
@@ -815,7 +822,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _variableTypeStack.SetValue(identifier, expressionType);
     }
     
-    private DefinedType GetVariableType(string identifier, SourceSpan span)
+    private ConcreteType GetVariableType(string identifier, SourceSpan span)
     {
         if (_variableTypeStack.ContainsKey(identifier))
         {
@@ -885,11 +892,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return enumInstantiation;
     }
 
-    private DefinedEnumVariant CheckEnumVariantExists(string variantName, DefinedType definedType, SourceSpan span)
+    private DefinedEnumVariant CheckEnumVariantExists(string variantName, ConcreteType concreteType, SourceSpan span)
     {
-        if (!definedType.EnumVariants.TryGetValue(variantName, out var enumVariant))
+        if (!concreteType.EnumVariants.TryGetValue(variantName, out var enumVariant))
         {
-            throw ErrorHelper.ShowErrorMessage($"Enum `{definedType.Name}` does not contain a variant named `{variantName}`.", span);
+            throw ErrorHelper.ShowErrorMessage($"Enum `{concreteType.Name}` does not contain a variant named `{variantName}`.", span);
         }
 
         return enumVariant;
@@ -951,9 +958,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return selfAccess;
     }
 
-    private DefinedType? GetCommonType(IEnumerable<DefinedType> types)
+    private ConcreteType? GetCommonType(IEnumerable<ConcreteType> types)
     {
-        DefinedType? matchExpressionType = null;
+        ConcreteType? matchExpressionType = null;
         foreach (var type in types)
         {
             if (matchExpressionType is not {} currentType)
@@ -984,16 +991,16 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return matchArm;
     }
 
-    private int? GetMathTypePrecedence(DefinedType type)
+    private int? GetMathTypePrecedence(ConcreteType type)
     {
         var idx = MathTypes.IndexOf(type);
         return idx == -1 ? null : idx;
     }
 
-    private bool IsMathType(DefinedType type)
+    private bool IsMathType(ConcreteType type)
     {
         return MathTypes.Contains(type);
     }
 
-    private static readonly List<DefinedType> MathTypes = [PrimitiveTypes.IntType, PrimitiveTypes.FloatType];
+    private static readonly List<ConcreteType> MathTypes = [PrimitiveTypes.IntType, PrimitiveTypes.FloatType];
 }

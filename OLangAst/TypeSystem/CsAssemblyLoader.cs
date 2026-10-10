@@ -10,8 +10,8 @@ public static class CsAssemblyLoader
         return assembly.ExportedTypes;
     }
     
-    public static List<(Type, DefinedType)> LoadDefinedTypesFromAssembly(string assemblyName)
+    public static List<(Type, ConcreteType)> LoadDefinedTypesFromAssembly(string assemblyName)
     {
-        return LoadCsTypesFromAssembly(assemblyName).Select(x => (x, DefinedType.FromCsType(x))).ToList();
+        return LoadCsTypesFromAssembly(assemblyName).Select(x => (x, ConcreteType.FromCsType(x))).ToList();
     }
 }

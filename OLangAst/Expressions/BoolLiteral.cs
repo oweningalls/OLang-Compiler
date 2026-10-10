@@ -7,5 +7,5 @@ public class BoolLiteral(bool value) : IExpression
 {
     public bool Value = value;
     public SourceSpan Span { get; set; }
-    public DefinedType? Type { get; set; } = PrimitiveTypes.BoolType;
+    public ConcreteType? Type { get; set; } = PrimitiveTypes.BoolType;
 }

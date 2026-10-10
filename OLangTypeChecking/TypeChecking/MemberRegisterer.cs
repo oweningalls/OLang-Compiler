@@ -11,7 +11,7 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class MemberRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private DefinedType? _currentType;
+    private ConcreteType? _currentType;
 
     protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {

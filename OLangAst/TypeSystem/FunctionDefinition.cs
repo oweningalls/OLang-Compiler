@@ -1,9 +1,9 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct FunctionDefinition(DefinedType declaringType, DefinedType returnType, string name, IEnumerable<Parameter> parameters, bool isInstance)
+public struct FunctionDefinition(ConcreteType declaringType, ConcreteType returnType, string name, IEnumerable<Parameter> parameters, bool isInstance)
 {
-    public DefinedType DeclaringType = declaringType;
-    public DefinedType ReturnType = returnType;
+    public ConcreteType DeclaringType = declaringType;
+    public ConcreteType ReturnType = returnType;
     public string Name = name;
     public IReadOnlyList<Parameter> Parameters = parameters.ToList();
     public bool IsInstance = isInstance;

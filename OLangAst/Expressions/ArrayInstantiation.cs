@@ -9,5 +9,5 @@ public class ArrayInstantiation(IVariableType arrayType, IExpression size) : IEx
     public IVariableType ArrayType = arrayType;
     public IExpression Size = size;
     public SourceSpan Span { get; set; }
-    public DefinedType? Type { get; set; }
+    public ConcreteType? Type { get; set; }
 }

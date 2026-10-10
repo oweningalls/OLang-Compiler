@@ -510,7 +510,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
         instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
-        _il.Emit(OpCodes.Newarr, GetCsType(instantiation.Type!.Value.TypeParameters.Single()));
+        _il.Emit(OpCodes.Newarr, GetCsType(instantiation.Type!.Value.ConcreteTypeParameters.Single()));
 
         return instantiation;
     }
@@ -778,7 +778,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     private long _generatedVariableCounter;
     
-    public Type GetCsType(DefinedType type)
+    public Type GetCsType(ConcreteType type)
     {
         if (type.Equals(PrimitiveTypes.FloatType))
         {
@@ -808,7 +808,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
         if (type.IsArray)
         {
-            var innerType = type.TypeParameters.Single();
+            var innerType = type.ConcreteTypeParameters.Single();
 
             return GetCsType(innerType).MakeArrayType();
 
@@ -817,25 +817,25 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return _definedTypes[type];
     }
     
-    private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
-    private Dictionary<DefinedType, Type> _loadedTypes = new();
-    private Dictionary<DefinedType, ConstructorBuilder> _definedTypeConstructors = new();
+    private Dictionary<ConcreteType, TypeBuilder> _definedTypes = new();
+    private Dictionary<ConcreteType, Type> _loadedTypes = new();
+    private Dictionary<ConcreteType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
     private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
     private Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
 
-    private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
+    private List<TypeBuilder> DefineClasses(IEnumerable<ConcreteType> classes)
     {
         return classes.Where(x => x.TypeVariant != TypeVariant.Enum).Select(DefineClass).ToList();
     }
 
-    private List<TypeBuilder> DefineEnums(IEnumerable<DefinedType> enums)
+    private List<TypeBuilder> DefineEnums(IEnumerable<ConcreteType> enums)
     {
         return enums.Where(x => x.TypeVariant == TypeVariant.Enum).Select(DefineEnum).ToList();
     }
 
-    private TypeBuilder DefineEnum(DefinedType type)
+    private TypeBuilder DefineEnum(ConcreteType type)
     {
         var attributes = TypeAttributes.Public | TypeAttributes.Abstract;
         
@@ -849,7 +849,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return typeBuilder;
     }
 
-    private void DefineEnumVariants(IEnumerable<DefinedType> enums)
+    private void DefineEnumVariants(IEnumerable<ConcreteType> enums)
     {
         foreach (var enumType in enums)
         {
@@ -893,7 +893,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return $"_{index}";
     }
 
-    private TypeBuilder DefineClass(DefinedType type)
+    private TypeBuilder DefineClass(ConcreteType type)
     {
         var attributes = TypeAttributes.Public;
         
@@ -904,12 +904,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return typeBuilder;
     }
 
-    private void DefineMethods(List<DefinedType> classes, List<TypeBuilder> types)
+    private void DefineMethods(List<ConcreteType> classes, List<TypeBuilder> types)
     {
         classes.Zip(types).SelectMany(x => x.First.Methods.Select(method => (x.Second, method))).ToList().ForEach(x => DefineMethod(x.Second, x.method));
     }
     
-    private void DefineFields(List<DefinedType> classes, List<TypeBuilder> types)
+    private void DefineFields(List<ConcreteType> classes, List<TypeBuilder> types)
     {
         classes.Zip(types).SelectMany(x => x.First.Fields.Values.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method.Name, x.method.Type));
     }
@@ -931,7 +931,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _definedMethods[type][definition.Name] = method;
     }
 
-    private FieldBuilder DefineField(TypeBuilder type, string fieldName, DefinedType fieldType)
+    private FieldBuilder DefineField(TypeBuilder type, string fieldName, ConcreteType fieldType)
     {
         var attributes = FieldAttributes.Public;
         var defined = type.DefineField(fieldName, GetCsType(fieldType), attributes);

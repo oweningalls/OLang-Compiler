@@ -7,6 +7,6 @@ public class ClassDeclaration(string identifier, List<IClassMember> classMembers
 {
     public string Identifier = identifier;
     public List<IClassMember> ClassMembers = classMembers;
-    public DefinedType? Type; 
+    public ConcreteType? Type; 
     public SourceSpan Span { get; set; }
 }

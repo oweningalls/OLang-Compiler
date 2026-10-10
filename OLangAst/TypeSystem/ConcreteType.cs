@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
-public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = false, bool isArray = false)
+public struct ConcreteType(string name, TypeVariant typeVariant, bool isCs = false, bool isArray = false)
 {
     public string Name = name;
     public TypeVariant TypeVariant = typeVariant;
@@ -12,13 +12,13 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
     public Dictionary<string, FieldDefinition> Fields = [];
     public bool IsCs = isCs;
     public bool IsArray = isArray;
-    public List<DefinedType> TypeParameters = [];
+    public List<ConcreteType> ConcreteTypeParameters = []; // for instantiations of generics
 
     private static readonly Lock _lockObject = new();
 
-    public static DefinedType FromCsType(Type type)
+    public static ConcreteType FromCsType(Type type)
     {
-        DefinedType definedType;
+        ConcreteType concreteType;
         lock (_lockObject)
         {
             if (_typeMap.TryGetValue(type, out var savedType))
@@ -26,18 +26,18 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
                 return savedType;
             }
 
-            definedType = new DefinedType(type.Name, GetCsTypeVariant(type), true);
-            _typeMap[type] = definedType;
+            concreteType = new ConcreteType(type.Name, GetCsTypeVariant(type), true);
+            _typeMap[type] = concreteType;
         }
 
         foreach (var typeArgument in type.GenericTypeArguments)
         {
-            definedType.TypeParameters.Add(FromCsType(typeArgument));
+            concreteType.ConcreteTypeParameters.Add(FromCsType(typeArgument));
         }
 
         foreach (var method in type.GetMethods())
         {
-            definedType.Methods.Add(new FunctionDefinition(definedType, FromCsType(method.ReturnType),
+            concreteType.Methods.Add(new FunctionDefinition(concreteType, FromCsType(method.ReturnType),
                 method.Name,
                 method.GetParameters().ToArray()
                     .Select(parameter => new Parameter(parameter.Name,
@@ -45,7 +45,7 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
                     .ToList(), !method.IsStatic));
         }
 
-        return definedType;
+        return concreteType;
     }
 
     private static TypeVariant GetCsTypeVariant(Type type)
@@ -58,11 +58,11 @@ public struct DefinedType(string name, TypeVariant typeVariant, bool isCs = fals
         return TypeVariant.Class;
     }
 
-    private static ConcurrentDictionary<Type, DefinedType> _typeMap = new();
+    private static ConcurrentDictionary<Type, ConcreteType> _typeMap = new();
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return obj is DefinedType definedType && definedType.Name == Name && IsArray == definedType.IsArray && TypeParameters.SequenceEqual(definedType.TypeParameters);
+        return obj is ConcreteType definedType && definedType.Name == Name && IsArray == definedType.IsArray && ConcreteTypeParameters.SequenceEqual(definedType.ConcreteTypeParameters);
     }
 
     public override string ToString()

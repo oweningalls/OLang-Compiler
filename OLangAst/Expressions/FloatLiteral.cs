@@ -7,5 +7,5 @@ public class FloatLiteral(float value) : IExpression
 {
     public float Value = value;
     public SourceSpan Span { get; set; }
-    public DefinedType? Type { get; set; } = PrimitiveTypes.FloatType;
+    public ConcreteType? Type { get; set; } = PrimitiveTypes.FloatType;
 }

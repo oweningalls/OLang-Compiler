@@ -7,5 +7,5 @@ public class Negate(IExpression value) : IExpression
 {
     public IExpression Value = value;
     public SourceSpan Span { get; set; }
-    public DefinedType? Type { get; set; }
+    public ConcreteType? Type { get; set; }
 }

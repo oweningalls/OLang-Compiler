@@ -1,7 +1,7 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct DefinedEnumVariant(string name, List<DefinedType> parameters)
+public struct DefinedEnumVariant(string name, List<ConcreteType> parameters)
 {
     public string Name = name;
-    public List<DefinedType> Parameters = parameters;
+    public List<ConcreteType> Parameters = parameters;
 }
