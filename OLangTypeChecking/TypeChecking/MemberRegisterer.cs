@@ -53,13 +53,13 @@ public class MemberRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) :
 
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        functionDeclaration.ReturnType = typeHelper.GetMethodType(functionDeclaration.DeclaredType);
+        functionDeclaration.ReturnType = typeHelper.GetMethodType(functionDeclaration.DeclaredType, _currentType);
         SetParameterTypes(functionDeclaration.Parameters);
         return base.VisitFunctionDeclaration(functionDeclaration);
     }
 
     private void SetParameterTypes(List<ParameterNode> parameters)
     {
-        parameters.ForEach(x => { x.Type = typeHelper.GetLocalType(x.DeclaredType); });
+        parameters.ForEach(x => { x.Type = typeHelper.GetLocalType(x.DeclaredType, _currentType); });
     }
 }

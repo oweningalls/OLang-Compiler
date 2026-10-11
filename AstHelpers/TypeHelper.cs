@@ -10,35 +10,35 @@ namespace AstHelpers;
 
 public class TypeHelper(IErrorHelper errorHelper)
 {
-    public IType GetMethodType(IVariableType? type)
+    public IType GetMethodType(IVariableType? type, IDefinedType? typeContext)
     {
         if (type == null)
         {
             return PrimitiveTypes.VoidType;
         }
 
-        return GetLocalType(type);
+        return GetLocalType(type, typeContext);
     }
 
-    public IType? TryGetLocalType(IVariableType? type)
+    public IType? TryGetLocalType(IVariableType? type, IDefinedType? typeContext)
     {
         if (type == null)
         {
             return null;
         }
 
-        return GetLocalType(type);
+        return GetLocalType(type, typeContext);
     }
-    public IType GetLocalType(IVariableType type)
+    public IType GetLocalType(IVariableType type, IDefinedType? typeContext)
     {
         if (type is ArrayType arrayType)
         {
-            var innerType = GetLocalType(arrayType.InnerType);
+            var innerType = GetLocalType(arrayType.InnerType, typeContext);
 
             return GetArrayOfType(innerType);
         }
         
-        return GetDefinedType(type.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
+        return GetDefinedType(type.Name, typeContext) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
     }
 
     private DefinedArray GetArrayOfType(IType type)
@@ -73,9 +73,9 @@ public class TypeHelper(IErrorHelper errorHelper)
         
         CheckForExistingMember(customDefinedType, methodDeclaration.Identifier, methodDeclaration.Span);
         var method = new FunctionDefinition(customDefinedType,
-            GetMethodType(methodDeclaration.DeclaredType),
+            GetMethodType(methodDeclaration.DeclaredType, customDefinedType),
             methodDeclaration.Identifier,
-            methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, GetLocalType(x.DeclaredType))),
+            methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, GetLocalType(x.DeclaredType, customDefinedType))),
             methodDeclaration.IsInstance);
         customDefinedType.Methods.Add(method);
 
@@ -91,7 +91,7 @@ public class TypeHelper(IErrorHelper errorHelper)
         
         CheckForExistingEnumVariant(customDefinedType, enumVariant.Name, enumVariant.Span);
 
-        var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name, enumVariant.Values.Select(GetLocalType).ToList());
+        var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name, enumVariant.Values.Select(x => GetLocalType(x, customDefinedType)).ToList());
         customDefinedType.EnumVariants.Add(enumVariant.Name, definedEnumVariant);
 
         return definedEnumVariant;
@@ -108,7 +108,7 @@ public class TypeHelper(IErrorHelper errorHelper)
     public void CreateCustomField(DefinedType customDefinedType, FieldDeclaration fieldDeclaration)
     {
         CheckForExistingMember(customDefinedType, fieldDeclaration.Identifier, fieldDeclaration.Span);
-        customDefinedType.Fields.Add(fieldDeclaration.Identifier, new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
+        customDefinedType.Fields.Add(fieldDeclaration.Identifier, new FieldDefinition(GetLocalType(fieldDeclaration.Type, customDefinedType), fieldDeclaration.Identifier));
     }
 
     private void CheckForExistingMember(DefinedType definedType, string memberName, SourceSpan span)
@@ -151,13 +151,18 @@ public class TypeHelper(IErrorHelper errorHelper)
         return arrayType.InnerType;
     }
 
-    public IDefinedType? GetDefinedType(string name)
+    public IType? GetDefinedType(string name, IDefinedType? typeContext)
     {
         if (PrimitiveTypeMap.Keys.Any(x => x.ToString() == name))
         {
             return PrimitiveTypeMap.First(x => x.Key.ToString() == name).Value;
         }
-        return _customTypes.GetValueOrDefault(name) ?? _loadedTypes.GetValueOrDefault(name) as IDefinedType;
+        return _customTypes.GetValueOrDefault(name) ?? (IType?)_loadedTypes.GetValueOrDefault(name) ?? GetTypeParameter(name, typeContext);
+    }
+
+    private GenericType? GetTypeParameter(string name, IDefinedType? declaringType)
+    {
+        return (declaringType as DefinedType)?.TypeParameters.Any(x => x == name) ?? false ? new GenericType(name) : null;
     }
 
     private bool TypeMatches(IType type, List<IType> argumentTypes, int index)

@@ -36,14 +36,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
+        _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier, null) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
 
         return (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
     }
     
     protected override EnumDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
-        var type = typeHelper.GetDefinedType(enumDeclaration.Identifier) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Enum `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
+        var type = typeHelper.GetDefinedType(enumDeclaration.Identifier, null) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Enum `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
         _currentClass = type;
 
         enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
@@ -228,7 +228,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         var type = GetExpressionType(declarationStatement.Value);
-        if (declarationStatement.DeclaredType is {} declaredType && !CanImplicitlyConvertTo(typeHelper.GetLocalType(declaredType), type))
+        if (declarationStatement.DeclaredType is {} declaredType && !CanImplicitlyConvertTo(typeHelper.GetLocalType(declaredType, _currentClass), type))
         {
             throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.DeclaredType}", declarationStatement.Span);
         }
@@ -238,7 +238,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Cannot set variable to void value", declarationStatement.Span);
         }
     
-        declarationStatement.VariableType = typeHelper.TryGetLocalType(declarationStatement.DeclaredType!) ?? type;
+        declarationStatement.VariableType = typeHelper.TryGetLocalType(declarationStatement.DeclaredType!, _currentClass) ?? type;
         declarationStatement.Value = MaybeImplicitCast(declarationStatement.VariableType!, declarationStatement.Value);
         RecordVariableType(declarationStatement.Identifier, declarationStatement.VariableType!, declarationStatement.Span);
 
@@ -247,13 +247,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     private FunctionSignature GetSignatureFromFunctionDeclaration(FunctionDeclaration declaration)
     {
-        return new FunctionSignature(typeHelper.GetMethodType(declaration.DeclaredType), declaration.Parameters.Select(x => typeHelper.GetLocalType(x.DeclaredType)));
+        return new FunctionSignature(typeHelper.GetMethodType(declaration.DeclaredType, _currentClass), declaration.Parameters.Select(x => typeHelper.GetLocalType(x.DeclaredType, _currentClass)));
     }
 
     protected override MethodDeclaration VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var typedParameters = methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, typeHelper.GetLocalType(x.DeclaredType))).ToList();
-        methodDeclaration.Parameters.ForEach(x => x.Type = typeHelper.GetLocalType(x.DeclaredType));
+        var typedParameters = methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, typeHelper.GetLocalType(x.DeclaredType, _currentClass))).ToList();
+        methodDeclaration.Parameters.ForEach(x => x.Type = typeHelper.GetLocalType(x.DeclaredType, _currentClass));
         typeHelper.GetMethod(_currentClass!, methodDeclaration.Identifier, typedParameters.Select(x => x.Type).ToList(), methodDeclaration.Span);
     
         var originalTypeStack = _variableTypeStack;
@@ -267,7 +267,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         _isInInstanceMethod = methodDeclaration.IsInstance;
         var previousFunctionType = _currentFunctionReturnType;
-        _currentFunctionReturnType = typeHelper.GetMethodType(methodDeclaration.DeclaredType);
+        _currentFunctionReturnType = typeHelper.GetMethodType(methodDeclaration.DeclaredType, _currentClass);
     
         VisitScope(methodDeclaration.Scope);
         if (methodDeclaration.DeclaredType is not null)
@@ -283,7 +283,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IClassMember VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
     {
-        _ = typeHelper.GetLocalType(fieldDeclaration.Type);
+        _ = typeHelper.GetLocalType(fieldDeclaration.Type, _currentClass);
 
         return fieldDeclaration;
     }
@@ -298,7 +298,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
         foreach (var param in functionDeclaration.Parameters)
         {
-            _variableTypeStack.SetValue(param.Identifier, typeHelper.GetLocalType(param.DeclaredType));
+            _variableTypeStack.SetValue(param.Identifier, typeHelper.GetLocalType(param.DeclaredType, _currentClass));
         }
     
         var previousFunctionType = _currentFunctionReturnType;
@@ -374,7 +374,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         if (!methodInvocation.IsInstance)
         {
-            if (typeHelper.GetDefinedType(methodInvocation.ClassName!) is not { } declaredClass)
+            if (typeHelper.GetDefinedType(methodInvocation.ClassName!, null) is not IDefinedType declaredClass)
             {
                 throw ErrorHelper.ShowErrorMessage($"Unrecognized class name: `{methodInvocation.ClassName}`", methodInvocation.Span);
             }
@@ -710,10 +710,10 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         cast = (Cast)base.VisitCast(cast);
         var expType = cast.Value.Type!;
-        var targetType = typeHelper.GetLocalType(cast.TargetType);
+        var targetType = typeHelper.GetLocalType(cast.TargetType, _currentClass);
         if ((IsMathType(targetType) && IsMathType(expType)) || targetType.Equals(expType))
         {
-            cast.Type = typeHelper.GetLocalType(cast.TargetType);
+            cast.Type = typeHelper.GetLocalType(cast.TargetType, _currentClass);
             return cast;
         }
         
@@ -722,7 +722,10 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        var type = typeHelper.GetDefinedType(instantiation.ClassName) ?? throw ErrorHelper.ShowErrorMessage($"Unrecognized type `{instantiation.ClassName}`.", instantiation.Span);
+        var type = (typeHelper.GetDefinedType(instantiation.ClassName, null)
+                    ?? throw ErrorHelper.ShowErrorMessage($"Unrecognized type `{instantiation.ClassName}`.", instantiation.Span)) as IDefinedType
+                    ?? throw ErrorHelper.ShowErrorMessage($"Cannot instantiate generic type `{instantiation.ClassName}`.", instantiation.Span);
+        
         instantiation.Type = type;
         instantiation = (Instantiation)base.VisitInstantiation(instantiation);
 
@@ -768,7 +771,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Size of array must be int, found type `{instantiation.Size.Type}`.", instantiation.Span);
         }
         
-        instantiation.Type = typeHelper.GetLocalType(instantiation.ArrayType);
+        instantiation.Type = typeHelper.GetLocalType(instantiation.ArrayType, _currentClass);
         
         return instantiation;
     }
@@ -883,8 +886,8 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
         enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
-        var definedType = typeHelper.GetDefinedType(enumInstantiation.EnumName)!;
-        if (definedType.TypeVariant != TypeVariant.Enum)
+        var type = typeHelper.GetDefinedType(enumInstantiation.EnumName, null)!;
+        if (type is not IDefinedType definedType || definedType.TypeVariant != TypeVariant.Enum)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
         }

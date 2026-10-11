@@ -334,9 +334,10 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override FunctionDeclaration VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
+        // TODO: handle generic types properly
         GenerateFunction(functionDeclaration.Identifier,
             MethodAttributes.Public | MethodAttributes.Static,
-            functionDeclaration.DeclaredType == null ? null : GetCsType(typeHelper.GetMethodType(functionDeclaration.DeclaredType)),
+            functionDeclaration.DeclaredType == null ? null : GetCsType(typeHelper.GetMethodType(functionDeclaration.DeclaredType, null)),
             functionDeclaration.Parameters,
             functionDeclaration.Scope.Statements);
 
@@ -499,7 +500,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var type = (IDefinedType)instantiation.Type!;
         var csType = GetCsType(type);
         var isCs = instantiation.Type is ConcreteType { IsCs: true } concreteType;
-        var method = isCs ? csType.GetConstructor([])! : _definedTypeConstructors[type];
+        var method = isCs ? csType.GetConstructor([])! : _definedTypeConstructors[(DefinedType)type];
         _il.Emit(OpCodes.Newobj, method);
         foreach (var field in type.GetFields().Keys)
         {
@@ -672,7 +673,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var matchTargetLocal = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!));
         _il.Emit(OpCodes.Stloc, matchTargetLocal);
 
-        var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName)!);
+        var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName, null)!);
         var csEnumVariants = _enumVariants[enumBaseCsType];
 
         var exitLabel = _il.DefineLabel();
@@ -781,8 +782,8 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     }
     
     private long _generatedVariableCounter;
-    
-    public Type GetCsType(IType type)
+
+    private Type GetCsType(IType type)
     {
         if (type.Equals(PrimitiveTypes.FloatType))
         {
@@ -811,17 +812,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             case DefinedArray definedArray:
                 return GetCsType(definedArray.InnerType).MakeArrayType();
             case ConcreteType concreteType:
-                if (concreteType.IsCs)
-                {
-                    return _loadedTypes[concreteType];
-                }
-                return _definedTypes[concreteType];
-                break;
+                return concreteType.IsCs ? _loadedTypes[concreteType] : _definedTypes[concreteType];
             case DefinedType definedType:
                 return _definedTypes[definedType];
             case GenericType genericType:
-                // TODO: figure this out
-                throw new Exception("Need to figure out how these work...");
+                return _definedTypeTypeParameters[_type][genericType.TypeParameterName];
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
@@ -830,6 +825,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     private Dictionary<IDefinedType, TypeBuilder> _definedTypes = new();
     private Dictionary<ConcreteType, Type> _loadedTypes = new();
     private Dictionary<IDefinedType, ConstructorBuilder> _definedTypeConstructors = new();
+    private Dictionary<TypeBuilder, Dictionary<string, GenericTypeParameterBuilder>> _definedTypeTypeParameters = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
     private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
@@ -852,6 +848,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
         _definedTypes[type] = typeBuilder;
         _definedTypeConstructors[type] = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        if (type.TypeParameters.Count != 0)
+        {
+            _definedTypeTypeParameters[typeBuilder] = new Dictionary<string, GenericTypeParameterBuilder>(typeBuilder
+                .DefineGenericParameters(type.TypeParameters.ToArray())
+                .Select(x => new KeyValuePair<string, GenericTypeParameterBuilder>(x.Name, x))
+            );
+        }
         typeBuilder.CreateType();
         _enumVariants[typeBuilder] = [];
         _enumVariantConstructors[typeBuilder] = [];
@@ -864,6 +867,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         foreach (var enumType in enums)
         {
             var builder = _definedTypes[enumType];
+            _type = builder;
             foreach (var variant in enumType.EnumVariants.Values)
             {
                 MakeEnumVariant(variant, builder);
@@ -910,6 +914,13 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         var typeBuilder = _moduleBuilder.DefineType(type.Name, attributes);
         _definedTypes[type] = typeBuilder;
         _definedTypeConstructors[type] = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        if (type.TypeParameters.Count != 0)
+        {
+            _definedTypeTypeParameters[typeBuilder] = new Dictionary<string, GenericTypeParameterBuilder>(typeBuilder
+                .DefineGenericParameters(type.TypeParameters.ToArray())
+                .Select(x => new KeyValuePair<string, GenericTypeParameterBuilder>(x.Name, x))
+            );
+        }
         
         return typeBuilder;
     }

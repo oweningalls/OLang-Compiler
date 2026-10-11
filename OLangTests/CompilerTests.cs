@@ -1667,17 +1667,17 @@ public class CompilerTests
              }
          }
          """, ""),
-        // ("""
-        //  enum Maybe<T> {
-        //      Val<T>,
-        //      None
-        //  }
-        //  
-        //  class Program {
-        //      void Main() {
-        //      }
-        //  }
-        //  """, ""),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+         
+         class Program {
+             void Main() {
+             }
+         }
+         """, ""),
     ];
     
     [TestCaseSource(nameof(GenericTypePrograms))]
