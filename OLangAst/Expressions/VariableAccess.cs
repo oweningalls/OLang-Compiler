@@ -7,5 +7,5 @@ public class VariableAccess(string identifier) : IExpression
 {
     public string Identifier = identifier;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

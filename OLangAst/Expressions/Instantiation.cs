@@ -8,5 +8,5 @@ public class Instantiation(string className, Dictionary<string, IExpression> ini
     public string ClassName = className;
     public Dictionary<string, IExpression> FieldInitializations = initializations;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

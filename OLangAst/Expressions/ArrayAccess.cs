@@ -8,5 +8,5 @@ public class ArrayAccess(IExpression array, IExpression index) : IExpression
     public IExpression Array = array;
     public IExpression Index = index;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

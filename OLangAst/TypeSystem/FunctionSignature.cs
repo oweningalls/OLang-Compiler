@@ -1,7 +1,7 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public class FunctionSignature(ConcreteType? returnType, IEnumerable<ConcreteType> parameterTypes)
+public class FunctionSignature(IType? returnType, IEnumerable<IType> parameterTypes)
 {
-    public readonly ConcreteType? ReturnType = returnType;
-    public readonly List<ConcreteType> ParameterTypes = parameterTypes.ToList();
+    public readonly IType? ReturnType = returnType;
+    public readonly List<IType> ParameterTypes = parameterTypes.ToList();
 }

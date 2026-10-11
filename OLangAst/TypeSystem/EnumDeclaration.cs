@@ -8,6 +8,6 @@ public class EnumDeclaration(string identifier, List<string> typeParameters, Lis
     public string Identifier = identifier;
     public List<string> TypeParameters = typeParameters;
     public List<EnumVariant> EnumVariants = enumVariants;
-    public ConcreteType? Type;
+    public DefinedType? Type;
     public SourceSpan Span { get; set; }
 }

@@ -13,6 +13,7 @@ using OLangAst.Miscellaneous;
 using OLangAst.Statements;
 using OLangAst.TypeSystem;
 using OLangHelpers;
+using Type = System.Type;
 
 namespace AssemblyGeneration.Generation;
 
@@ -69,7 +70,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _type = _definedTypes[classDeclaration.Type!.Value];
+        _type = _definedTypes[classDeclaration.Type!];
         classDeclaration = (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
         
         _type.CreateType();
@@ -79,7 +80,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     protected override ITypeDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
-        _type = _definedTypes[enumDeclaration.Type!.Value];
+        _type = _definedTypes[enumDeclaration.Type!];
         enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
         // already did CreateType() in DefineEnum
         
@@ -95,7 +96,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!.Value)));
+        var method = (MethodBuilder)GetMethod(_type, methodDeclaration.Identifier, methodDeclaration.Parameters.Select(x => GetCsType(x.Type!)));
         _functions[methodDeclaration.Identifier] = method;
         
         var originalIl = _il;
@@ -162,7 +163,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     private void GenerateFunction(string name, MethodAttributes attributes, Type? retType, List<ParameterNode> parameters, List<IStatement> statements)
     {
-        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => GetCsType(x.Type!.Value)).ToArray());
+        var method = _type.DefineMethod(name, attributes, retType, parameters.Select(x => GetCsType(x.Type!)).ToArray());
         _functions[name] = method;
         
         var originalIl = _il;
@@ -192,7 +193,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
         enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
-        var enumType = GetCsType(enumInstantiation.Type!.Value);
+        var enumType = GetCsType(enumInstantiation.Type!);
         var constructor = _enumVariantConstructors[enumType][enumInstantiation.VariantName];
         
         _il.Emit(OpCodes.Newobj, constructor);
@@ -224,7 +225,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override VariableDeclarationStatement VisitDeclarationStatement(VariableDeclarationStatement declarationStatement)
     {
-        var local = _il.DeclareLocal(GetCsType(declarationStatement.VariableType!.Value));
+        var local = _il.DeclareLocal(GetCsType(declarationStatement.VariableType!));
         _variableTracker.SetValue(declarationStatement.Identifier, local);
         declarationStatement = base.VisitDeclarationStatement(declarationStatement);
         EmitLocalSet(declarationStatement.Identifier);
@@ -252,7 +253,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
     {
         fieldAssignment.Target = VisitExpression(fieldAssignment.Target);
-        EmitFieldAssignment(GetCsType(fieldAssignment.Target.Type!.Value), fieldAssignment.Value, fieldAssignment.Identifier);
+        EmitFieldAssignment(GetCsType(fieldAssignment.Target.Type!), fieldAssignment.Value, fieldAssignment.Identifier);
 
         return fieldAssignment;
     }
@@ -346,11 +347,11 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocationStatement(methodInvocation);
 
-        var returnType = GetCsType(typeHelper.GetMethod(methodInvocation.Expression!.Type!.Value,
+        var returnType = GetCsType(typeHelper.GetMethod((IDefinedType)methodInvocation.Expression!.Type!,
                 methodInvocation.Identifier,
-                methodInvocation.Arguments.Select(x => x.Type!.Value)
+                methodInvocation.Arguments.Select(x => x.Type!)
                     .ToList(), methodInvocation.Span)
-            .ReturnType);
+            .GetReturnType());
         if (returnType != typeof(void))
         {
             _il.Emit(OpCodes.Pop);
@@ -363,14 +364,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
 
         var expressionType = methodInvocation.SourceType ?? methodInvocation.Expression?.Type;
-        var targetType = expressionType == null ? _type : GetCsType(expressionType.Value);
+        var targetType = expressionType == null ? _type : GetCsType(expressionType);
 
         if (expressionType != null && targetType.IsValueType)
         {
             GetReferenceToStackValue(methodInvocation.Expression);
         }
 
-        var method = GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => GetCsType(x.Type!.Value)));
+        var method = GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => GetCsType(x.Type!)));
         _il.Emit(targetType.IsValueType || method.IsStatic ? OpCodes.Call : OpCodes.Callvirt, method);
 
         return methodInvocation;
@@ -380,7 +381,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
 
-        var type = GetCsType(fieldAccess.Expression.Type!.Value);
+        var type = GetCsType(fieldAccess.Expression.Type!);
         var field = GetField(type, fieldAccess.FieldName);
         _il.Emit(OpCodes.Ldfld, field);
         
@@ -389,7 +390,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     private void GetReferenceToStackValue(IExpression expression)
     {
-        var local = _il.DeclareLocal(GetCsType(expression.Type!.Value));
+        var local = _il.DeclareLocal(GetCsType(expression.Type!));
         var name = _generatedVariableCounter++.ToString();
         _variableTracker.SetValue(name, local);
         EmitLocalSet(name);
@@ -495,13 +496,15 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
     protected override IExpression VisitInstantiation(Instantiation instantiation)
     {
-        var type = GetCsType(instantiation.Type!.Value);
-        var method = instantiation.Type!.Value.IsCs ? type.GetConstructor([])! : _definedTypeConstructors[instantiation.Type.Value];
+        var type = (IDefinedType)instantiation.Type!;
+        var csType = GetCsType(type);
+        var isCs = instantiation.Type is ConcreteType { IsCs: true } concreteType;
+        var method = isCs ? csType.GetConstructor([])! : _definedTypeConstructors[type];
         _il.Emit(OpCodes.Newobj, method);
-        foreach (var field in instantiation.Type!.Value.Fields.Keys)
+        foreach (var field in type.GetFields().Keys)
         {
             _il.Emit(OpCodes.Dup);
-            EmitFieldAssignment(type, instantiation.FieldInitializations[field], field);
+            EmitFieldAssignment(csType, instantiation.FieldInitializations[field], field);
         }
 
         return instantiation;
@@ -510,7 +513,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
         instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
-        _il.Emit(OpCodes.Newarr, GetCsType(instantiation.Type!.Value.ConcreteTypeParameters.Single()));
+        _il.Emit(OpCodes.Newarr, GetCsType(((DefinedArray)instantiation.Type!).InnerType));
 
         return instantiation;
     }
@@ -666,17 +669,18 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
     {
         matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
-        var matchTargetLocal = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!.Value));
+        var matchTargetLocal = _il.DeclareLocal(GetCsType(matchExpression.MatchTarget.Type!));
         _il.Emit(OpCodes.Stloc, matchTargetLocal);
 
-        var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName)!.Value);
-        var enumVariants = _enumVariants[enumBaseCsType];
+        var enumBaseCsType = GetCsType(typeHelper.GetDefinedType(matchExpression.MatchArms.First().EnumName)!);
+        var csEnumVariants = _enumVariants[enumBaseCsType];
 
         var exitLabel = _il.DefineLabel();
+        var enumVariants = ((IDefinedType)matchExpression.MatchTarget.Type!).GetEnumVariants();
         foreach (var matchArm in matchExpression.MatchArms)
         {
-            var enumVariant = matchExpression.MatchTarget.Type!.Value.EnumVariants[matchArm.VariantName];
-            var variantCsType = enumVariants[matchArm.VariantName];
+            var enumVariant = enumVariants[matchArm.VariantName];
+            var variantCsType = csEnumVariants[matchArm.VariantName];
             _il.Emit(OpCodes.Ldloc, matchTargetLocal);
             _il.Emit(OpCodes.Isinst, variantCsType);
             _il.Emit(OpCodes.Ldnull);
@@ -686,7 +690,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             _il.Emit(OpCodes.Brfalse, label);
             
             BeginScope();
-            foreach (var ((index, variable), type) in matchArm.DestructureVariables.Index().Zip(enumVariant.Parameters))
+            foreach (var ((index, variable), type) in matchArm.DestructureVariables.Index().Zip(enumVariant.GetParameters()))
             {
                 var local = _il.DeclareLocal(GetCsType(type));
                 _variableTracker.SetValue(variable, local);
@@ -778,7 +782,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     
     private long _generatedVariableCounter;
     
-    public Type GetCsType(ConcreteType type)
+    public Type GetCsType(IType type)
     {
         if (type.Equals(PrimitiveTypes.FloatType))
         {
@@ -801,41 +805,47 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         {
             return typeof(void);
         }
-        if (type.IsCs)
+
+        switch (type)
         {
-            return _loadedTypes[type];
+            case DefinedArray definedArray:
+                return GetCsType(definedArray.InnerType).MakeArrayType();
+            case ConcreteType concreteType:
+                if (concreteType.IsCs)
+                {
+                    return _loadedTypes[concreteType];
+                }
+                return _definedTypes[concreteType];
+                break;
+            case DefinedType definedType:
+                return _definedTypes[definedType];
+            case GenericType genericType:
+                // TODO: figure this out
+                throw new Exception("Need to figure out how these work...");
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type));
         }
-
-        if (type.IsArray)
-        {
-            var innerType = type.ConcreteTypeParameters.Single();
-
-            return GetCsType(innerType).MakeArrayType();
-
-        }
-
-        return _definedTypes[type];
     }
     
-    private Dictionary<ConcreteType, TypeBuilder> _definedTypes = new();
+    private Dictionary<IDefinedType, TypeBuilder> _definedTypes = new();
     private Dictionary<ConcreteType, Type> _loadedTypes = new();
-    private Dictionary<ConcreteType, ConstructorBuilder> _definedTypeConstructors = new();
+    private Dictionary<IDefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
     private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
     private Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
 
-    private List<TypeBuilder> DefineClasses(IEnumerable<ConcreteType> classes)
+    private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
     {
         return classes.Where(x => x.TypeVariant != TypeVariant.Enum).Select(DefineClass).ToList();
     }
 
-    private List<TypeBuilder> DefineEnums(IEnumerable<ConcreteType> enums)
+    private List<TypeBuilder> DefineEnums(IEnumerable<DefinedType> enums)
     {
         return enums.Where(x => x.TypeVariant == TypeVariant.Enum).Select(DefineEnum).ToList();
     }
 
-    private TypeBuilder DefineEnum(ConcreteType type)
+    private TypeBuilder DefineEnum(DefinedType type)
     {
         var attributes = TypeAttributes.Public | TypeAttributes.Abstract;
         
@@ -849,7 +859,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return typeBuilder;
     }
 
-    private void DefineEnumVariants(IEnumerable<ConcreteType> enums)
+    private void DefineEnumVariants(IEnumerable<DefinedType> enums)
     {
         foreach (var enumType in enums)
         {
@@ -893,7 +903,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return $"_{index}";
     }
 
-    private TypeBuilder DefineClass(ConcreteType type)
+    private TypeBuilder DefineClass(DefinedType type)
     {
         var attributes = TypeAttributes.Public;
         
@@ -904,12 +914,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         return typeBuilder;
     }
 
-    private void DefineMethods(List<ConcreteType> classes, List<TypeBuilder> types)
+    private void DefineMethods(List<DefinedType> classes, List<TypeBuilder> types)
     {
         classes.Zip(types).SelectMany(x => x.First.Methods.Select(method => (x.Second, method))).ToList().ForEach(x => DefineMethod(x.Second, x.method));
     }
     
-    private void DefineFields(List<ConcreteType> classes, List<TypeBuilder> types)
+    private void DefineFields(List<DefinedType> classes, List<TypeBuilder> types)
     {
         classes.Zip(types).SelectMany(x => x.First.Fields.Values.Select(method => (x.Second, method))).ToList().ForEach(x => DefineField(x.Second, x.method.Name, x.method.Type));
     }
@@ -931,7 +941,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         _definedMethods[type][definition.Name] = method;
     }
 
-    private FieldBuilder DefineField(TypeBuilder type, string fieldName, ConcreteType fieldType)
+    private FieldBuilder DefineField(TypeBuilder type, string fieldName, IType fieldType)
     {
         var attributes = FieldAttributes.Public;
         var defined = type.DefineField(fieldName, GetCsType(fieldType), attributes);

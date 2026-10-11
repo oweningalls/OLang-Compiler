@@ -11,7 +11,7 @@ public class MethodInvocation : IStatement, IExpression
     public IExpression? Expression;
     public string Identifier;
     public List<IExpression> Arguments;
-    public ConcreteType? SourceType;
+    public IDefinedType? SourceType;
 
     public MethodInvocation(string className, string identifier, List<IExpression> arguments)
     {
@@ -28,5 +28,5 @@ public class MethodInvocation : IStatement, IExpression
     }
 
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+public IType? Type { get; set; }
 }

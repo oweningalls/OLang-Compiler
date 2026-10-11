@@ -8,5 +8,5 @@ public class MatchExpression(IExpression matchTarget, List<MatchArm> matchArms) 
     public IExpression MatchTarget = matchTarget;
     public List<MatchArm> MatchArms = matchArms;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

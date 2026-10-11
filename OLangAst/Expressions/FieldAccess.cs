@@ -8,5 +8,5 @@ public class FieldAccess(IExpression expression, string fieldName) : IExpression
     public IExpression Expression = expression;
     public string FieldName = fieldName;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

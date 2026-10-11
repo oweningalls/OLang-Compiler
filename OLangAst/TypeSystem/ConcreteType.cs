@@ -3,23 +3,32 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
-public struct ConcreteType(string name, TypeVariant typeVariant, bool isCs = false, bool isArray = false)
+public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = false) : IDefinedType
 {
-    public string Name = name;
-    public TypeVariant TypeVariant = typeVariant;
-    public Dictionary<string, DefinedEnumVariant> EnumVariants = [];
-    public List<FunctionDefinition> Methods = [];
-    public Dictionary<string, FieldDefinition> Fields = [];
+    public string Name { get; set; } = name;
+    public TypeVariant TypeVariant { get; set; } = typeVariant;
+    public Dictionary<string, ConcreteEnumVariant> EnumVariants = [];
+    public List<ConcreteFunctionDefinition> Methods = [];
+    public readonly Dictionary<string, ConcreteField> Fields = [];
     public bool IsCs = isCs;
-    public bool IsArray = isArray;
-    public List<ConcreteType> ConcreteTypeParameters = []; // for instantiations of generics
+    public Dictionary<string, ConcreteType> ConcreteTypeMap = []; // for instantiations of generics
 
-    private static readonly Lock _lockObject = new();
+    private static readonly Lock LockObject = new();
 
-    public static ConcreteType FromCsType(Type type)
+    public Dictionary<string, IField> GetFields()
+    {
+        return new Dictionary<string, IField>(Fields.Select(x => new KeyValuePair<string, IField>(x.Key, x.Value)));
+    }
+
+    public Dictionary<string, IEnumVariant> GetEnumVariants()
+    {
+        return new Dictionary<string, IEnumVariant>(EnumVariants.Select(x => new KeyValuePair<string, IEnumVariant>(x.Key, x.Value)));
+    }
+
+    public static ConcreteType FromCsType(System.Type type)
     {
         ConcreteType concreteType;
-        lock (_lockObject)
+        lock (LockObject)
         {
             if (_typeMap.TryGetValue(type, out var savedType))
             {
@@ -30,17 +39,18 @@ public struct ConcreteType(string name, TypeVariant typeVariant, bool isCs = fal
             _typeMap[type] = concreteType;
         }
 
-        foreach (var typeArgument in type.GenericTypeArguments)
-        {
-            concreteType.ConcreteTypeParameters.Add(FromCsType(typeArgument));
-        }
+        // ignoring type arguments for C# types
+        // foreach (var typeArgument in type.GenericTypeArguments.Zip(type.Generic))
+        // {
+        //     concreteType.ConcreteTypeMap.Add(null, FromCsType(typeArgument));
+        // }
 
         foreach (var method in type.GetMethods())
         {
-            concreteType.Methods.Add(new FunctionDefinition(concreteType, FromCsType(method.ReturnType),
+            concreteType.Methods.Add(new ConcreteFunctionDefinition(concreteType, FromCsType(method.ReturnType),
                 method.Name,
                 method.GetParameters().ToArray()
-                    .Select(parameter => new Parameter(parameter.Name,
+                    .Select(parameter => new ConcreteParameter(parameter.Name!,
                         FromCsType(parameter.ParameterType)))
                     .ToList(), !method.IsStatic));
         }
@@ -48,7 +58,7 @@ public struct ConcreteType(string name, TypeVariant typeVariant, bool isCs = fal
         return concreteType;
     }
 
-    private static TypeVariant GetCsTypeVariant(Type type)
+    private static TypeVariant GetCsTypeVariant(System.Type type)
     {
         if (type.IsEnum)
         {
@@ -58,11 +68,11 @@ public struct ConcreteType(string name, TypeVariant typeVariant, bool isCs = fal
         return TypeVariant.Class;
     }
 
-    private static ConcurrentDictionary<Type, ConcreteType> _typeMap = new();
+    private static ConcurrentDictionary<System.Type, ConcreteType> _typeMap = new();
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return obj is ConcreteType definedType && definedType.Name == Name && IsArray == definedType.IsArray && ConcreteTypeParameters.SequenceEqual(definedType.ConcreteTypeParameters);
+        return obj is ConcreteType concreteType && concreteType.Name == Name && ConcreteTypeMap.Keys.All(x => ConcreteTypeMap[x] == concreteType.ConcreteTypeMap[x]);
     }
 
     public override string ToString()

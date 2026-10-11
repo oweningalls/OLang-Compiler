@@ -1,7 +1,11 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct DefinedEnumVariant(string name, List<ConcreteType> parameters)
+public class DefinedEnumVariant(string name, List<IType> parameters) : IEnumVariant
 {
     public string Name = name;
-    public List<ConcreteType> Parameters = parameters;
+    public List<IType> Parameters = parameters;
+    public List<IType> GetParameters()
+    {
+        return Parameters;
+    }
 }

@@ -12,7 +12,7 @@ public class MethodDeclaration(IVariableType? declaredType, string identifier, L
     public List<ParameterNode> Parameters = parameters;
     public Scope Scope = scope;
     public bool IsInstance = isInstance;
-    public ConcreteType? ReturnType; 
+    public IType? ReturnType; 
     
     public SourceSpan Span { get; set; }
 }

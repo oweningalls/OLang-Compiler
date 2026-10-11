@@ -11,7 +11,7 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class MemberRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private ConcreteType? _currentType;
+    private DefinedType? _currentType;
 
     protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
@@ -29,14 +29,14 @@ public class MemberRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) :
 
     protected override EnumVariant VisitEnumVariant(EnumVariant enumVariant)
     {
-        typeHelper.CreateEnumVariant(_currentType!.Value, enumVariant);
+        typeHelper.CreateEnumVariant(_currentType!, enumVariant);
 
         return enumVariant;
     }
 
     protected override IClassMember VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var method = typeHelper.CreateCustomMethod(_currentType!.Value, methodDeclaration);
+        var method = typeHelper.CreateCustomMethod(_currentType!, methodDeclaration);
         methodDeclaration.ReturnType = method.ReturnType;
         SetParameterTypes(methodDeclaration.Parameters);
 
@@ -45,7 +45,7 @@ public class MemberRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) :
 
     protected override IClassMember VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
     {
-        typeHelper.CreateCustomField(_currentType!.Value, fieldDeclaration);
+        typeHelper.CreateCustomField(_currentType!, fieldDeclaration);
 
         return fieldDeclaration;
     }

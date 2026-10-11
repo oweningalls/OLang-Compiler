@@ -4,5 +4,5 @@ namespace OLangAst.Expressions;
 
 public class GreaterThan(IExpression lhs, IExpression rhs) : BaseBinaryExpression(lhs, rhs)
 {
-    public override ConcreteType? Type { get; set; } = PrimitiveTypes.BoolType;
+    public override IType? Type { get; set; } = PrimitiveTypes.BoolType;
 }

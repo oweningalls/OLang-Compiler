@@ -10,6 +10,6 @@ public class VariableDeclarationStatement(IVariableType? declaredType, string id
     public IVariableType? DeclaredType = declaredType;
     public string Identifier = identifier;
     public IExpression Value = value;
-    public ConcreteType? VariableType;
+    public IType? VariableType;
     public SourceSpan Span { get; set; }
 }

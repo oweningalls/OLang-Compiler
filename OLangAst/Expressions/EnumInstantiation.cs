@@ -9,5 +9,5 @@ public class EnumInstantiation(string enumName, string variantName, List<IExpres
     public string VariantName = variantName;
     public List<IExpression> Arguments = arguments;
     public SourceSpan Span { get; set; }
-    public ConcreteType? Type { get; set; }
+    public IType? Type { get; set; }
 }

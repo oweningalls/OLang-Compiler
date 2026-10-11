@@ -10,7 +10,7 @@ namespace AstHelpers;
 
 public class TypeHelper(IErrorHelper errorHelper)
 {
-    public ConcreteType GetMethodType(IVariableType? type)
+    public IType GetMethodType(IVariableType? type)
     {
         if (type == null)
         {
@@ -20,7 +20,7 @@ public class TypeHelper(IErrorHelper errorHelper)
         return GetLocalType(type);
     }
 
-    public ConcreteType? TryGetLocalType(IVariableType? type)
+    public IType? TryGetLocalType(IVariableType? type)
     {
         if (type == null)
         {
@@ -29,7 +29,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
         return GetLocalType(type);
     }
-    public ConcreteType GetLocalType(IVariableType type)
+    public IType GetLocalType(IVariableType type)
     {
         if (type is ArrayType arrayType)
         {
@@ -41,17 +41,20 @@ public class TypeHelper(IErrorHelper errorHelper)
         return GetDefinedType(type.Name) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
     }
 
-    private ConcreteType GetArrayOfType(ConcreteType type)
+    private DefinedArray GetArrayOfType(IType type)
     {
-        return new ConcreteType($"{type.Name}[]", type.TypeVariant, isArray: true)
-        {
-            ConcreteTypeParameters = [type]
-        };
+        return new DefinedArray(type);
     }
     
-    public FunctionDefinition GetMethod(ConcreteType type, string name, List<ConcreteType> argumentTypes, SourceSpan span)
+    public IFunctionDefinition GetMethod(IDefinedType definedType, string name, List<IType> argumentTypes, SourceSpan span)
     {
-        var matchingMethods = type.Methods.Where(x => x.Name == name && x.Parameters.Index().All(y => TypeMatches(y.Item.Type, argumentTypes, y.Index))).ToList();
+        var methods = definedType switch
+        {
+            ConcreteType concreteType => concreteType.Methods.Cast<IFunctionDefinition>(),
+            DefinedType definedType1 => definedType1.Methods,
+            _ => throw new ArgumentOutOfRangeException(nameof(definedType))
+        };
+        var matchingMethods = methods.Where(x => x.Name == name && x.GetParameterTypes().Index().All(y => TypeMatches(y.Item, argumentTypes, y.Index))).ToList();
 
         return matchingMethods.Count switch
         {
@@ -61,70 +64,70 @@ public class TypeHelper(IErrorHelper errorHelper)
         };
     }
 
-    public FunctionDefinition CreateCustomMethod(ConcreteType customType, MethodDeclaration methodDeclaration)
+    public FunctionDefinition CreateCustomMethod(DefinedType customDefinedType, MethodDeclaration methodDeclaration)
     {
-        if (customType.TypeVariant == TypeVariant.Enum)
+        if (customDefinedType.TypeVariant == TypeVariant.Enum)
         {
-            throw errorHelper.ShowErrorMessage($"Cannot define method on enum {customType.Name}", methodDeclaration.Span);
+            throw errorHelper.ShowErrorMessage($"Cannot define method on enum {customDefinedType.Name}", methodDeclaration.Span);
         }
         
-        CheckForExistingMember(customType, methodDeclaration.Identifier, methodDeclaration.Span);
-        var method = new FunctionDefinition(customType,
+        CheckForExistingMember(customDefinedType, methodDeclaration.Identifier, methodDeclaration.Span);
+        var method = new FunctionDefinition(customDefinedType,
             GetMethodType(methodDeclaration.DeclaredType),
             methodDeclaration.Identifier,
-            methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, GetLocalType(x.DeclaredType))),
+            methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, GetLocalType(x.DeclaredType))),
             methodDeclaration.IsInstance);
-        customType.Methods.Add(method);
+        customDefinedType.Methods.Add(method);
 
         return method;
     }
 
-    public DefinedEnumVariant CreateEnumVariant(ConcreteType customType, EnumVariant enumVariant)
+    public DefinedEnumVariant CreateEnumVariant(DefinedType customDefinedType, EnumVariant enumVariant)
     {
-        if (customType.TypeVariant != TypeVariant.Enum)
+        if (customDefinedType.TypeVariant != TypeVariant.Enum)
         {
-            throw errorHelper.ShowErrorMessage($"Cannot define enum variant on non-enum {customType.Name}", enumVariant.Span);
+            throw errorHelper.ShowErrorMessage($"Cannot define enum variant on non-enum {customDefinedType.Name}", enumVariant.Span);
         }
         
-        CheckForExistingEnumVariant(customType, enumVariant.Name, enumVariant.Span);
+        CheckForExistingEnumVariant(customDefinedType, enumVariant.Name, enumVariant.Span);
 
         var definedEnumVariant = new DefinedEnumVariant(enumVariant.Name, enumVariant.Values.Select(GetLocalType).ToList());
-        customType.EnumVariants.Add(enumVariant.Name, definedEnumVariant);
+        customDefinedType.EnumVariants.Add(enumVariant.Name, definedEnumVariant);
 
         return definedEnumVariant;
     }
 
-    private void CheckForExistingEnumVariant(ConcreteType type, string variantName, SourceSpan span)
+    private void CheckForExistingEnumVariant(DefinedType definedType, string variantName, SourceSpan span)
     {
-        if (type.EnumVariants.ContainsKey(variantName))
+        if (definedType.EnumVariants.ContainsKey(variantName))
         {
-            throw errorHelper.ShowErrorMessage($"Enum `{type.Name}` had variant `{variantName}` defined twice", span);
+            throw errorHelper.ShowErrorMessage($"Enum `{definedType.Name}` had variant `{variantName}` defined twice", span);
         }
     }
 
-    public void CreateCustomField(ConcreteType customType, FieldDeclaration fieldDeclaration)
+    public void CreateCustomField(DefinedType customDefinedType, FieldDeclaration fieldDeclaration)
     {
-        CheckForExistingMember(customType, fieldDeclaration.Identifier, fieldDeclaration.Span);
-        customType.Fields.Add(fieldDeclaration.Identifier, new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
+        CheckForExistingMember(customDefinedType, fieldDeclaration.Identifier, fieldDeclaration.Span);
+        customDefinedType.Fields.Add(fieldDeclaration.Identifier, new FieldDefinition(GetLocalType(fieldDeclaration.Type), fieldDeclaration.Identifier));
     }
 
-    private void CheckForExistingMember(ConcreteType type, string memberName, SourceSpan span)
+    private void CheckForExistingMember(DefinedType definedType, string memberName, SourceSpan span)
     {
         var errorMessage = $"Member with name `{memberName}` was already declared";
-        if (type.Methods.Any(x => x.Name == memberName))
+        if (definedType.Methods.Any(x => x.Name == memberName))
         {
             throw errorHelper.ShowErrorMessage(errorMessage, span);
         }
         
-        if (type.Fields.ContainsKey(memberName))
+        if (definedType.Fields.ContainsKey(memberName))
         {
             throw errorHelper.ShowErrorMessage(errorMessage, span);
         }
     }
 
-    public ConcreteType CreateCustomType(string name, TypeVariant typeVariant, List<string> typeParameters)
+    public DefinedType CreateCustomType(string name, TypeVariant typeVariant, List<string> typeParameters)
     {
-        var userDefined = new ConcreteType(name, typeVariant);
+        var userDefined = new DefinedType(name, typeVariant, typeParameters);
         _customTypes.Add(name, userDefined);
         
         return userDefined;
@@ -134,39 +137,40 @@ public class TypeHelper(IErrorHelper errorHelper)
     {
         foreach (var (_, type) in CsAssemblyLoader.LoadDefinedTypesFromAssembly(assemblyName))
         {
-            _customTypes[type.Name] = type;
+            _loadedTypes[type.Name] = type;
         }
     }
     
-    public ConcreteType GetInnerArrayType(IExpression array)
+    public IType GetInnerArrayType(IExpression array)
     {
-        if (!array.Type!.Value.IsArray)
+        if (array.Type is not DefinedArray arrayType)
         {
             throw errorHelper.ShowErrorMessage($"Cannot get inner array type from non-array type {array.Type}", array.Span);
         }
         
-        return array.Type.Value.ConcreteTypeParameters.Single();
+        return arrayType.InnerType;
     }
 
-    public ConcreteType? GetDefinedType(string name)
+    public IDefinedType? GetDefinedType(string name)
     {
         if (PrimitiveTypeMap.Keys.Any(x => x.ToString() == name))
         {
             return PrimitiveTypeMap.First(x => x.Key.ToString() == name).Value;
         }
-        return _customTypes.TryGetValue(name, out var value) ? value : null;
+        return _customTypes.GetValueOrDefault(name) ?? _loadedTypes.GetValueOrDefault(name) as IDefinedType;
     }
 
-    private bool TypeMatches(ConcreteType type, List<ConcreteType> argumentTypes, int index)
+    private bool TypeMatches(IType type, List<IType> argumentTypes, int index)
     {
         return index < argumentTypes.Count && type.Equals(argumentTypes[index]);
     }
 
-    private readonly Dictionary<string, ConcreteType> _customTypes = new();
+    private readonly Dictionary<string, DefinedType> _customTypes = new();
+    private readonly Dictionary<string, ConcreteType> _loadedTypes = new();
 
-    public List<ConcreteType> GetDefinedTypes()
+    public List<DefinedType> GetDefinedTypes()
     {
-        return _customTypes.Values.Where(x => !x.IsCs).ToList();
+        return _customTypes.Values.ToList();
     }
 
     private static readonly Dictionary<PrimitiveVariableTypeEnum, ConcreteType> PrimitiveTypeMap = new()

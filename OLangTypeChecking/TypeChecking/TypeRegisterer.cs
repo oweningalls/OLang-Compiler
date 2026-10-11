@@ -7,7 +7,7 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class TypeRegisterer(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private ConcreteType? _currentType;
+    private DefinedType? _currentType;
     protected override ITypeDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
         _currentType = typeHelper.CreateCustomType(classDeclaration.Identifier, TypeVariant.Class, []);

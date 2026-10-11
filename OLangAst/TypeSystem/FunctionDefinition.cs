@@ -1,13 +1,23 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public struct FunctionDefinition(ConcreteType declaringType, ConcreteType returnType, string name, IEnumerable<Parameter> parameters, bool isInstance)
+public class FunctionDefinition(IType declaringType, IType returnType, string name, IEnumerable<DeclaredParameter> parameters, bool isInstance) : IFunctionDefinition
 {
-    public ConcreteType DeclaringType = declaringType;
-    public ConcreteType ReturnType = returnType;
-    public string Name = name;
-    public IReadOnlyList<Parameter> Parameters = parameters.ToList();
-    public bool IsInstance = isInstance;
+    public readonly IType DeclaringType = declaringType;
+    public IType ReturnType = returnType;
+    public string Name { get; } = name;
+    public readonly IReadOnlyList<DeclaredParameter> Parameters = parameters.ToList();
+    public bool IsInstance => isInstance;
 
+    public IType GetReturnType()
+    {
+        return ReturnType;
+    }
+    
+    public List<IType> GetParameterTypes()
+    {
+        return Parameters.Select(x => x.Type).ToList();
+    }
+    
     public override int GetHashCode()
     {
         return Name.GetHashCode();

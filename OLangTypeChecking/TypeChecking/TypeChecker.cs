@@ -13,15 +13,15 @@ namespace OLangTypeChecking.TypeChecking;
 
 public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : BaseOLangAstVisitor(errorHelper)
 {
-    private ScopeTracker<string, ConcreteType> _variableTypeStack = null!;
+    private ScopeTracker<string, IType> _variableTypeStack = null!;
     private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
-    private ConcreteType _currentFunctionReturnType;
-    private ConcreteType? _currentClass;
+    private IType _currentFunctionReturnType;
+    private DefinedType? _currentClass;
     private bool _isInInstanceMethod;
     
     public override Program VisitProgram(Program program)
     {
-        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
+        _variableTypeStack = new ScopeTracker<string, IType>();
         _functionTypeStack = new ScopeTracker<string, FunctionSignature>();
 
         return base.VisitProgram(program);
@@ -36,14 +36,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     
     protected override ClassDeclaration VisitClassDeclaration(ClassDeclaration classDeclaration)
     {
-        _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
+        _currentClass = typeHelper.GetDefinedType(classDeclaration.Identifier) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Class `{classDeclaration.Identifier}` wasn't recognized", classDeclaration.Span);
 
         return (ClassDeclaration)base.VisitClassDeclaration(classDeclaration);
     }
     
     protected override EnumDeclaration VisitEnumDeclaration(EnumDeclaration enumDeclaration)
     {
-        var type = typeHelper.GetDefinedType(enumDeclaration.Identifier) ?? throw ErrorHelper.ShowErrorMessage($"Enum `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
+        var type = typeHelper.GetDefinedType(enumDeclaration.Identifier) as DefinedType ?? throw ErrorHelper.ShowErrorMessage($"Enum `{enumDeclaration.Identifier}` wasn't recognized", enumDeclaration.Span);
         _currentClass = type;
 
         enumDeclaration = (EnumDeclaration)base.VisitEnumDeclaration(enumDeclaration);
@@ -59,9 +59,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         if (_currentFunctionReturnType.Equals(PrimitiveTypes.VoidType) && returnStatement.Value is not null)
         {
-            throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Value.Span);
+            throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Span);
         }
-        returnStatement = base.VisitReturnStatement(returnStatement);
+        returnStatement = base.VisitReturnStatement(returnStatement!);
 
         if (returnStatement.Value == null)
         {
@@ -136,7 +136,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 assignmentStatement.Span);
         }
         
-        if (_currentClass!.Value.Fields.ContainsKey(assignmentStatement.Identifier))
+        if (_currentClass!.Fields.ContainsKey(assignmentStatement.Identifier))
         {
             var thisAccess = new ThisAccess();
             thisAccess = (ThisAccess)VisitThisAccess(thisAccess);
@@ -151,21 +151,21 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override ArrayAssignment VisitArrayAssignment(ArrayAssignment assignmentStatement)
     {
         assignmentStatement = base.VisitArrayAssignment(assignmentStatement);
-        var expressionType = GetExpressionType(assignmentStatement.Array);
+        var expressionType = GetExpressionType(assignmentStatement.Array) as DefinedArray;
 
-        if (!expressionType.IsArray)
+        if (expressionType is null)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot index non-array type {expressionType}", assignmentStatement.Span);
         }
 
-        var indexType = assignmentStatement.Index.Type;
+        var indexType = assignmentStatement.Index.Type!;
         if (!indexType.Equals(PrimitiveTypes.IntType))
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot use non-integer expression of type {indexType} as an index.", assignmentStatement.Index.Span);
         }
 
         var arrayType = typeHelper.GetInnerArrayType(assignmentStatement.Array);
-        var valueType = assignmentStatement.Value.Type!.Value;
+        var valueType = assignmentStatement.Value.Type!;
         assignmentStatement.Value = CastIfImplicitOrThrow(valueType,
             assignmentStatement.Value,
             $"Cannot assign expression of type {valueType} to array of type {arrayType}",
@@ -177,9 +177,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override FieldAssignment VisitFieldAssignment(FieldAssignment fieldAssignment)
     {
         fieldAssignment = base.VisitFieldAssignment(fieldAssignment);
-        var targetType = fieldAssignment.Target.Type!.Value;
+        var targetType = fieldAssignment.Target.Type!;
 
-        if (targetType.Fields.TryGetValue(fieldAssignment.Identifier, out _))
+        if (targetType is DefinedType definedType &&  definedType.Fields.TryGetValue(fieldAssignment.Identifier, out _))
         {
             return fieldAssignment;
         }
@@ -214,11 +214,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitNotExpression(Not notExpression)
     {
         notExpression = (Not)base.VisitNotExpression(notExpression);
-        var expType = GetExpressionType(notExpression.Value);
+        var expType = GetExpressionType(notExpression);
 
         if (!expType.Equals(PrimitiveTypes.BoolType))
         {
-            throw CannotApplyUnaryOperator("!", expType.ToString(), notExpression.Span);
+            throw CannotApplyUnaryOperator("!", expType.ToString()!, notExpression.Span);
         }
         
         return notExpression;
@@ -230,7 +230,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var type = GetExpressionType(declarationStatement.Value);
         if (declarationStatement.DeclaredType is {} declaredType && !CanImplicitlyConvertTo(typeHelper.GetLocalType(declaredType), type))
         {
-            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.DeclaredType}", declarationStatement.Value.Span);
+            throw ErrorHelper.ShowErrorMessage($"Expression type {type} does not match variable type {declarationStatement.DeclaredType}", declarationStatement.Span);
         }
 
         if (type.Equals(PrimitiveTypes.VoidType))
@@ -239,8 +239,8 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
     
         declarationStatement.VariableType = typeHelper.TryGetLocalType(declarationStatement.DeclaredType!) ?? type;
-        declarationStatement.Value = MaybeImplicitCast(declarationStatement.VariableType!.Value, declarationStatement.Value);
-        RecordVariableType(declarationStatement.Identifier, declarationStatement.VariableType!.Value, declarationStatement.Span);
+        declarationStatement.Value = MaybeImplicitCast(declarationStatement.VariableType!, declarationStatement.Value);
+        RecordVariableType(declarationStatement.Identifier, declarationStatement.VariableType!, declarationStatement.Span);
 
         return declarationStatement;
     }
@@ -252,14 +252,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override MethodDeclaration VisitMethodDeclaration(MethodDeclaration methodDeclaration)
     {
-        var typedParameters = methodDeclaration.Parameters.Select(x => new Parameter(x.Identifier, typeHelper.GetLocalType(x.DeclaredType))).ToList();
+        var typedParameters = methodDeclaration.Parameters.Select(x => new DeclaredParameter(x.Identifier, typeHelper.GetLocalType(x.DeclaredType))).ToList();
         methodDeclaration.Parameters.ForEach(x => x.Type = typeHelper.GetLocalType(x.DeclaredType));
-        typeHelper.GetMethod(_currentClass!.Value, methodDeclaration.Identifier, typedParameters.Select(x => x.Type).ToList(), methodDeclaration.Span);
+        typeHelper.GetMethod(_currentClass!, methodDeclaration.Identifier, typedParameters.Select(x => x.Type).ToList(), methodDeclaration.Span);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
+        _variableTypeStack = new ScopeTracker<string, IType>();
     
-        _variableTypeStack.SetValue("self", _currentClass!.Value);
+        _variableTypeStack.SetValue("self", _currentClass!);
         foreach (var param in typedParameters)
         {
             _variableTypeStack.SetValue(param.Name, param.Type);
@@ -294,7 +294,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _functionTypeStack.SetValue(functionDeclaration.Identifier, signature);
     
         var originalTypeStack = _variableTypeStack;
-        _variableTypeStack = new ScopeTracker<string, ConcreteType>();
+        _variableTypeStack = new ScopeTracker<string, IType>();
     
         foreach (var param in functionDeclaration.Parameters)
         {
@@ -316,13 +316,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return functionDeclaration;
     }
 
-    private ConcreteType GetReturnType(FunctionSignature signature)
+    private IType GetReturnType(FunctionSignature signature)
     {
         if (signature.ReturnType == null)
         {
             return PrimitiveTypes.VoidType;
         }
-        return signature.ReturnType!.Value;
+        return signature.ReturnType!;
     }
 
     protected override IExpression VisitFunctionInvocation(FunctionInvocation functionInvocation)
@@ -330,9 +330,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         functionInvocation.Arguments = functionInvocation.Arguments.Select(VisitExpression).ToList();
         if (!_functionTypeStack.ContainsKey(functionInvocation.Identifier))
         {
-            var method = typeHelper.GetMethod(_currentClass!.Value, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!.Value).ToList(), functionInvocation.Span);
+            var method = typeHelper.GetMethod(_currentClass!, functionInvocation.Identifier, functionInvocation.Arguments.Select(x => x.Type!).ToList(), functionInvocation.Span);
 
-            var methodInvocation = new MethodInvocation(_currentClass!.Value.Name, functionInvocation.Identifier, functionInvocation.Arguments) { Type = method.ReturnType };
+            var methodInvocation = new MethodInvocation(_currentClass!.Name, functionInvocation.Identifier, functionInvocation.Arguments) { Type = method.GetReturnType() };
             
             VisitMethodInvocationStatement(methodInvocation);
 
@@ -374,7 +374,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         if (!methodInvocation.IsInstance)
         {
-            if (typeHelper.GetDefinedType(methodInvocation.ClassName) is not { } declaredClass)
+            if (typeHelper.GetDefinedType(methodInvocation.ClassName!) is not { } declaredClass)
             {
                 throw ErrorHelper.ShowErrorMessage($"Unrecognized class name: `{methodInvocation.ClassName}`", methodInvocation.Span);
             }
@@ -383,8 +383,13 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         }
         
         methodInvocation = base.VisitMethodInvocation(methodInvocation);
-        var targetType = methodInvocation.IsInstance ? methodInvocation.Expression?.Type ?? _currentClass!.Value : methodInvocation.SourceType!.Value;
-        var functionDefinition = typeHelper.GetMethod(targetType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!.Value).ToList(), methodInvocation.Span);
+        var targetType = methodInvocation.IsInstance ? methodInvocation.Expression?.Type : methodInvocation.SourceType!;
+        if (targetType is not IDefinedType definedType)
+        {
+            throw ErrorHelper.ShowErrorMessage($"Cannot call methods on non-class type `{targetType}`.", methodInvocation.Span);
+        }
+        
+        var functionDefinition = typeHelper.GetMethod(definedType, methodInvocation.Identifier, methodInvocation.Arguments.Select(x => x.Type!).ToList(), methodInvocation.Span);
 
         if (methodInvocation.IsInstance && !functionDefinition.IsInstance)
         {
@@ -396,7 +401,8 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Cannot call instance method `{methodInvocation.Identifier}` as non-instance method.", methodInvocation.Span);
         }
 
-        var paramCount = functionDefinition.Parameters.Count;
+        var parameterTypes = functionDefinition.GetParameterTypes();
+        var paramCount = parameterTypes.Count;
         var argCount = methodInvocation.Arguments.Count;
         if (argCount != paramCount)
         {
@@ -406,14 +412,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         for (var i = 0; i < methodInvocation.Arguments.Count; i++)
         {
             var argument = methodInvocation.Arguments[i];
-            var paramType = functionDefinition.Parameters[i].Type;
+            var paramType = parameterTypes[i];
             methodInvocation.Arguments[i] = CastIfImplicitOrThrow(paramType,
                 argument,
                 $"Argument of type `{argument.Type}` passed to function `{methodInvocation.Identifier}` does not match declared parameter type `{paramType}`",
                 argument.Span);
         }
 
-        methodInvocation.Type = functionDefinition.ReturnType;
+        methodInvocation.Type = functionDefinition.GetReturnType();
 
         return methodInvocation;
     }
@@ -467,11 +473,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitNegate(Negate negate)
     {
         negate = (Negate)base.VisitNegate(negate);
-        var expType = GetExpressionType(negate.Value);
+        var expType = GetExpressionType(negate);
 
         if (!IsMathType(expType))
         {
-            throw CannotApplyUnaryOperator("-", expType.ToString(), negate.Span);
+            throw CannotApplyUnaryOperator("-", expType.ToString()!, negate.Span);
         }
         
         MarkExpressionType(negate, expType);
@@ -510,7 +516,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         binaryComparisonExpression.Rhs = MaybeImplicitCast(lhsType, binaryComparisonExpression.Rhs);
     }
 
-    private bool CanImplicitlyConvertTo(ConcreteType expectedType, ConcreteType actualType)
+    private bool CanImplicitlyConvertTo(IType expectedType, IType actualType)
     {
         if (expectedType.Equals(actualType))
         {
@@ -545,9 +551,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         MarkExpressionType(mathExpression, definedType);
     }
 
-    private IExpression CastIfImplicitOrThrow(ConcreteType type, IExpression expression, string errorMessage, SourceSpan span)
+    private IExpression CastIfImplicitOrThrow(IType type, IExpression expression, string errorMessage, SourceSpan span)
     {
-        if (CanImplicitlyConvertTo(type, expression.Type!.Value))
+        if (CanImplicitlyConvertTo(type, expression.Type!))
         {
             return MaybeImplicitCast(type, expression);
         }
@@ -555,9 +561,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         throw ErrorHelper.ShowErrorMessage(errorMessage, span);
     }
 
-    private IExpression MaybeImplicitCast(ConcreteType type, IExpression expression)
+    private IExpression MaybeImplicitCast(IType type, IExpression expression)
     {
-        if (expression.Type.Equals(type))
+        if (expression.Type!.Equals(type))
         {
             return expression;
         }
@@ -565,7 +571,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return new Cast(new InternalDefinedType(type), expression) { Type = type };
     }
 
-    private ConcreteType? GetCommonType(ConcreteType type1, ConcreteType type2)
+    private IType? GetCommonType(IType type1, IType type2)
     {
         if (type1.Equals(type2))
         {
@@ -580,7 +586,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return null;
     }
 
-    private ConcreteType? ResultingTypeFromMath(ConcreteType type1, ConcreteType type2)
+    private IType? ResultingTypeFromMath(IType type1, IType type2)
     {
         var t1Precedence = GetMathTypePrecedence(type1);
         var t2Precedence = GetMathTypePrecedence(type2);
@@ -600,7 +606,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitAddExpression(Add addExpression)
     {
         addExpression = (Add)base.VisitAddExpression(addExpression);
-        if (addExpression.Lhs.Type.Equals(PrimitiveTypes.StringType) && addExpression.Rhs.Type.Equals(PrimitiveTypes.StringType))
+        if (addExpression.Lhs.Type!.Equals(PrimitiveTypes.StringType) && addExpression.Rhs.Type!.Equals(PrimitiveTypes.StringType))
         {
             MarkExpressionType(addExpression, PrimitiveTypes.StringType);
         }
@@ -703,8 +709,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitCast(Cast cast)
     {
         cast = (Cast)base.VisitCast(cast);
-        var expType = cast.Value.Type;
-        if ((IsMathType(typeHelper.GetLocalType(cast.TargetType)) && IsMathType(expType!.Value)) || cast.Type.Equals(expType))
+        var expType = cast.Value.Type!;
+        var targetType = typeHelper.GetLocalType(cast.TargetType);
+        if ((IsMathType(targetType) && IsMathType(expType)) || targetType.Equals(expType))
         {
             cast.Type = typeHelper.GetLocalType(cast.TargetType);
             return cast;
@@ -719,7 +726,8 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         instantiation.Type = type;
         instantiation = (Instantiation)base.VisitInstantiation(instantiation);
 
-        var missingInitializations = type.Fields.Keys.Except(instantiation.FieldInitializations.Select(x => x.Key));
+        var fields = GetFields(type);
+        var missingInitializations = fields.Keys.Except(instantiation.FieldInitializations.Select(x => x.Key));
 
         if (missingInitializations.FirstOrDefault() is { } missingField)
         {
@@ -728,24 +736,34 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         
         foreach (var (fieldName, value) in instantiation.FieldInitializations)
         {
-            if (!type.Fields.TryGetValue(fieldName, out var field))
+            if (!fields.TryGetValue(fieldName, out var fieldType))
             {
-                throw ErrorHelper.ShowErrorMessage($"Class `{type.Name}` does not have a field named `{field}`.", value.Span);
+                throw ErrorHelper.ShowErrorMessage($"Class `{type.Name}` does not have a field named `{fieldName}`.", value.Span);
             }
 
-            if (!CanImplicitlyConvertTo(field.Type, value.Type!.Value))
+            if (!CanImplicitlyConvertTo(fieldType, value.Type!))
             {
-                throw ErrorHelper.ShowErrorMessage($"Expression of type `{value.Type!.Value}` cannot implicitly convert to type `{field.Type}`", value.Span);
+                throw ErrorHelper.ShowErrorMessage($"Expression of type `{value.Type!}` cannot implicitly convert to type `{fieldType}`", value.Span);
             }
         }
 
         return instantiation;
     }
+
+    private Dictionary<string, IType> GetFields(IDefinedType type)
+    {
+        return type switch
+        {
+            ConcreteType concreteType => new Dictionary<string, IType>(concreteType.Fields.Select(x => new KeyValuePair<string, IType>(x.Key, x.Value.Type))),
+            DefinedType definedType => new Dictionary<string, IType>(definedType.Fields.Select(x => new KeyValuePair<string, IType>(x.Key, x.Value.Type))),
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+    }
     
     protected override IExpression VisitArrayInstantiation(ArrayInstantiation instantiation)
     {
         instantiation = (ArrayInstantiation)base.VisitArrayInstantiation(instantiation);
-        if (!instantiation.Size.Type.Equals(PrimitiveTypes.IntType))
+        if (!instantiation.Size.Type!.Equals(PrimitiveTypes.IntType))
         {
             throw ErrorHelper.ShowErrorMessage($"Size of array must be int, found type `{instantiation.Size.Type}`.", instantiation.Span);
         }
@@ -769,19 +787,24 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         fieldAccess = (FieldAccess)base.VisitFieldAccess(fieldAccess);
 
         var type = fieldAccess.Expression.Type;
-
-        if (type!.Value.Fields.TryGetValue(fieldAccess.FieldName, out var fieldType))
+        if (type is not IDefinedType definedType)
         {
-            fieldAccess.Type = fieldType.Type;
-
-            return fieldAccess;
+            throw ErrorHelper.ShowErrorMessage($"Cannot access fields from non-class type `{type}`", fieldAccess.Span);
         }
 
-        throw ErrorHelper.ShowErrorMessage($"Unrecognized member `{fieldAccess.FieldName}` on expression of type `{type}`", fieldAccess.Span);
+        if (!GetFields(definedType).TryGetValue(fieldAccess.FieldName, out var fieldType))
+        {
+            throw ErrorHelper.ShowErrorMessage($"Unrecognized member `{fieldAccess.FieldName}` on expression of type `{type}`", fieldAccess.Span);
+        }
+        
+        fieldAccess.Type = fieldType;
+
+        return fieldAccess;
+
     }
 
 
-    private void MarkExpressionType(IExpression expression, ConcreteType type)
+    private void MarkExpressionType(IExpression expression, IType type)
     {
         if (expression.Type is not null)
         {
@@ -790,14 +813,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         expression.Type = type;
     }
     
-    private ConcreteType GetExpressionType(IExpression expression)
+    private IType GetExpressionType(IExpression expression)
     {
         if (expression is FunctionInvocation { Type: null } inv)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot get value from void function {inv.Identifier}", inv.Span);
         }
 
-        return expression.Type!.Value;
+        return expression.Type!;
     }
 
     private void BeginScope()
@@ -812,7 +835,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _functionTypeStack.EndScope();
     }
     
-    private void RecordVariableType(string identifier, ConcreteType expressionType, SourceSpan span)
+    private void RecordVariableType(string identifier, IType expressionType, SourceSpan span)
     {
         if (_variableTypeStack.ContainsKey(identifier))
         {
@@ -822,14 +845,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         _variableTypeStack.SetValue(identifier, expressionType);
     }
     
-    private ConcreteType GetVariableType(string identifier, SourceSpan span)
+    private IType GetVariableType(string identifier, SourceSpan span)
     {
         if (_variableTypeStack.ContainsKey(identifier))
         {
             return _variableTypeStack.GetValue(identifier);
         }
         
-        if (_currentClass!.Value.Fields.TryGetValue(identifier, out var field))
+        if (_currentClass!.Fields.TryGetValue(identifier, out var field))
         {
             return field.Type;
         }
@@ -852,7 +875,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     protected override IExpression VisitThisAccess(ThisAccess thisAccess)
     {
-        thisAccess.Type = _currentClass!.Value;
+        thisAccess.Type = _currentClass!;
 
         return thisAccess;
     }
@@ -860,16 +883,21 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
         enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
-        var definedType = typeHelper.GetDefinedType(enumInstantiation.EnumName)!.Value;
+        var definedType = typeHelper.GetDefinedType(enumInstantiation.EnumName)!;
         if (definedType.TypeVariant != TypeVariant.Enum)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
         }
 
         var enumVariant = CheckEnumVariantExists(enumInstantiation.VariantName, definedType, enumInstantiation.Span);
+        var paramTypes = enumVariant switch
+        {
+            ConcreteEnumVariant concreteEnumVariant => concreteEnumVariant.Parameters.Cast<IType>().ToList(),
+            DefinedEnumVariant definedEnumVariant => definedEnumVariant.Parameters,
+            _ => throw new ArgumentOutOfRangeException(nameof(enumVariant))
+        };
 
         var args = enumInstantiation.Arguments;
-        var paramTypes = enumVariant.Parameters;
 
         if (args.Count != paramTypes.Count)
         {
@@ -881,7 +909,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 (
                     x.Second,
                     x.First,
-                    $"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{x.First.Type!.Value}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
+                    $"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{x.First.Type!}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
                     x.First.Span
                 )
             )
@@ -892,22 +920,33 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return enumInstantiation;
     }
 
-    private DefinedEnumVariant CheckEnumVariantExists(string variantName, ConcreteType concreteType, SourceSpan span)
+    private IEnumVariant CheckEnumVariantExists(string variantName, IDefinedType definedType, SourceSpan span)
     {
-        if (!concreteType.EnumVariants.TryGetValue(variantName, out var enumVariant))
+        var variant = TryGetEnumVariant(variantName, definedType);
+        if (variant is null)
         {
-            throw ErrorHelper.ShowErrorMessage($"Enum `{concreteType.Name}` does not contain a variant named `{variantName}`.", span);
+            throw ErrorHelper.ShowErrorMessage($"Enum `{definedType.Name}` does not contain a variant named `{variantName}`.", span);
         }
 
-        return enumVariant;
+        return variant;
+    }
+
+    private IEnumVariant? TryGetEnumVariant(string variantName, IDefinedType definedType)
+    {
+        return definedType switch
+        {
+            ConcreteType concreteType => concreteType.EnumVariants.GetValueOrDefault(variantName),
+            DefinedType definedType1 => definedType1.EnumVariants.GetValueOrDefault(variantName),
+            _ => throw new ArgumentOutOfRangeException(nameof(definedType))
+        };
     }
 
     protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
     {
         matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
 
-        var matchTargetType = matchExpression.MatchTarget.Type!.Value;
-        if (matchTargetType.TypeVariant != TypeVariant.Enum)
+        var matchTargetType = matchExpression.MatchTarget.Type! as DefinedType;
+        if (matchTargetType == null || matchTargetType.TypeVariant != TypeVariant.Enum)
         {
             throw ErrorHelper.ShowErrorMessage($"Cannot match expression of non-enum type `{matchTargetType}`.", matchExpression.MatchTarget.Span);
         }
@@ -915,8 +954,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         foreach (var arm in matchExpression.MatchArms)
         {
             var enumVariant = CheckEnumVariantExists(arm.VariantName, matchTargetType, arm.Span);
+            var paramTypes = enumVariant switch
+            {
+                ConcreteEnumVariant concreteEnumVariant => concreteEnumVariant.Parameters.Cast<IType>().ToList(),
+                DefinedEnumVariant definedEnumVariant => definedEnumVariant.Parameters,
+                _ => throw new ArgumentOutOfRangeException(nameof(enumVariant))
+            };
 
-            var enumParameterCount = enumVariant.Parameters.Count;
+            var enumParameterCount = paramTypes.Count;
             var destructureVariableCount = arm.DestructureVariables.Count;
             if (enumParameterCount != destructureVariableCount)
             {
@@ -925,7 +970,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             
             BeginScope();
             
-            foreach (var (variable, type) in arm.DestructureVariables.Zip(enumVariant.Parameters))
+            foreach (var (variable, type) in arm.DestructureVariables.Zip(paramTypes))
             {
                 RecordVariableType(variable, type, arm.Span);
             }
@@ -935,7 +980,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             EndScope();
         }
 
-        matchExpression.Type = GetCommonType(matchExpression.MatchArms.Select(x => x.Value.Type!.Value));
+        matchExpression.Type = GetCommonType(matchExpression.MatchArms.Select(x => x.Value.Type!));
         if (matchExpression.Type is not {} commonType)
         {
             throw ErrorHelper.ShowErrorMessage("Not all branches of match expression can implicitly convert to a common type.", matchExpression.Span);
@@ -953,14 +998,14 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             throw ErrorHelper.ShowErrorMessage($"Cannot access `self` outside of an instance method.", selfAccess.Span);
         }
         
-        selfAccess.Type = _currentClass!.Value;
+        selfAccess.Type = _currentClass!;
 
         return selfAccess;
     }
 
-    private ConcreteType? GetCommonType(IEnumerable<ConcreteType> types)
+    private IType? GetCommonType(IEnumerable<IType> types)
     {
-        ConcreteType? matchExpressionType = null;
+        IType? matchExpressionType = null;
         foreach (var type in types)
         {
             if (matchExpressionType is not {} currentType)
@@ -991,13 +1036,18 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return matchArm;
     }
 
-    private int? GetMathTypePrecedence(ConcreteType type)
+    private int? GetMathTypePrecedence(IType type)
     {
-        var idx = MathTypes.IndexOf(type);
+        if (type is not ConcreteType concreteType)
+        {
+            return null;
+        }
+        
+        var idx = MathTypes.IndexOf(concreteType);
         return idx == -1 ? null : idx;
     }
 
-    private bool IsMathType(ConcreteType type)
+    private bool IsMathType(IType type)
     {
         return MathTypes.Contains(type);
     }
