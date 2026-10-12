@@ -3,31 +3,61 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OLangAst.TypeSystem;
 
-public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = false) : IDefinedType
+public class ConcreteType : IDefinedType
 {
-    public string Name { get; set; } = name;
-    public TypeVariant TypeVariant { get; set; } = typeVariant;
-    public Dictionary<string, ConcreteEnumVariant> EnumVariants = [];
-    public List<ConcreteFunctionDefinition> Methods = [];
-    public readonly Dictionary<string, ConcreteField> Fields = [];
-    public bool IsCs = isCs;
-    public Dictionary<string, ConcreteType> ConcreteTypeMap = []; // for instantiations of generics
+    public DefinedType GenericType { get; }
+    public string Name => GenericType.Name;
+    public TypeVariant TypeVariant => GenericType.TypeVariant;
+    public readonly Dictionary<string, IType> ConcreteTypeMap;
+
+    public ConcreteType(DefinedType abstractType, Dictionary<string, IType> typeMap)
+    {
+        foreach (var typeParameter in abstractType.TypeParameters)
+        {
+            if (!typeMap.ContainsKey(typeParameter))
+            {
+                throw new Exception($"Type parameter {typeParameter} wasn't given a concrete type.");
+            }
+        }
+        GenericType = abstractType;
+        ConcreteTypeMap = typeMap;
+    }
+
+    public IType ResolveType(IType type)
+    {
+        if (type is GenericType generic)
+        {
+            return ConcreteTypeMap.GetValueOrDefault(generic.TypeParameterName) ?? type;
+        }
+
+        return type;
+    }
+
+    public IEnumerable<IType> GetOrderedTypeArguments()
+    {
+        return GenericType.TypeParameters.Select(x => ConcreteTypeMap[x]);
+    }
 
     private static readonly Lock LockObject = new();
 
-    public Dictionary<string, IField> GetFields()
+    public List<FunctionDefinition> GetMethods()
     {
-        return new Dictionary<string, IField>(Fields.Select(x => new KeyValuePair<string, IField>(x.Key, x.Value)));
+        return GenericType.Methods;
+    }
+    
+    public Dictionary<string, FieldDefinition> GetFields()
+    {
+        return GenericType.GetFields();
     }
 
-    public Dictionary<string, IEnumVariant> GetEnumVariants()
+    public Dictionary<string, DefinedEnumVariant> GetEnumVariants()
     {
-        return new Dictionary<string, IEnumVariant>(EnumVariants.Select(x => new KeyValuePair<string, IEnumVariant>(x.Key, x.Value)));
+        return GenericType.GetEnumVariants();
     }
 
-    public static ConcreteType FromCsType(System.Type type)
+    public static DefinedType FromCsType(Type type)
     {
-        ConcreteType concreteType;
+        DefinedType concreteType;
         lock (LockObject)
         {
             if (_typeMap.TryGetValue(type, out var savedType))
@@ -35,11 +65,10 @@ public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = fals
                 return savedType;
             }
 
-            concreteType = new ConcreteType(type.Name, GetCsTypeVariant(type), true);
+            concreteType = new DefinedType(type.Name, GetCsTypeVariant(type), [], true);
             _typeMap[type] = concreteType;
         }
 
-        // ignoring type arguments for C# types
         // foreach (var typeArgument in type.GenericTypeArguments.Zip(type.Generic))
         // {
         //     concreteType.ConcreteTypeMap.Add(null, FromCsType(typeArgument));
@@ -47,10 +76,10 @@ public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = fals
 
         foreach (var method in type.GetMethods())
         {
-            concreteType.Methods.Add(new ConcreteFunctionDefinition(concreteType, FromCsType(method.ReturnType),
+            concreteType.Methods.Add(new FunctionDefinition(concreteType, FromCsType(method.ReturnType),
                 method.Name,
-                method.GetParameters().ToArray()
-                    .Select(parameter => new ConcreteParameter(parameter.Name!,
+                method.GetParameters()
+                    .Select(parameter => new DeclaredParameter(parameter.Name!,
                         FromCsType(parameter.ParameterType)))
                     .ToList(), !method.IsStatic));
         }
@@ -58,7 +87,7 @@ public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = fals
         return concreteType;
     }
 
-    private static TypeVariant GetCsTypeVariant(System.Type type)
+    private static TypeVariant GetCsTypeVariant(Type type)
     {
         if (type.IsEnum)
         {
@@ -68,7 +97,7 @@ public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = fals
         return TypeVariant.Class;
     }
 
-    private static ConcurrentDictionary<System.Type, ConcreteType> _typeMap = new();
+    private static ConcurrentDictionary<Type, DefinedType> _typeMap = new();
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
@@ -77,12 +106,14 @@ public class ConcreteType(string name, TypeVariant typeVariant, bool isCs = fals
 
     public override string ToString()
     {
-        return Name;
+        return $"{Name}<{string.Join(", ", GetOrderedTypeArguments().Select(x => x.ToString()))}>";
     }
 
     public override int GetHashCode()
     {
-        return Name.GetHashCode();
+        var hash = Name.GetHashCode();
+
+        return ConcreteTypeMap.OrderBy(x => x.Key).Select(x => HashCode.Combine(x.Key, x.Value)).Aggregate(hash, HashCode.Combine);
     }
 }
 

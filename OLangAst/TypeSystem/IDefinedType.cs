@@ -4,7 +4,8 @@ public interface IDefinedType : IType
 {
     public string Name { get; }
     public TypeVariant TypeVariant { get; }
-    
-    public Dictionary<string, IField> GetFields();
-    public Dictionary<string, IEnumVariant> GetEnumVariants();
+
+    public List<FunctionDefinition> GetMethods();
+    public Dictionary<string, FieldDefinition> GetFields();
+    public Dictionary<string, DefinedEnumVariant> GetEnumVariants();
 }

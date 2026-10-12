@@ -1678,6 +1678,31 @@ public class CompilerTests
              }
          }
          """, ""),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+
+         class Program {
+             void Main() {
+                 let maybeInt = new Maybe<int>::None;
+             }
+         }
+         """, ""),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+
+         class Program {
+             void Main() {
+                 let maybeInt = new Maybe<int>::None;
+                 maybeInt = new Maybe<int>::Val(123);
+             }
+         }
+         """, ""),
     ];
     
     [TestCaseSource(nameof(GenericTypePrograms))]

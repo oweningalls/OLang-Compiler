@@ -28,6 +28,7 @@ using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.TypeArgumentList;
 using OLangGrammar.ParseTree.TypeDeclaration;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangGrammar.ParseTree.UsingList;
@@ -229,6 +230,14 @@ public class OLangGrammar : IGrammar
         // EnumInstantiation
         GrammarRule.Create((NewToken _, IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName) => new EnumVariantInstantiation(enumName, variantName)),
         GrammarRule.Create((NewToken _, IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new EnumVariantInstantiationWithArguments(enumName, variantName, argumentList)),
+        GrammarRule.Create((NewToken _, IdentifierToken enumName, LessToken _, ITypeArgumentList typeArgumentList, GreaterToken _, DoubleColonToken _, IdentifierToken variantName) => new GenericEnumVariantInstantiation(enumName, typeArgumentList, variantName)),
+        GrammarRule.Create((NewToken _, IdentifierToken enumName, LessToken _, ITypeArgumentList typeArgumentList, GreaterToken _, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new GenericEnumVariantInstantiationWithArguments(enumName, typeArgumentList, variantName, argumentList)),
+        
+        // TypeArgumentList
+        GrammarRule.Create((IType type) => new SingleTypeArgumentList(type)),
+        GrammarRule.Create((IType type, CommaToken _, ITypeArgumentList typeArgumentList) => new ContinuedTypeArgumentList(type, typeArgumentList)),
+        GrammarRule.Create((IdentifierToken type) => new SingleTypeArgumentList(new NonPrimitiveType(type))),
+        GrammarRule.Create((IdentifierToken type, CommaToken _, ITypeArgumentList typeArgumentList) => new ContinuedTypeArgumentList(new NonPrimitiveType(type), typeArgumentList)),
 
         // FunctionInvocation
         GrammarRule.Create((IdentifierToken ident, LeftParenToken _, IArgumentList argumentList, RightParenToken _) => new FunctionInvocationWithArguments(ident, argumentList)),

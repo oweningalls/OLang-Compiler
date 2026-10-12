@@ -15,7 +15,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 {
     private ScopeTracker<string, IType> _variableTypeStack = null!;
     private ScopeTracker<string, FunctionSignature> _functionTypeStack = null!;
-    private IType _currentFunctionReturnType;
+    private IType _currentFunctionReturnType = null!;
     private DefinedType? _currentClass;
     private bool _isInInstanceMethod;
     
@@ -61,7 +61,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         {
             throw ErrorHelper.ShowErrorMessage($"Void function cannot return a value.", returnStatement.Span);
         }
-        returnStatement = base.VisitReturnStatement(returnStatement!);
+        returnStatement = base.VisitReturnStatement(returnStatement);
 
         if (returnStatement.Value == null)
         {
@@ -757,7 +757,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         return type switch
         {
-            ConcreteType concreteType => new Dictionary<string, IType>(concreteType.Fields.Select(x => new KeyValuePair<string, IType>(x.Key, x.Value.Type))),
+            ConcreteType concreteType => new Dictionary<string, IType>(concreteType.GetFields().Select(x => new KeyValuePair<string, IType>(x.Key, x.Value.Type))),
             DefinedType definedType => new Dictionary<string, IType>(definedType.Fields.Select(x => new KeyValuePair<string, IType>(x.Key, x.Value.Type))),
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
@@ -889,22 +889,42 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         var type = typeHelper.GetDefinedType(enumInstantiation.EnumName, null)!;
         if (type is not IDefinedType definedType || definedType.TypeVariant != TypeVariant.Enum)
         {
-            throw ErrorHelper.ShowErrorMessage($"Cannot instantiate class `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
+            throw ErrorHelper.ShowErrorMessage($"Cannot instantiate type `{enumInstantiation.EnumName}` as enum.", enumInstantiation.Span);
         }
 
         var enumVariant = CheckEnumVariantExists(enumInstantiation.VariantName, definedType, enumInstantiation.Span);
-        var paramTypes = enumVariant switch
-        {
-            ConcreteEnumVariant concreteEnumVariant => concreteEnumVariant.Parameters.Cast<IType>().ToList(),
-            DefinedEnumVariant definedEnumVariant => definedEnumVariant.Parameters,
-            _ => throw new ArgumentOutOfRangeException(nameof(enumVariant))
-        };
 
+        var paramTypes = enumVariant.GetParameters();
+
+        ConcreteType concreteType = null!;
+        switch (definedType)
+        {
+            case DefinedType maybeGenericType:
+            {
+                var typeArgs = enumInstantiation.TypeArguments;
+                if (typeArgs.Count != maybeGenericType.TypeParameters.Count)
+                {
+                    throw ErrorHelper.ShowErrorMessage(
+                        $"Enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` expected {maybeGenericType.TypeParameters.Count} arguments, found {typeArgs.Count}.",
+                        enumInstantiation.Span);
+                }
+            
+                var typeArgDefinedTypes = typeArgs.Select(x => typeHelper.GetLocalType(x, _currentClass)).ToList();
+                enumInstantiation.ResolvedTypeArguments = typeArgDefinedTypes;
+                concreteType = maybeGenericType.MakeConcrete(typeArgDefinedTypes);
+                break;
+            }
+            case ConcreteType concrete:
+                concreteType = concrete;
+                break;
+        }
+
+        paramTypes = paramTypes.Select(x => concreteType.ResolveType(x)).ToList();
         var args = enumInstantiation.Arguments;
 
         if (args.Count != paramTypes.Count)
         {
-            throw ErrorHelper.ShowErrorMessage($"Enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` expected {paramTypes.Count} arguments, found {args.Count}.", enumInstantiation.Span);
+            throw ErrorHelper.ShowErrorMessage($"Enum variant `{concreteType}::{enumInstantiation.VariantName}` expected {paramTypes.Count} type arguments, found {args.Count}.", enumInstantiation.Span);
         }
 
         enumInstantiation.Arguments = args.Zip(paramTypes)
@@ -912,18 +932,18 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 (
                     x.Second,
                     x.First,
-                    $"Argument to enum variant `{enumInstantiation.EnumName}::{enumInstantiation.VariantName}` of type `{x.First.Type!}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
+                    $"Argument to enum variant `{concreteType}::{enumInstantiation.VariantName}` of type `{x.First.Type!}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
                     x.First.Span
                 )
             )
             .ToList();
         
-        enumInstantiation.Type = definedType;
+        enumInstantiation.Type = concreteType;
 
         return enumInstantiation;
     }
 
-    private IEnumVariant CheckEnumVariantExists(string variantName, IDefinedType definedType, SourceSpan span)
+    private DefinedEnumVariant CheckEnumVariantExists(string variantName, IDefinedType definedType, SourceSpan span)
     {
         var variant = TryGetEnumVariant(variantName, definedType);
         if (variant is null)
@@ -934,14 +954,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return variant;
     }
 
-    private IEnumVariant? TryGetEnumVariant(string variantName, IDefinedType definedType)
+    private static DefinedEnumVariant? TryGetEnumVariant(string variantName, IDefinedType definedType)
     {
-        return definedType switch
-        {
-            ConcreteType concreteType => concreteType.EnumVariants.GetValueOrDefault(variantName),
-            DefinedType definedType1 => definedType1.EnumVariants.GetValueOrDefault(variantName),
-            _ => throw new ArgumentOutOfRangeException(nameof(definedType))
-        };
+        return definedType.GetEnumVariants().GetValueOrDefault(variantName);
     }
 
     protected override IExpression VisitMatchExpression(MatchExpression matchExpression)
@@ -957,12 +972,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         foreach (var arm in matchExpression.MatchArms)
         {
             var enumVariant = CheckEnumVariantExists(arm.VariantName, matchTargetType, arm.Span);
-            var paramTypes = enumVariant switch
-            {
-                ConcreteEnumVariant concreteEnumVariant => concreteEnumVariant.Parameters.Cast<IType>().ToList(),
-                DefinedEnumVariant definedEnumVariant => definedEnumVariant.Parameters,
-                _ => throw new ArgumentOutOfRangeException(nameof(enumVariant))
-            };
+            var paramTypes = enumVariant.GetParameters();
 
             var enumParameterCount = paramTypes.Count;
             var destructureVariableCount = arm.DestructureVariables.Count;
@@ -1041,7 +1051,7 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
     private int? GetMathTypePrecedence(IType type)
     {
-        if (type is not ConcreteType concreteType)
+        if (type is not DefinedType concreteType)
         {
             return null;
         }
@@ -1055,5 +1065,5 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
         return MathTypes.Contains(type);
     }
 
-    private static readonly List<ConcreteType> MathTypes = [PrimitiveTypes.IntType, PrimitiveTypes.FloatType];
+    private static readonly List<DefinedType> MathTypes = [PrimitiveTypes.IntType, PrimitiveTypes.FloatType];
 }

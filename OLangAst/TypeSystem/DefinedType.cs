@@ -1,36 +1,39 @@
 ﻿namespace OLangAst.TypeSystem;
 
-public class DefinedType(string name, TypeVariant typeVariant, List<string> typeParameters) : IDefinedType
+public class DefinedType(string name, TypeVariant typeVariant, List<string> typeParameters, bool isCs) : IDefinedType
 {
     public string Name { get; } = name;
     public TypeVariant TypeVariant { get; } = typeVariant;
     public readonly List<string> TypeParameters = typeParameters;
+    public readonly bool IsCs = isCs;
     public Dictionary<string, DefinedEnumVariant> EnumVariants = [];
     public List<FunctionDefinition> Methods = [];
     public Dictionary<string, FieldDefinition> Fields = [];
+    public bool IsGeneric => TypeParameters.Count != 0;
 
-    public Dictionary<string, IField> GetFields()
+    public List<FunctionDefinition> GetMethods()
     {
-        return new Dictionary<string, IField>(Fields.Select(x => new KeyValuePair<string, IField>(x.Key, x.Value)));
+        return Methods;
     }
     
-    public Dictionary<string, IEnumVariant> GetEnumVariants()
+    public Dictionary<string, FieldDefinition> GetFields()
     {
-        return new Dictionary<string, IEnumVariant>(EnumVariants.Select(x => new KeyValuePair<string, IEnumVariant>(x.Key, x.Value)));
+        return new Dictionary<string, FieldDefinition>(Fields.Select(x => new KeyValuePair<string, FieldDefinition>(x.Key, x.Value)));
+    }
+    
+    public Dictionary<string, DefinedEnumVariant> GetEnumVariants()
+    {
+        return EnumVariants;
     }
 
-    public ConcreteType MakeConcrete(List<ConcreteType> typeArguments)
+    public ConcreteType MakeConcrete(List<IType> typeArguments)
     {
-        var type = new ConcreteType(Name, TypeVariant);
-        if (typeArguments.Count != TypeParameters.Count)
-        {
-            throw new Exception($"Got {typeArguments.Count} type arguments but expected {TypeParameters.Count}");
-        }
-
+        var typeMap = new Dictionary<string, IType>();
         foreach (var (name, argType) in TypeParameters.Zip(typeArguments))
         {
-            type.ConcreteTypeMap.Add(name, argType);
+            typeMap.Add(name, argType);
         }
+        var type = new ConcreteType(this, typeMap);
 
         return type;
     }
@@ -38,6 +41,11 @@ public class DefinedType(string name, TypeVariant typeVariant, List<string> type
     public override bool Equals(object? obj)
     {
         return obj is DefinedType definedType && definedType.Name == Name;
+    }
+
+    public override string ToString()
+    {
+        return Name;
     }
 
     public override int GetHashCode()

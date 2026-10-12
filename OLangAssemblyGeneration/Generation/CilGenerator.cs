@@ -193,12 +193,31 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     protected override IExpression VisitEnumInstantiation(EnumInstantiation enumInstantiation)
     {
         enumInstantiation = (EnumInstantiation)base.VisitEnumInstantiation(enumInstantiation);
-        var enumType = GetCsType(enumInstantiation.Type!);
-        var constructor = _enumVariantConstructors[enumType][enumInstantiation.VariantName];
         
-        _il.Emit(OpCodes.Newobj, constructor);
+        _il.Emit(OpCodes.Newobj, GetEnumVariantConstructor(enumInstantiation));
 
         return enumInstantiation;
+    }
+
+    private ConstructorInfo GetEnumVariantConstructor(EnumInstantiation enumInstantiation)
+    {
+        if (enumInstantiation.Type is not ConcreteType concreteType)
+        {
+            return _enumVariantConstructors[GetCsType(enumInstantiation.Type!)][enumInstantiation.VariantName];
+        }
+        
+        var variantCsType = _enumVariants[GetCsType(concreteType.GenericType)][enumInstantiation.VariantName];
+        var genericCsType = GetCsType(concreteType.GenericType);
+        if (_constructedEnumVariantConstructors[variantCsType].TryGetValue(concreteType, out var concreteConstructor))
+        {
+            return concreteConstructor;
+        }
+
+        var concreteVariant = variantCsType.MakeGenericType(enumInstantiation.ResolvedTypeArguments.Select(GetCsType).ToArray());
+        var ctor = TypeBuilder.GetConstructor(concreteVariant, _enumVariantConstructors[genericCsType][enumInstantiation.VariantName]);
+        _constructedEnumVariantConstructors[variantCsType][concreteType] = ctor;
+
+        return ctor;
     }
 
     private static readonly MethodInfo ExitMethod = typeof(Environment).GetMethod(nameof(Environment.Exit), [typeof(int)])!;
@@ -499,7 +518,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         var type = (IDefinedType)instantiation.Type!;
         var csType = GetCsType(type);
-        var isCs = instantiation.Type is ConcreteType { IsCs: true } concreteType;
+        var isCs = instantiation.Type is ConcreteType concreteType && concreteType.GenericType.IsCs;
         var method = isCs ? csType.GetConstructor([])! : _definedTypeConstructors[(DefinedType)type];
         _il.Emit(OpCodes.Newobj, method);
         foreach (var field in type.GetFields().Keys)
@@ -812,9 +831,19 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             case DefinedArray definedArray:
                 return GetCsType(definedArray.InnerType).MakeArrayType();
             case ConcreteType concreteType:
-                return concreteType.IsCs ? _loadedTypes[concreteType] : _definedTypes[concreteType];
+                if (_concreteTypes.TryGetValue(concreteType, out var concreteCsType))
+                {
+                    return concreteCsType;
+                }
+                
+                var savedType = concreteType.GenericType.IsCs ? _loadedTypes[concreteType.GenericType] : _definedTypes[concreteType.GenericType];
+                var createdConcreteCsType = savedType.MakeGenericType(concreteType.GetOrderedTypeArguments().Select(GetCsType).ToArray());
+                _concreteTypes[concreteType] = createdConcreteCsType;
+
+                return createdConcreteCsType;
             case DefinedType definedType:
-                return _definedTypes[definedType];
+                var builder = _definedTypes[definedType];
+                return builder;
             case GenericType genericType:
                 return _definedTypeTypeParameters[_type][genericType.TypeParameterName];
             default:
@@ -822,13 +851,15 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         }
     }
     
-    private Dictionary<IDefinedType, TypeBuilder> _definedTypes = new();
-    private Dictionary<ConcreteType, Type> _loadedTypes = new();
+    private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
+    private Dictionary<DefinedType, Type> _loadedTypes = new();
+    private Dictionary<ConcreteType, Type> _concreteTypes = new();
     private Dictionary<IDefinedType, ConstructorBuilder> _definedTypeConstructors = new();
     private Dictionary<TypeBuilder, Dictionary<string, GenericTypeParameterBuilder>> _definedTypeTypeParameters = new();
     private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
     private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
     private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
+    private Dictionary<TypeBuilder, Dictionary<ConcreteType, ConstructorInfo>> _constructedEnumVariantConstructors = new();
     private Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
 
     private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
@@ -870,25 +901,42 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             _type = builder;
             foreach (var variant in enumType.EnumVariants.Values)
             {
-                MakeEnumVariant(variant, builder);
+                MakeEnumVariant(variant, builder, _definedTypeConstructors[enumType]);
             }
         }
     }
 
-    private void MakeEnumVariant(DefinedEnumVariant variant, TypeBuilder enumBaseClass)
+    private void MakeEnumVariant(DefinedEnumVariant variant, TypeBuilder enumBaseClass, ConstructorBuilder baseConstructor)
     {
-        var variantBuilder = _moduleBuilder.DefineType(variant.Name, TypeAttributes.Public | TypeAttributes.Sealed, enumBaseClass);
+        TypeBuilder variantBuilder;
+        var genericArguments = enumBaseClass.GetGenericArguments();
+        Type constructedBaseType;
+        if (genericArguments.Length == 0)
+        {
+            variantBuilder = _moduleBuilder.DefineType(variant.Name, TypeAttributes.Public | TypeAttributes.Sealed, enumBaseClass);
+            constructedBaseType = enumBaseClass;
+        }
+        else
+        {
+            variantBuilder = _moduleBuilder.DefineType(variant.Name, TypeAttributes.Public | TypeAttributes.Sealed);
+            var typeParams = variantBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
+            constructedBaseType = enumBaseClass.MakeGenericType(typeParams);
+            variantBuilder.SetParent(constructedBaseType);
+        }
         
         _enumVariants[enumBaseClass][variant.Name] = variantBuilder;
+        _constructedEnumVariantConstructors[variantBuilder] = new Dictionary<ConcreteType, ConstructorInfo>();
 
-        if (!variant.Parameters.Any())
+        if (variant.Parameters.Count == 0)
         {
             _enumVariantConstructors[enumBaseClass][variant.Name] = variantBuilder.DefineDefaultConstructor(MethodAttributes.Public);
             return;
         }
         
-        var constructorBuilder = variantBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, variant.Parameters.Select(GetCsType).ToArray());
+        ConstructorBuilder constructorBuilder = variantBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, variant.Parameters.Select(GetCsType).ToArray());
         var constructorGenerator = constructorBuilder.GetILGenerator();
+        constructorGenerator.Emit(OpCodes.Ldarg_0);
+        constructorGenerator.Emit(OpCodes.Call, TypeBuilder.GetConstructor(constructedBaseType, baseConstructor));
         
         for (var i = 0; i < variant.Parameters.Count; i++)
         {

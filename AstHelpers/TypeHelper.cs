@@ -48,12 +48,7 @@ public class TypeHelper(IErrorHelper errorHelper)
     
     public IFunctionDefinition GetMethod(IDefinedType definedType, string name, List<IType> argumentTypes, SourceSpan span)
     {
-        var methods = definedType switch
-        {
-            ConcreteType concreteType => concreteType.Methods.Cast<IFunctionDefinition>(),
-            DefinedType definedType1 => definedType1.Methods,
-            _ => throw new ArgumentOutOfRangeException(nameof(definedType))
-        };
+        var methods = definedType.GetMethods();
         var matchingMethods = methods.Where(x => x.Name == name && x.GetParameterTypes().Index().All(y => TypeMatches(y.Item, argumentTypes, y.Index))).ToList();
 
         return matchingMethods.Count switch
@@ -127,7 +122,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
     public DefinedType CreateCustomType(string name, TypeVariant typeVariant, List<string> typeParameters)
     {
-        var userDefined = new DefinedType(name, typeVariant, typeParameters);
+        var userDefined = new DefinedType(name, typeVariant, typeParameters, false);
         _customTypes.Add(name, userDefined);
         
         return userDefined;
@@ -171,14 +166,14 @@ public class TypeHelper(IErrorHelper errorHelper)
     }
 
     private readonly Dictionary<string, DefinedType> _customTypes = new();
-    private readonly Dictionary<string, ConcreteType> _loadedTypes = new();
+    private readonly Dictionary<string, DefinedType> _loadedTypes = new();
 
     public List<DefinedType> GetDefinedTypes()
     {
         return _customTypes.Values.ToList();
     }
 
-    private static readonly Dictionary<PrimitiveVariableTypeEnum, ConcreteType> PrimitiveTypeMap = new()
+    private static readonly Dictionary<PrimitiveVariableTypeEnum, DefinedType> PrimitiveTypeMap = new()
     {
         { PrimitiveVariableTypeEnum.Int, PrimitiveTypes.IntType },
         { PrimitiveVariableTypeEnum.Bool, PrimitiveTypes.BoolType },

@@ -32,6 +32,7 @@ using OLangGrammar.ParseTree.Stmt;
 using OLangGrammar.ParseTree.StmtList;
 using OLangGrammar.ParseTree.Term;
 using OLangGrammar.ParseTree.Type;
+using OLangGrammar.ParseTree.TypeArgumentList;
 using OLangGrammar.ParseTree.UnaryExpression;
 using OLangGrammar.ParseTree.UsingList;
 using OLangGrammar.UsingStatement;
@@ -426,10 +427,26 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return enumInstantiation.EnumInstantiation switch
         {
-            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
-            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
+            EnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), [], ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
+            EnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), [], ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
+            GenericEnumVariantInstantiation enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseTypeArgumentList(enumVariantInstantiation.TypeArgumentList), ParseIdentifier(enumVariantInstantiation.VariantName), []) { Span = enumVariantInstantiation.Span },
+            GenericEnumVariantInstantiationWithArguments enumVariantInstantiation => new EnumInstantiation(ParseIdentifier(enumVariantInstantiation.EnumName), ParseTypeArgumentList(enumVariantInstantiation.TypeArgumentList), ParseIdentifier(enumVariantInstantiation.VariantName), ParseArgumentList(enumVariantInstantiation.ArgumentList)) { Span = enumVariantInstantiation.Span },
             _ => throw errorHelper.UnknownVariant("enum instantiation", enumInstantiation.EnumInstantiation.GetType())
         };
+    }
+
+    private List<IVariableType> ParseTypeArgumentList(ITypeArgumentList typeArgumentList)
+    {
+        return ParseList(
+            typeArgumentList,
+            x => x switch
+            {
+                ContinuedTypeArgumentList continuedTypeArgumentList => (continuedTypeArgumentList.Type, continuedTypeArgumentList.TypeArgumentList),
+                SingleTypeArgumentList singleTypeArgumentList => (singleTypeArgumentList.Type, null),
+                _ => throw errorHelper.UnknownVariant("type argument list", x.GetType())
+            },
+            ParseType
+        );
     }
 
     private List<MatchArm> ParseMatchArmList(IMatchArmList matchArmList)
