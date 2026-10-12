@@ -467,8 +467,8 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
     {
         return matchArm switch
         {
-            OLangGrammar.ParseTree.MatchArm.MatchArm matchArm1 => new MatchArm(ParseIdentifier(matchArm1.EnumName), ParseIdentifier(matchArm1.VariantName), [], ParseExpression(matchArm1.Value)) { Span = matchArm1.Span },
-            DestructuringMatchArm destructuringMatchArm => new MatchArm(ParseIdentifier(destructuringMatchArm.EnumName), ParseIdentifier(destructuringMatchArm.VariantName), ParseIdentifierList(destructuringMatchArm.IdentifierList), ParseExpression(destructuringMatchArm.Value)) { Span = destructuringMatchArm.Span },
+            OLangGrammar.ParseTree.MatchArm.MatchArm matchArm1 => new MatchArm(ParseIdentifier(matchArm1.EnumName), matchArm1.TypeArgumentList == null ? [] :ParseTypeArgumentList(matchArm1.TypeArgumentList), ParseIdentifier(matchArm1.VariantName), [], ParseExpression(matchArm1.Value)) { Span = matchArm1.Span },
+            DestructuringMatchArm destructuringMatchArm => new MatchArm(ParseIdentifier(destructuringMatchArm.EnumName), destructuringMatchArm.TypeArgumentList == null ? [] :ParseTypeArgumentList(destructuringMatchArm.TypeArgumentList), ParseIdentifier(destructuringMatchArm.VariantName), ParseIdentifierList(destructuringMatchArm.IdentifierList), ParseExpression(destructuringMatchArm.Value)) { Span = destructuringMatchArm.Span },
             _ => throw errorHelper.UnknownVariant("match arm", matchArm.GetType())
         };
     }

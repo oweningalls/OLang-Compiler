@@ -700,7 +700,14 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         foreach (var matchArm in matchExpression.MatchArms)
         {
             var enumVariant = enumVariants[matchArm.VariantName];
-            var variantCsType = csEnumVariants[matchArm.VariantName];
+            Type variantCsType = csEnumVariants[matchArm.VariantName];
+            var parameters = enumVariant.GetParameters();
+            if (matchExpression.MatchTarget.Type is ConcreteType concreteType)
+            {
+                parameters = parameters.Select(x => concreteType.ResolveType(x)).ToList();
+                variantCsType = variantCsType.MakeGenericType(concreteType.GetOrderedTypeArguments().Select(GetCsType).ToArray());
+            }
+            
             _il.Emit(OpCodes.Ldloc, matchTargetLocal);
             _il.Emit(OpCodes.Isinst, variantCsType);
             _il.Emit(OpCodes.Ldnull);
@@ -710,14 +717,20 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             _il.Emit(OpCodes.Brfalse, label);
             
             BeginScope();
-            foreach (var ((index, variable), type) in matchArm.DestructureVariables.Index().Zip(enumVariant.GetParameters()))
+            
+            foreach (var ((index, variable), type) in matchArm.DestructureVariables.Index().Zip(parameters))
             {
                 var local = _il.DeclareLocal(GetCsType(type));
                 _variableTracker.SetValue(variable, local);
                 
                 _il.Emit(OpCodes.Ldloc, matchTargetLocal);
                 _il.Emit(OpCodes.Isinst, variantCsType);
-                var field = GetField(_enumVariants[enumBaseCsType][matchArm.VariantName], GetEnumField(index));
+                var variant = _enumVariants[enumBaseCsType][matchArm.VariantName];
+                var field = GetField(variant, GetEnumField(index));
+                if (matchExpression.MatchTarget.Type is ConcreteType)
+                {
+                    field = TypeBuilder.GetField(variantCsType, field);
+                }
                 _il.Emit(OpCodes.Ldfld, field);
                 
                 EmitLocalSet(variable);
@@ -851,16 +864,16 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         }
     }
     
-    private Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
-    private Dictionary<DefinedType, Type> _loadedTypes = new();
-    private Dictionary<ConcreteType, Type> _concreteTypes = new();
-    private Dictionary<IDefinedType, ConstructorBuilder> _definedTypeConstructors = new();
-    private Dictionary<TypeBuilder, Dictionary<string, GenericTypeParameterBuilder>> _definedTypeTypeParameters = new();
-    private Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
-    private Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
-    private Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
-    private Dictionary<TypeBuilder, Dictionary<ConcreteType, ConstructorInfo>> _constructedEnumVariantConstructors = new();
-    private Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
+    private readonly Dictionary<DefinedType, TypeBuilder> _definedTypes = new();
+    private readonly Dictionary<DefinedType, Type> _loadedTypes = new();
+    private readonly Dictionary<ConcreteType, Type> _concreteTypes = new();
+    private readonly Dictionary<IDefinedType, ConstructorBuilder> _definedTypeConstructors = new();
+    private readonly Dictionary<TypeBuilder, Dictionary<string, GenericTypeParameterBuilder>> _definedTypeTypeParameters = new();
+    private readonly Dictionary<TypeBuilder, Dictionary<string, MethodBuilder>> _definedMethods = new();
+    private readonly Dictionary<TypeBuilder, Dictionary<string, FieldBuilder>> _definedFields = new();
+    private readonly Dictionary<Type, Dictionary<string, TypeBuilder>> _enumVariants = new();
+    private readonly Dictionary<TypeBuilder, Dictionary<ConcreteType, ConstructorInfo>> _constructedEnumVariantConstructors = new();
+    private readonly Dictionary<Type, Dictionary<string, ConstructorBuilder>> _enumVariantConstructors = new();
 
     private List<TypeBuilder> DefineClasses(IEnumerable<DefinedType> classes)
     {

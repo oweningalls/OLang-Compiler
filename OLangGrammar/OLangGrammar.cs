@@ -220,8 +220,10 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IMatchArm matchArm, CommaToken _, IMatchArmList matchArmList) => new ContinuedMatchMatchArmList(matchArm, matchArmList)),
         
         // MatchArm
-        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, ArrowToken _, IExpression value) => new MatchArm(enumName, variantName, value)),
-        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IIdentifierList identifierList, RightParenToken _, ArrowToken _, IExpression value) => new DestructuringMatchArm(enumName, variantName, identifierList, value)),
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, ArrowToken _, IExpression value) => new MatchArm(enumName, null, variantName, value)),
+        GrammarRule.Create((IdentifierToken enumName, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IIdentifierList identifierList, RightParenToken _, ArrowToken _, IExpression value) => new DestructuringMatchArm(enumName, null, variantName, identifierList, value)),
+        GrammarRule.Create((IdentifierToken enumName, LessToken _, ITypeArgumentList typeArgumentList, GreaterToken _, DoubleColonToken _, IdentifierToken variantName, ArrowToken _, IExpression value) => new MatchArm(enumName, typeArgumentList, variantName, value)),
+        GrammarRule.Create((IdentifierToken enumName, LessToken _, ITypeArgumentList typeArgumentList, GreaterToken _, DoubleColonToken _, IdentifierToken variantName, LeftParenToken _, IIdentifierList identifierList, RightParenToken _, ArrowToken _, IExpression value) => new DestructuringMatchArm(enumName, typeArgumentList, variantName, identifierList, value)),
         
         // IdentifierList
         GrammarRule.Create((IdentifierToken identifier) => new SingleIdentifierList(identifier)),

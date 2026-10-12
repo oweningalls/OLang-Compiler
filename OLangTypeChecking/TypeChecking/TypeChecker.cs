@@ -963,10 +963,9 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
     {
         matchExpression.MatchTarget = VisitExpression(matchExpression.MatchTarget);
 
-        var matchTargetType = matchExpression.MatchTarget.Type! as DefinedType;
-        if (matchTargetType == null || matchTargetType.TypeVariant != TypeVariant.Enum)
+        if (matchExpression.MatchTarget.Type! is not IDefinedType { TypeVariant: TypeVariant.Enum } matchTargetType)
         {
-            throw ErrorHelper.ShowErrorMessage($"Cannot match expression of non-enum type `{matchTargetType}`.", matchExpression.MatchTarget.Span);
+            throw ErrorHelper.ShowErrorMessage($"Cannot match expression of non-enum type `{matchExpression.MatchTarget.Type}`.", matchExpression.MatchTarget.Span);
         }
 
         foreach (var arm in matchExpression.MatchArms)
@@ -979,6 +978,11 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             if (enumParameterCount != destructureVariableCount)
             {
                 throw ErrorHelper.ShowErrorMessage($"Enum destructure had {destructureVariableCount} variables, expected {enumParameterCount};", arm.Span);
+            }
+
+            if (matchExpression.MatchTarget.Type is ConcreteType concreteType)
+            {
+                paramTypes = paramTypes.Select(x => concreteType.ResolveType(x)).ToList();
             }
             
             BeginScope();

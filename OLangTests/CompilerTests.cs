@@ -1703,6 +1703,63 @@ public class CompilerTests
              }
          }
          """, ""),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+
+         class Program {
+             void Main() {
+                 let maybeInt = new Maybe<int>::Val(321);
+                 
+                 let value = match maybeInt {
+                     Maybe<int>::Val(value) => value,
+                     Maybe<int>::None => -1
+                 };
+                 
+                 print value.ToString();
+             }
+         }
+         """, "321"),
+        ("""
+         enum Result<V, E> {
+             Ok(V),
+             Err(E)
+         }
+
+         class Program {
+             void Main() {
+                 let result = new Result<string, int>::Ok("hi!");
+                 
+                 let value = match result {
+                     Result<string, int>::Ok(value) => value,
+                     Result<string, int>::Err(e) => e.ToString()
+                 };
+                 
+                 print value;
+             }
+         }
+         """, "hi!"),
+        ("""
+         enum Result<V, E> {
+             Ok(V),
+             Err(E)
+         }
+
+         class Program {
+             void Main() {
+                 let result = new Result<string, int>::Err(-1);
+                 
+                 let value = match result {
+                     Result<string, int>::Ok(value) => value,
+                     Result<string, int>::Err(e) => e.ToString()
+                 };
+                 
+                 print value;
+             }
+         }
+         """, "-1"),
     ];
     
     [TestCaseSource(nameof(GenericTypePrograms))]
