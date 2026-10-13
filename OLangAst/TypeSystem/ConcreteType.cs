@@ -12,13 +12,12 @@ public class ConcreteType : IDefinedType
 
     public ConcreteType(DefinedType abstractType, Dictionary<string, IType> typeMap)
     {
-        foreach (var typeParameter in abstractType.TypeParameters)
+        var missingTypeParameter = abstractType.TypeParameters.FirstOrDefault(typeParameter => !typeMap.ContainsKey(typeParameter));
+        if (missingTypeParameter != null)
         {
-            if (!typeMap.ContainsKey(typeParameter))
-            {
-                throw new Exception($"Type parameter {typeParameter} wasn't given a concrete type.");
-            }
+            throw new Exception($"Type parameter {missingTypeParameter} wasn't given a concrete type.");
         }
+        
         GenericType = abstractType;
         ConcreteTypeMap = typeMap;
     }

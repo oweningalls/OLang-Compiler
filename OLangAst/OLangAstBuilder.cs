@@ -61,6 +61,7 @@ using MethodDeclaration = OLangAst.ClassMembers.MethodDeclaration;
 using FieldDeclaration = OLangAst.ClassMembers.FieldDeclaration;
 using ITypeDeclaration = OLangAst.TypeSystem.ITypeDeclaration;
 using MatchArm = OLangAst.Expressions.MatchArm;
+using ParameterizedType = OLangAst.Miscellaneous.ParameterizedType;
 
 namespace OLangAst;
 
@@ -409,7 +410,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             MethodInvocationTerm methodInvocationTerm => ParseMethodInvocation(methodInvocationTerm.InvocationNode),
             IdentifierTerm identifierTerm => new VariableAccess(ParseIdentifier(identifierTerm.Identifier)) { Span = identifierTerm.Span },
             Paren paren => ParseExpression(paren.Expression),
-            CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseExpression(castTerm.Expression)) { Span = castTerm.Span },
+            CastTerm castTerm => new Cast(ParseType(castTerm.Type), ParseTerm(castTerm.Term)) { Span = castTerm.Span },
             ClassInstantiationTerm instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), []) { Span = instantiationTerm.Span },
             ClassInstantiationTermWithInitializers instantiationTerm => new Instantiation(ParseIdentifier(instantiationTerm.Identifier), ParseInitializerList(instantiationTerm.InitializationList)) { Span = instantiationTerm.Span },
             ArrayInstantiationTerm instantiationTerm => new ArrayInstantiation(new ArrayType(ParseType(instantiationTerm.Type)), ParseExpression(instantiationTerm.Size)) { Span = instantiationTerm.Span },
@@ -535,6 +536,7 @@ public class OLangAstBuilder(IErrorHelper errorHelper)
             NonPrimitiveType customType => new CustomType(ParseIdentifier(customType.Identifier)) { Span = customType.Span },
             OLangGrammar.ParseTree.Type.ArrayType arrayType => new ArrayType(ParseType(arrayType.InnerType)) { Span = arrayType.Span },
             CustomArrayType arrayType => new ArrayType(new CustomType(ParseIdentifier(arrayType.InnerType))) { Span = arrayType.Span },
+            OLangGrammar.ParseTree.Type.ParameterizedType parameterizedType => new ParameterizedType(new CustomType(ParseIdentifier(parameterizedType.Type)), ParseTypeArgumentList(parameterizedType.TypeArgumentList)),
             _ => throw errorHelper.UnknownVariant("type", type.GetType())
         };
     }

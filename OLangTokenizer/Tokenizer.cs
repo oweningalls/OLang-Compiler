@@ -277,6 +277,7 @@ public class Tokenizer
         { "enum", () => new EnumToken() },
         { "match", () => new MatchToken() },
         { "self", () => new SelfToken() },
+        { "as", () => new AsToken() },
     };
 
     private BaseToken? TryParseOperator()

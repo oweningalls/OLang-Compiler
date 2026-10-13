@@ -136,6 +136,8 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IType type, IdentifierToken identifier) => new Parameter(type, identifier)),
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(new NonPrimitiveType(type), identifier, parameterList)),
         GrammarRule.Create((IdentifierToken type, IdentifierToken identifier) => new Parameter(new NonPrimitiveType(type), identifier)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier, CommaToken _, IParameterListNode parameterList) => new ContinuedParameterList(new NonPrimitiveType(type), identifier, parameterList)),
+        GrammarRule.Create((IdentifierToken type, IdentifierToken identifier) => new Parameter(new NonPrimitiveType(type), identifier)),
 
         // ArgumentList
         GrammarRule.Create((IExpression expression, CommaToken _, IArgumentList parameterList) => new ContinuedArgumentList(expression, parameterList)),
@@ -159,6 +161,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((StringTypeToken _) => new StringType()),
         GrammarRule.Create((LeftBracketToken _, IType type, RightBracketToken _) => new ArrayType(type)),
         GrammarRule.Create((LeftBracketToken _, IdentifierToken type, RightBracketToken _) => new CustomArrayType(type)),
+        GrammarRule.Create((IdentifierToken type, LessToken _, ITypeArgumentList typeArgumentList, GreaterToken _) => new ParameterizedType(type, typeArgumentList)),
         
         // Expression
         GrammarRule.Create((IExpression lhs, BooleanOrToken _, IAndExpression rhs) => new Expression(lhs, rhs)),
@@ -205,7 +208,7 @@ public class OLangGrammar : IGrammar
         GrammarRule.Create((IFunctionInvocation functionInvocation) => new FunctionInvocationTerm(functionInvocation)),
         GrammarRule.Create((IMethodInvocation methodInvocation) => new MethodInvocationTerm(methodInvocation)),
         GrammarRule.Create((IEnumInstantiation enumInstantiation) => new EnumInstantiationTerm(enumInstantiation)),
-        GrammarRule.Create((IType type, LeftParenToken _, IExpression value, RightParenToken _) => new CastTerm(type, value)),
+        GrammarRule.Create((ITerm value, AsToken _, IType type) => new CastTerm(type, value)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftCurlyToken _, RightCurlyToken _) => new ClassInstantiationTerm(ident)),
         GrammarRule.Create((NewToken _, IdentifierToken ident, LeftCurlyToken _, IInitializationList initializationList , RightCurlyToken _) => new ClassInstantiationTermWithInitializers(ident, initializationList)),
         GrammarRule.Create((NewToken _, LeftBracketToken _, IType type, SemicolonToken _, IExpression size, RightBracketToken _) => new ArrayInstantiationTerm(type, size)),

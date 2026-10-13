@@ -4,9 +4,9 @@ using OLangGrammar.ParseTree.Type;
 
 namespace OLangGrammar.ParseTree.Term;
 
-public class CastTerm(IType type, IExpression expression) : ITerm
+public class CastTerm(IType type, ITerm term) : ITerm
 {
     public IType Type = type;
-    public IExpression Expression = expression;
+    public ITerm Term = term;
     public SourceSpan Span { get; set; }
 }

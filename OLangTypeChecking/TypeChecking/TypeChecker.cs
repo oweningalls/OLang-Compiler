@@ -896,7 +896,6 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
 
         var paramTypes = enumVariant.GetParameters();
 
-        ConcreteType concreteType = null!;
         switch (definedType)
         {
             case DefinedType maybeGenericType:
@@ -911,20 +910,31 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
             
                 var typeArgDefinedTypes = typeArgs.Select(x => typeHelper.GetLocalType(x, _currentClass)).ToList();
                 enumInstantiation.ResolvedTypeArguments = typeArgDefinedTypes;
-                concreteType = maybeGenericType.MakeConcrete(typeArgDefinedTypes);
+                if (maybeGenericType.IsGeneric)
+                {
+                    var concreteType = maybeGenericType.MakeConcrete(typeArgDefinedTypes);
+                    paramTypes = paramTypes.Select(x => concreteType.ResolveType(x)).ToList();
+                    enumInstantiation.Type = concreteType;
+                }
+                else
+                {
+                    enumInstantiation.Type = maybeGenericType;
+                }
+
                 break;
             }
             case ConcreteType concrete:
-                concreteType = concrete;
+                var conc = concrete;
+                paramTypes = paramTypes.Select(x => conc.ResolveType(x)).ToList();
+                enumInstantiation.Type = concrete;
                 break;
         }
 
-        paramTypes = paramTypes.Select(x => concreteType.ResolveType(x)).ToList();
         var args = enumInstantiation.Arguments;
 
         if (args.Count != paramTypes.Count)
         {
-            throw ErrorHelper.ShowErrorMessage($"Enum variant `{concreteType}::{enumInstantiation.VariantName}` expected {paramTypes.Count} type arguments, found {args.Count}.", enumInstantiation.Span);
+            throw ErrorHelper.ShowErrorMessage($"Enum variant `{definedType}::{enumInstantiation.VariantName}` expected {paramTypes.Count} type arguments, found {args.Count}.", enumInstantiation.Span);
         }
 
         enumInstantiation.Arguments = args.Zip(paramTypes)
@@ -932,14 +942,12 @@ public class TypeChecker(IErrorHelper errorHelper, TypeHelper typeHelper) : Base
                 (
                     x.Second,
                     x.First,
-                    $"Argument to enum variant `{concreteType}::{enumInstantiation.VariantName}` of type `{x.First.Type!}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
+                    $"Argument to enum variant `{definedType}::{enumInstantiation.VariantName}` of type `{x.First.Type!}` cannot implicitly convert to defined parameter of type `{x.Second}`.",
                     x.First.Span
                 )
             )
             .ToList();
         
-        enumInstantiation.Type = concreteType;
-
         return enumInstantiation;
     }
 

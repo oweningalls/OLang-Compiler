@@ -518,7 +518,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         var type = (IDefinedType)instantiation.Type!;
         var csType = GetCsType(type);
-        var isCs = instantiation.Type is ConcreteType concreteType && concreteType.GenericType.IsCs;
+        var isCs = (type switch
+        {
+            ConcreteType concreteType => concreteType.GenericType,
+            DefinedType definedType => definedType,
+            _ => throw new ArgumentOutOfRangeException()
+        }).IsCs;
         var method = isCs ? csType.GetConstructor([])! : _definedTypeConstructors[(DefinedType)type];
         _il.Emit(OpCodes.Newobj, method);
         foreach (var field in type.GetFields().Keys)
@@ -855,6 +860,10 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
 
                 return createdConcreteCsType;
             case DefinedType definedType:
+                if (definedType.IsCs)
+                {
+                    return _loadedTypes[definedType];
+                }
                 var builder = _definedTypes[definedType];
                 return builder;
             case GenericType genericType:
@@ -924,10 +933,12 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         TypeBuilder variantBuilder;
         var genericArguments = enumBaseClass.GetGenericArguments();
         Type constructedBaseType;
+        ConstructorInfo constructedBaseConstructor;
         if (genericArguments.Length == 0)
         {
             variantBuilder = _moduleBuilder.DefineType(variant.Name, TypeAttributes.Public | TypeAttributes.Sealed, enumBaseClass);
             constructedBaseType = enumBaseClass;
+            constructedBaseConstructor = baseConstructor;
         }
         else
         {
@@ -935,6 +946,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
             var typeParams = variantBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
             constructedBaseType = enumBaseClass.MakeGenericType(typeParams);
             variantBuilder.SetParent(constructedBaseType);
+            constructedBaseConstructor = TypeBuilder.GetConstructor(constructedBaseType, baseConstructor);
         }
         
         _enumVariants[enumBaseClass][variant.Name] = variantBuilder;
@@ -949,7 +961,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
         ConstructorBuilder constructorBuilder = variantBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, variant.Parameters.Select(GetCsType).ToArray());
         var constructorGenerator = constructorBuilder.GetILGenerator();
         constructorGenerator.Emit(OpCodes.Ldarg_0);
-        constructorGenerator.Emit(OpCodes.Call, TypeBuilder.GetConstructor(constructedBaseType, baseConstructor));
+        constructorGenerator.Emit(OpCodes.Call, constructedBaseConstructor);
         
         for (var i = 0; i < variant.Parameters.Count; i++)
         {

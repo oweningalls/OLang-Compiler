@@ -616,7 +616,7 @@ public class CompilerTests
              return 1;
          }
          
-         exit int(func());
+         exit func() as int;
          """, 1)
     ];
     
@@ -787,47 +787,47 @@ public class CompilerTests
          """, 0),
         ("""
          let a = 1.3;
-         exit int(a * 10);
+         exit (a * 10) as int;
          """, 13),
         ("""
          let a = 1.3;
-         exit int(a * 3 + 0.11);
+         exit (a * 3 + 0.11) as int;
          """, 4), // add 0.11 instead of 0.1 due to rounding error
         ("""
          let a = 1.3;
-         exit int(a);
+         exit a as int;
          """, 1),
         ("""
          let a = 1.9;
-         exit int(a);
+         exit a as int;
          """, 1),
         ("""
          float a = 3;
          int b = 4;
          let c = a / b;
-         exit int(c * 100);
+         exit (c * 100) as int;
          """, 75),
         ("""
          float a = 0.5;
-         exit int(a * 2);
+         exit (a * 2) as int;
          """, 1),
         ("""
          float a = -0.5;
-         exit int(a * -2);
+         exit (a * -2) as int;
          """, 1),
         ("""
          let a = -0.5;
          let b = a - 5;
-         exit int(b * -2);
+         exit (b * -2) as int;
          """, 11),
         ("""
          let a = -0.5;
          a = 3;
-         exit int(a);
+         exit a as int;
          """, 3),
         ("""
          void test(float a) {
-             exit int(a);
+             exit a as int;
          }
          test(13);
          """, 13),
@@ -1760,6 +1760,96 @@ public class CompilerTests
              }
          }
          """, "-1"),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+         
+         class Program {
+             void Main() {
+                 let maybeValue = new Maybe<string>::Val("value");
+                 
+                 let value = GetValue(maybeValue);
+                 
+                 print value;
+             }
+             
+             string GetValue(Maybe<string> maybe) {
+                 return match maybe {
+                     Maybe<string>::Val(value) => value,
+                     Maybe<string>::None => "nothing"
+                 };
+             }
+         }
+         """, "value"),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+
+         class Program {
+             void Main() {
+                 let maybeValue = new Maybe<string>::None;
+                 
+                 let value = GetValue(maybeValue);
+                 
+                 print value;
+             }
+             
+             string GetValue(Maybe<string> maybe) {
+                 return match maybe {
+                     Maybe<string>::Val(value) => value,
+                     Maybe<string>::None => "nothing"
+                 };
+             }
+         }
+         """, "nothing"),
+        ("""
+         enum Maybe<T> {
+             Val(T),
+             None
+         }
+
+         class Program {
+             void Main() {
+                 let maybe = MakeMaybe("test string");
+                 
+                 print match maybe {
+                     Maybe<string>::Val(value) => value,
+                     Maybe<string>::None => "nothing"
+                 };
+             }
+             
+             Maybe<string> MakeMaybe(string maybe) {
+                 return new Maybe<string>::Val(maybe);
+             }
+         }
+         """, "test string"),
+//         ("""
+//          enum Maybe<T> {
+//              Val(T),
+//              None
+//          }
+//
+//          class Program {
+//              void Main() {
+//                  let maybeValue = new Maybe<string>::None;
+//                  
+//                  let value = GetValue(maybeValue);
+//                  
+//                  print value;
+//              }
+//              
+//              string GetValueOrDefault<T>(Maybe<T> maybe, T defaultValue) {
+//                  return match maybe {
+//                      Maybe<string>::Val(value) => value,
+//                      Maybe<string>::None => defaultValue
+//                  };
+//              }
+//          }
+//          """, "nothing"),
     ];
     
     [TestCaseSource(nameof(GenericTypePrograms))]

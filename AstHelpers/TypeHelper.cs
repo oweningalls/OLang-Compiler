@@ -29,6 +29,7 @@ public class TypeHelper(IErrorHelper errorHelper)
 
         return GetLocalType(type, typeContext);
     }
+    
     public IType GetLocalType(IVariableType type, IDefinedType? typeContext)
     {
         if (type is ArrayType arrayType)
@@ -36,6 +37,19 @@ public class TypeHelper(IErrorHelper errorHelper)
             var innerType = GetLocalType(arrayType.InnerType, typeContext);
 
             return GetArrayOfType(innerType);
+        }
+
+        if (type is ParameterizedType parameterizedType)
+        {
+            var genericType = GetLocalType(parameterizedType.GenericType, typeContext);
+            var typeArguments = parameterizedType.TypeArguments.Select(x => GetLocalType(x, typeContext));
+
+            if (genericType is not DefinedType { IsGeneric: true } definedType)
+            {
+                throw errorHelper.ShowErrorMessage($"Type `{genericType}` doesn't have type parameters.", type.Span);
+            }
+
+            return definedType.MakeConcrete(typeArguments.ToList());
         }
         
         return GetDefinedType(type.Name, typeContext) ?? throw errorHelper.ShowErrorMessage($"Unknown type: `{type.Name}`", type.Span);
