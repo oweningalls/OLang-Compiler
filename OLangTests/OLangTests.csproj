@@ -29,4 +29,10 @@
       <Folder Include="my_obj\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="stdlib.ol">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

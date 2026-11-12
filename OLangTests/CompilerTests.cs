@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace OLangTests;
+﻿namespace OLangTests;
 
 [Parallelizable(ParallelScope.Children)]
 public class CompilerTests
@@ -1863,14 +1861,14 @@ public class CompilerTests
         var program = values.Item1;
         var exitCode = values.Item2;
         
-        Assert.That(CompileAndExecuteProgram(program, out _), Is.EqualTo(exitCode));
+        Assert.That(_testCompileHelper.CompileAndExecuteProgram(program, out _, TargetPlatform), Is.EqualTo(exitCode));
     }
     
     private void TestProgramConsoleOutput((string, string) values, bool wrapWithMain = true)
     {
         var program = values.Item1;
         var expectedConsoleOutput = values.Item2;
-        CompileAndExecuteProgram(program, out var actualConsoleOutput, wrapWithMain);
+        _testCompileHelper.CompileAndExecuteProgram(program, out var actualConsoleOutput, TargetPlatform, wrapWithMain);
         Assert.That(actualConsoleOutput, Is.EqualTo(expectedConsoleOutput));
     }
     
@@ -1929,7 +1927,7 @@ public class CompilerTests
     [TestCase("print bool[10][10 + 1].ToString();")] // incompatible arguments
     public void TestInvalidPrograms(string program)
     {
-        var ex = Assert.Catch<Exception>(() => CompileAndExecuteProgram(program, out _));
+        var ex = Assert.Catch<Exception>(() => _testCompileHelper.CompileAndExecuteProgram(program, out _, TargetPlatform));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
@@ -1956,7 +1954,7 @@ public class CompilerTests
                   }
               }
               """;
-        var ex = Assert.Catch<Exception>(() => CompileAndExecuteProgram(program, out _, false));
+        var ex = Assert.Catch<Exception>(() => _testCompileHelper.CompileAndExecuteProgram(program, out _, TargetPlatform, false));
         
         TestContext.Out.WriteLine(ex.Message);
         Assert.That(ex.Message.ToLower().Contains("expression type") && ex.Message.ToLower().Contains("unknown"), Is.False);
@@ -1976,7 +1974,7 @@ public class CompilerTests
                         }
                         exit fn1;
                         """;
-        var olFibNum = CompileAndExecuteProgram(program, out _);
+        var olFibNum = _testCompileHelper.CompileAndExecuteProgram(program, out _, TargetPlatform);
         var trueFibNum = Fib(num);
         
         Assert.That(olFibNum, Is.EqualTo(trueFibNum));
@@ -1995,7 +1993,7 @@ public class CompilerTests
                         
                         exit fib({{num}});
                         """;
-        var olFibNum = CompileAndExecuteProgram(program, out _);
+        var olFibNum = _testCompileHelper.CompileAndExecuteProgram(program, out _, TargetPlatform);
         var trueFibNum = Fib(num);
         
         Assert.That(olFibNum, Is.EqualTo(trueFibNum));
@@ -2008,72 +2006,6 @@ public class CompilerTests
 
         return Fib(n - 1) + Fib(n - 2);
     }
-
-    private int _counter = 1;
-
-    private readonly Lock _lockObject = new();
-    private string GetName()
-    {
-        lock (_lockObject)
-        {
-            return $"test{_counter++.ToString()}";
-        }
-    }
-
-    private int CompileAndExecuteProgram(string program, out string output, bool wrapWithMain = true)
-    {
-        var name = GetName();
-        var outputFile = TargetPlatform switch
-        {
-            OLangCompiler.OLangCompiler.CompileTargets.X86 => $"{name}.asm",
-            OLangCompiler.OLangCompiler.CompileTargets.Cil => $"{name}.dll",
-            _ => throw new ArgumentOutOfRangeException()
-        };
-
-        if (wrapWithMain)
-        {
-            program = $"class Program {{void Main() {{\n{program}\n}}}}";
-        }
-        OLangCompiler.OLangCompiler.GenerateAssembly(program, TargetPlatform, ".", outputFile);
-
-        var psi = TargetPlatform switch
-        {
-            OLangCompiler.OLangCompiler.CompileTargets.X86 => new ProcessStartInfo
-            {
-                FileName = "wsl.exe",
-                Arguments = $"bash ./build_and_execute.sh {outputFile}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            },
-            OLangCompiler.OLangCompiler.CompileTargets.Cil => new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = outputFile,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        using var process = new Process();
-        process.StartInfo = psi;
-        process.Start();
-
-        output = process.StandardOutput.ReadToEnd();
-        var errors = process.StandardError.ReadToEnd();
-
-        process.WaitForExit();
-        Console.WriteLine("Output:");
-        Console.WriteLine(output);
-
-        if (!string.IsNullOrEmpty(errors))
-        {
-            throw new Exception(errors);
-        }
-
-        return process.ExitCode;
-    }
+    
+    private readonly TestCompileHelper _testCompileHelper = new();
 }

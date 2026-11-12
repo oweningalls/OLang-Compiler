@@ -367,7 +367,7 @@ public class CilGenerator(IErrorHelper errorHelper, TypeHelper typeHelper) : Bas
     {
         methodInvocation = base.VisitMethodInvocationStatement(methodInvocation);
 
-        var returnType = GetCsType(typeHelper.GetMethod((IDefinedType)methodInvocation.Expression!.Type!,
+        var returnType = GetCsType(typeHelper.GetMethod(methodInvocation.Expression?.Type as IDefinedType ?? methodInvocation.SourceType!,
                 methodInvocation.Identifier,
                 methodInvocation.Arguments.Select(x => x.Type!)
                     .ToList(), methodInvocation.Span)

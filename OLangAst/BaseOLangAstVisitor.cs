@@ -236,7 +236,7 @@ public class BaseOLangAstVisitor(IErrorHelper errorHelper)
 
     protected virtual IStatement VisitFunctionInvocationStatement(FunctionInvocation functionInvocation)
     {
-        return (FunctionInvocation)VisitFunctionInvocation(functionInvocation);
+        return (IStatement)VisitFunctionInvocation(functionInvocation);
     }
     
     protected virtual MethodInvocation VisitMethodInvocationStatement(MethodInvocation methodInvocation)
